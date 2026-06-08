@@ -1,0 +1,99 @@
+import os
+import sys
+from unittest.mock import MagicMock, patch
+
+# Ensure the project root and 'core' directory can be imported correctly
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from config import Config
+from core.ai_engines import AIEngines
+
+def run_mock_tests():
+    """
+    Runs automated mock tests to verify that the AIEngines architecture,
+    schemas, and logic function correctly in isolation.
+    """
+    print("\n" + "="*50)
+    print("RUNNING MOCK TESTS FOR AI ENGINES")
+    print("="*50)
+
+    # 1. Mocking Gemini (google.generativeai) content generation
+    print("\n--- Testing AIEngines.generate_social_content (MOCK) ---")
+    mock_gemini_response = MagicMock()
+    mock_gemini_response.text = """
+    {
+        "instagram_facebook_caption": "🚀 Hazır mısınız? Dijital dünyayı sarsacak yeni yapay zeka motorumuz yayında! 💡 Bu motor, sosyal medya stratejilerinizi baştan yazacak. Detaylar için link profilde! #CTA",
+        "hashtags": ["yapayzeka", "dijitalpazarlama", "sosyalmedya", "girisimcilik"],
+        "image_prompt": "A modern cyberpunk style office setup, with glowing neon monitors displaying marketing dashboards, a clean minimalist aesthetic, dramatic lighting, high angle shot, realistic photo style, 8k resolution"
+    }
+    """
+
+    with patch('google.generativeai.GenerativeModel') as MockModel, \
+         patch('google.generativeai.configure') as mock_configure:
+        
+        # Setup mock instance return values
+        mock_instance = MockModel.return_value
+        mock_instance.generate_content.return_value = mock_gemini_response
+        
+        # Override config API key temporarily for test
+        with patch.object(Config, 'GEMINI_API_KEY', 'mock_gemini_key'):
+            idea_prompt = "Yeni geliştirdiğimiz AI pazarlama aracını duyuran etkileyici bir post"
+            result = AIEngines.generate_social_content(idea_prompt)
+            
+            print(f"User Idea Input: '{idea_prompt}'")
+            if result:
+                print("[SUCCESS] Content generated successfully!")
+                print(f"Captured Caption:  {result.get('instagram_facebook_caption')}")
+                print(f"Captured Hashtags: {result.get('hashtags')}")
+                print(f"Captured Image Prompt: {result.get('image_prompt')}")
+            else:
+                print("[FAILURE] Content generation returned None.")
+
+    # 2. Mocking OpenAI DALL-E 3 image generation
+    print("\n--- Testing AIEngines.generate_image_design (MOCK) ---")
+    with patch('openai.OpenAI') as MockOpenAI:
+        mock_client = MockOpenAI.return_value
+        mock_response = MagicMock()
+        mock_image_data = MagicMock()
+        mock_image_data.url = "https://images.openai.com/generated_mock_image_12345.png"
+        mock_response.data = [mock_image_data]
+        mock_client.images.generate.return_value = mock_response
+        
+        # Override config API key temporarily for test
+        with patch.object(Config, 'OPENAI_API_KEY', 'mock_openai_key'):
+            image_prompt = "A modern cyberpunk office setup with glowing neon monitors"
+            img_url = AIEngines.generate_image_design(image_prompt)
+            
+            print(f"DALL-E Prompt Input: '{image_prompt}'")
+            if img_url:
+                print("[SUCCESS] Image generated successfully!")
+                print(f"Returned Temporary URL: {img_url}")
+            else:
+                print("[FAILURE] Image generation returned None.")
+                
+    print("\n" + "="*50)
+    print("MOCK TESTING COMPLETED")
+    print("="*50)
+
+def check_live_status():
+    """
+    Checks if API keys are configured and offers guidance for live testing.
+    """
+    print("\n" + "="*50)
+    print("API KEY STATUS AND SYSTEM VERIFICATION")
+    print("="*50)
+    
+    gemini_configured = bool(Config.GEMINI_API_KEY) and "your_gemini_api_key_here" not in Config.GEMINI_API_KEY
+    openai_configured = bool(Config.OPENAI_API_KEY) and "your_openai_api_key_here" not in Config.OPENAI_API_KEY
+    
+    print(f"Gemini API Key Configured: {'[YES] ✔' if gemini_configured else '[NO] ✘ (Check .env file)'}")
+    print(f"OpenAI API Key Configured: {'[YES] ✔' if openai_configured else '[NO] ✘ (Check .env file)'}")
+    
+    if not gemini_configured or not openai_configured:
+        print("\n💡 İpucu: Gerçek API testlerini gerçekleştirmek için projeyi oluşturduğumuz dizindeki")
+        print("   '.env.template' dosyasını '.env' olarak kopyalayabilir ve içerisine")
+        print("   kendi API anahtarlarınızı ekleyebilirsiniz.")
+
+if __name__ == "__main__":
+    check_live_status()
+    run_mock_tests()

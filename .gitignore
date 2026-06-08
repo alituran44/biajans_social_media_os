@@ -1,0 +1,11 @@
+# Environment variables
+.env
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Log files
+*.log
