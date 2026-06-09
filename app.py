@@ -302,7 +302,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         Platform yetkilendirme callback'ini işler.
         Başarılıysa index.html?connected=<platform>&status=success'e yönlendirir.
         """
-        base_redirect = "/"
+        base_redirect = "/dashboard.html"
 
         if error:
             print(f"[OAuth] ❌ {platform} OAuth hatası: {error}")

@@ -558,6 +558,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { btnId: 'ozetBtn', secId: null },
         { btnId: 'navPlanlama', secId: 'planlamaSection' },
         { btnId: 'navAnalitik', secId: 'analitikSection' },
+        { btnId: 'navRakip', secId: 'rakipSection' },
+        { btnId: 'sideRakip', secId: 'rakipSection' },
         { btnId: 'navRaporlama', secId: 'raporlamaSection' },
         { btnId: 'sideRaporlama', secId: 'raporlamaSection' },
         { btnId: 'navGelenKutusu', secId: 'gelenKutusuSection' },
@@ -622,6 +624,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetSecId === 'akilliBaglantilarSection') {
             if (typeof loadSmartLinks === 'function') {
                 loadSmartLinks();
+            }
+        }
+        if (targetSecId === 'rakipSection') {
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const activeBrand = brandsData.find(b => b.id === activeId);
+            if (activeBrand && typeof updateCompetitorsDashboard === 'function') {
+                updateCompetitorsDashboard(activeBrand);
+            }
+        }
+        if (targetSecId === 'settingsSection' || targetSecId === 'brandSettingsSection') {
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const activeBrand = brandsData.find(b => b.id === activeId);
+            if (activeBrand && typeof updatePOSDashboard === 'function') {
+                updatePOSDashboard(activeBrand);
             }
         }
     }
@@ -3305,6 +3321,12 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
             updateConnectedBrandStatsCount();
 
+            // Refresh dashboard network pills & stats on change
+            if (typeof updateDashboardStats === 'function') {
+                const currentBrand = getCurrentBrand();
+                if (currentBrand) updateDashboardStats(currentBrand);
+            }
+
         } catch (err) {
             // Sessizce geç — sunucu henüz OAuth endpoint'lerini desteklemeyebilir
             console.debug('[biAjans] Bağlantı durumu çekilemedi:', err.message);
@@ -4768,6 +4790,288 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
+    // Update agency dashboard stats dynamically based on brand selection
+    async function updateDashboardStats(brand) {
+        if (!brand) return;
+
+        // Welcome Header Banner
+        const welcomeHeader = document.getElementById('dashboardWelcomeHeader');
+        if (welcomeHeader) {
+            welcomeHeader.textContent = `Merhaba, ${brand.name}! 👋`;
+        }
+        
+        const welcomeAvatar = document.getElementById('dashboardBrandAvatar');
+        if (welcomeAvatar && brand.logo) {
+            welcomeAvatar.src = brand.logo;
+        }
+
+        const welcomeIndustry = document.getElementById('dashboardBrandIndustry');
+        if (welcomeIndustry) {
+            welcomeIndustry.textContent = brand.industry || 'Genel';
+        }
+
+        // 1. Total Engagement Metric
+        const statEngagement = document.getElementById('statEngagement');
+        if (statEngagement) {
+            if (brand.id === 'coffee') {
+                statEngagement.textContent = '45.2K';
+            } else if (brand.id === 'fitness') {
+                statEngagement.textContent = '198.5K';
+            } else {
+                // Generate a stable pseudorandom metric based on brand name
+                const hash = brand.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                const num = ((hash * 7) % 85) + 5.2;
+                statEngagement.textContent = `${num.toFixed(1)}K`;
+            }
+        }
+
+        // 2. Scheduled Posts Count
+        const statScheduled = document.getElementById('statScheduled');
+        if (statScheduled) {
+            if (brand.id === 'coffee') {
+                statScheduled.textContent = '8';
+            } else if (brand.id === 'fitness') {
+                statScheduled.textContent = '15';
+            } else {
+                const hash = brand.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                const num = (hash % 8) + 1;
+                statScheduled.textContent = String(num);
+            }
+        }
+
+        // 3. Monthly Ad Budget
+        const statBudget = document.getElementById('statBudget');
+        if (statBudget) {
+            const budgetVal = brand.payment || (brand.muhasebe && brand.muhasebe.monthlyAmount) || '';
+            const currency = brand.currency || (brand.muhasebe && brand.muhasebe.currency) || 'TL';
+            if (budgetVal && parseFloat(budgetVal) > 0) {
+                const formatted = parseFloat(budgetVal).toLocaleString('tr-TR');
+                statBudget.textContent = `${currency === 'TL' ? '₺' : currency}${formatted}`;
+            } else {
+                statBudget.textContent = '₺0 / Yok';
+            }
+        }
+
+        // 4. Connection Health Score
+        const statHealth = document.getElementById('statHealth');
+        const statHealthBar = document.getElementById('statHealthBar');
+        
+        let connectedCount = 0;
+        let connectionsData = null;
+        try {
+            const res = await fetch(`/api/connections/status?brand=${brand.id}`);
+            const data = await res.json();
+            if (data && data.connections) {
+                connectionsData = data.connections;
+                connectedCount = Object.values(connectionsData).filter(c => c.connected).length;
+            }
+        } catch (e) {
+            console.debug('Dashboard health fetch connection error:', e);
+        }
+
+        let healthPercent = 75;
+        if (brand.id === 'coffee') {
+            healthPercent = 92;
+        } else if (brand.id === 'fitness') {
+            healthPercent = 100;
+        } else {
+            healthPercent = 40 + (connectedCount * 15);
+            if (healthPercent > 100) healthPercent = 100;
+        }
+
+        if (statHealth) statHealth.textContent = `${healthPercent}%`;
+        if (statHealthBar) statHealthBar.style.width = `${healthPercent}%`;
+
+        // Update connected accounts list
+        const networksContainer = document.getElementById('dashboardConnectedNetworks');
+        if (networksContainer) {
+            const netStatus = [
+                { id: 'instagram', name: 'Instagram', icon: 'fa-brands fa-instagram', connected: false },
+                { id: 'facebook', name: 'Facebook', icon: 'fa-brands fa-facebook', connected: false },
+                { id: 'youtube', name: 'YouTube', icon: 'fa-brands fa-youtube', connected: false },
+                { id: 'x', name: 'X', icon: 'fa-brands fa-x-twitter', connected: false },
+                { id: 'linkedin', name: 'LinkedIn', icon: 'fa-brands fa-linkedin', connected: false },
+                { id: 'tiktok', name: 'TikTok', icon: 'fa-brands fa-tiktok', connected: false },
+                { id: 'bluesky', name: 'Bluesky', icon: 'fa-solid fa-cloud', connected: false }
+            ];
+
+            // Set default mock statuses for coffee & fitness if they are mock
+            if (brand.id === 'coffee') {
+                netStatus[0].connected = true; // Instagram
+                netStatus[1].connected = true; // Facebook
+                netStatus[4].connected = true; // LinkedIn
+            } else if (brand.id === 'fitness') {
+                netStatus[0].connected = true; // Instagram
+                netStatus[2].connected = true; // YouTube
+                netStatus[5].connected = true; // TikTok
+            }
+
+            // Merge with actual server connection status
+            if (connectionsData) {
+                if (connectionsData.meta && connectionsData.meta.connected) {
+                    netStatus[0].connected = true;
+                    netStatus[1].connected = true;
+                }
+                if (connectionsData.google && connectionsData.google.connected) {
+                    netStatus[2].connected = true;
+                }
+                if (connectionsData.x && connectionsData.x.connected) {
+                    netStatus[3].connected = true;
+                }
+                if (connectionsData.linkedin && connectionsData.linkedin.connected) {
+                    netStatus[4].connected = true;
+                }
+                if (connectionsData.tiktok && connectionsData.tiktok.connected) {
+                    netStatus[5].connected = true;
+                }
+                if (connectionsData.bluesky && connectionsData.bluesky.connected) {
+                    netStatus[6].connected = true;
+                }
+            }
+
+            networksContainer.innerHTML = netStatus.map(net => `
+                <div class="dashboard-net-pill ${net.connected ? 'connected' : ''}" title="${net.connected ? 'Bağlantı Aktif' : 'Bağlantı Yok'}">
+                    <i class="${net.icon}"></i>
+                    <span>${net.name}</span>
+                    <span class="status-dot"></span>
+                </div>
+            `).join('');
+        }
+    }
+
+    // Update circular onboarding progress bar
+    function updateOnboardingProgress(brand) {
+        if (!brand) return;
+
+        const obCircle = document.getElementById('onboardingProgressCircle');
+        const obText = document.getElementById('onboardingProgressText');
+        const obTitle = document.getElementById('onboardingStatusTitle');
+        const obDesc = document.getElementById('onboardingStatusDesc');
+
+        const ob = brand.onboarding || {};
+        const completedCount = [ob.step1, ob.step2, ob.step3, ob.step4].filter(Boolean).length;
+        const percent = Math.round((completedCount / 4) * 100);
+
+        if (obCircle) {
+            // Circumference of r=34 is 213.6
+            const offset = 213.6 - (percent / 100) * 213.6;
+            obCircle.style.strokeDashoffset = offset;
+        }
+        if (obText) {
+            obText.textContent = `${percent}%`;
+        }
+
+        if (obTitle) {
+            if (percent === 100) {
+                obTitle.textContent = 'Kurulum Hazır!';
+                if (obDesc) obDesc.textContent = 'Tüm sosyal medya adımları başarıyla tamamlandı.';
+            } else if (percent >= 50) {
+                obTitle.textContent = 'Kurulum Devam Ediyor';
+                if (obDesc) obDesc.textContent = 'Sosyal medya kurulumunun yarısı tamamlandı.';
+            } else {
+                obTitle.textContent = 'Kurulum Başlanmadı';
+                if (obDesc) obDesc.textContent = 'Sosyal ağları bağlayın ve profili tamamlayın.';
+            }
+        }
+
+        // Update checklist checkboxes
+        const updateCheckNode = (id, checked, text) => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (checked) {
+                    el.classList.add('completed');
+                    el.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> ${text}`;
+                } else {
+                    el.classList.remove('completed');
+                    el.innerHTML = `<i class="fa-regular fa-circle" style="color: #cbd5e1;"></i> ${text}`;
+                }
+            }
+        };
+
+        updateCheckNode('sumObStep1', ob.step1, 'Profil Bilgileri');
+        updateCheckNode('sumObStep2', ob.step2, 'Sosyal Ağ Bağlantıları');
+        updateCheckNode('sumObStep3', ob.step3, 'Yapay Zeka Kurulumu');
+        updateCheckNode('sumObStep4', ob.step4, 'İlk Kampanya Planı');
+    }
+
+    // Render mini today timeline
+    function renderMiniTodaySchedule(brand) {
+        const listContainer = document.getElementById('miniTimelineList');
+        if (!listContainer) return;
+
+        let items = [];
+        if (brand.id === 'coffee') {
+            items = [
+                { time: '09:30', platform: 'instagram', type: 'Reels', text: 'Güne Harika Bir Kahveyle Başlayın! ☕', status: 'Yayınlandı', statusClass: 'status-published' },
+                { time: '14:00', platform: 'facebook', type: 'Post', text: 'Haftalık Çekirdek Çekilişi Detayları', status: 'Planlandı', statusClass: 'status-scheduled' },
+                { time: '17:30', platform: 'youtube', type: 'Shorts', text: 'Espresso Nasıl Demlenir? 3 Altın Kural', status: 'Hazırlanıyor', statusClass: 'status-processing' }
+            ];
+        } else if (brand.id === 'fitness') {
+            items = [
+                { time: '08:00', platform: 'youtube', type: 'Video', text: '10 Dakikalık Sabah Kardiyosu', status: 'Yayınlandı', statusClass: 'status-published' },
+                { time: '12:00', platform: 'instagram', type: 'Post', text: 'Protein Bar İncelemesi: Hangisi En İyisi?', status: 'Planlandı', statusClass: 'status-scheduled' },
+                { time: '19:00', platform: 'tiktok', type: 'Video', text: 'Spora Başlarken Yapılan 3 Hata', status: 'Onay Bekliyor', statusClass: 'status-pending' }
+            ];
+        } else {
+            items = [
+                { time: '10:00', platform: 'linkedin', type: 'Post', text: 'Haftalık Sektör Değerlendirmesi', status: 'Planlandı', statusClass: 'status-scheduled' },
+                { time: '15:00', platform: 'x-twitter', type: 'Tweet', text: 'Soru-Cevap Etkinliği Başlıyor!', status: 'Planlandı', statusClass: 'status-scheduled' }
+            ];
+        }
+
+        listContainer.innerHTML = items.map(item => {
+            let iconClass = 'fa-solid fa-share-nodes';
+            if (item.platform === 'instagram') iconClass = 'fa-brands fa-instagram text-ig';
+            else if (item.platform === 'facebook') iconClass = 'fa-brands fa-facebook text-fb';
+            else if (item.platform === 'youtube') iconClass = 'fa-brands fa-youtube text-yt';
+            else if (item.platform === 'tiktok') iconClass = 'fa-brands fa-tiktok';
+            else if (item.platform === 'linkedin') iconClass = 'fa-brands fa-linkedin text-li';
+            else if (item.platform === 'x-twitter') iconClass = 'fa-brands fa-x-twitter';
+
+            return `
+                <div class="timeline-item">
+                    <div class="timeline-time">${item.time}</div>
+                    <div class="timeline-node">
+                        <div class="timeline-icon-bg"><i class="${iconClass}"></i></div>
+                    </div>
+                    <div class="timeline-content">
+                        <span class="timeline-type">${item.type}</span>
+                        <p class="timeline-text" title="${item.text}">${item.text}</p>
+                        <span class="timeline-status-badge ${item.statusClass}">${item.status}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Attach click handlers to quick actions
+    function initQuickActions() {
+        const actionEditBrand = document.getElementById('actionEditBrand');
+        if (actionEditBrand) {
+            actionEditBrand.addEventListener('click', (e) => {
+                e.preventDefault();
+                showView('brandSettingsSection', 'markaAyarlariSideBtn');
+            });
+        }
+        
+        const actionConnectSocials = document.getElementById('actionConnectSocials');
+        if (actionConnectSocials) {
+            actionConnectSocials.addEventListener('click', (e) => {
+                e.preventDefault();
+                const connectionsModal = document.getElementById('connectionsModal');
+                if (connectionsModal) connectionsModal.classList.remove('hidden');
+            });
+        }
+
+        const actionGoAnalytics = document.getElementById('actionGoAnalytics');
+        if (actionGoAnalytics) {
+            actionGoAnalytics.addEventListener('click', (e) => {
+                e.preventDefault();
+                showView('analitikSection', 'navAnalitik');
+            });
+        }
+    }
+
     // ---- EXTEND populateBrandForm to include Muhasebe + CRM ----
     const _origPopulate = populateBrandForm;
     function populateBrandFormExtended(brand) {
@@ -4779,6 +5083,19 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         }
         if (typeof syncConnectionStatus === 'function') {
             syncConnectionStatus();
+        }
+        
+        // Dynamic dashboard updates
+        updateDashboardStats(brand);
+        updateOnboardingProgress(brand);
+        renderMiniTodaySchedule(brand);
+
+        // Competitor & POS updates
+        if (typeof updateCompetitorsDashboard === 'function') {
+            updateCompetitorsDashboard(brand);
+        }
+        if (typeof updatePOSDashboard === 'function') {
+            updatePOSDashboard(brand);
         }
     }
 
@@ -4797,8 +5114,507 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
+    // ============================================================
+    // COMPETITOR ANALYSIS & BENCHMARKING SYSTEM
+    // ============================================================
+
+    // Load or initialize competitors list for brand
+    window.getCompetitorsForBrand = function(brand) {
+        if (!brand.competitors) {
+            if (brand.industry === 'Gıda & İçecek' || brand.id === 'coffee') {
+                brand.competitors = [
+                    { name: 'Starbucks Türkiye', platform: 'Instagram', followers: 850000, weeklyPosts: 5, growth: 1.2, engagement: 3.8 },
+                    { name: 'Espressolab', platform: 'Instagram', followers: 184000, weeklyPosts: 6, growth: 2.5, engagement: 4.1 },
+                    { name: 'Kahve Dünyası', platform: 'Instagram', followers: 320000, weeklyPosts: 4, growth: 0.8, engagement: 2.9 }
+                ];
+            } else if (brand.industry === 'Sağlık & Spor' || brand.id === 'fitness') {
+                brand.competitors = [
+                    { name: 'MACFit', platform: 'Instagram', followers: 245000, weeklyPosts: 7, growth: 1.8, engagement: 3.2 },
+                    { name: 'Gold\'s Gym TR', platform: 'Instagram', followers: 98000, weeklyPosts: 5, growth: 0.9, engagement: 2.8 },
+                    { name: 'Mars Athletic', platform: 'Instagram', followers: 154000, weeklyPosts: 6, growth: 1.5, engagement: 3.6 }
+                ];
+            } else if (brand.industry === 'Eğitim') {
+                brand.competitors = [
+                    { name: 'Bahçeşehir Koleji', platform: 'Instagram', followers: 180000, weeklyPosts: 8, growth: 1.1, engagement: 2.4 },
+                    { name: 'Udemy Türkçe', platform: 'Instagram', followers: 95000, weeklyPosts: 4, growth: 3.2, engagement: 4.5 },
+                    { name: 'DersSepeti', platform: 'Instagram', followers: 42000, weeklyPosts: 5, growth: 1.4, engagement: 3.0 }
+                ];
+            } else {
+                brand.competitors = [
+                    { name: 'Rakip A A.Ş.', platform: 'Instagram', followers: 12500, weeklyPosts: 3, growth: 0.5, engagement: 2.1 },
+                    { name: 'Rakip B Ticaret', platform: 'Instagram', followers: 8400, weeklyPosts: 4, growth: 1.1, engagement: 2.8 },
+                    { name: 'Rakip C Dijital', platform: 'Instagram', followers: 19200, weeklyPosts: 5, growth: 1.9, engagement: 3.4 }
+                ];
+            }
+            saveBrandsToStorage(brandsData);
+        }
+        return brand.competitors;
+    };
+
+    // Update Competitors Dashboard view
+    window.updateCompetitorsDashboard = function(brand) {
+        const competitors = getCompetitorsForBrand(brand);
+        
+        // Define active brand details dynamically
+        let ourFollowers = 24582;
+        let ourEngRate = 4.8;
+        let ourFreq = 8;
+        
+        if (brand.id === 'fitness') {
+            ourFollowers = 15840;
+            ourEngRate = 5.2;
+            ourFreq = 6;
+        } else if (brand.id === 'global') {
+            ourFollowers = 1200;
+            ourEngRate = 2.1;
+            ourFreq = 2;
+        } else {
+            const budgetVal = parseInt(brand.payment || '12000');
+            ourFollowers = Math.round(budgetVal * 1.8);
+            ourEngRate = 4.5;
+            ourFreq = 5;
+        }
+
+        // Calculate averages
+        let totalFollowers = 0;
+        let totalEng = 0;
+        let totalFreq = 0;
+        competitors.forEach(c => {
+            totalFollowers += c.followers;
+            totalEng += c.engagement;
+            totalFreq += c.weeklyPosts;
+        });
+        
+        const count = competitors.length || 1;
+        const avgFollowers = Math.round(totalFollowers / count);
+        const avgEng = parseFloat((totalEng / count).toFixed(2));
+        const avgFreq = parseFloat((totalFreq / count).toFixed(1));
+
+        // Render Summary Cards
+        const ourEngEl = document.getElementById('ourEngRateVal');
+        const compEngLabel = document.getElementById('compEngRateAvgLabel');
+        const compEngCompare = document.getElementById('compEngRateCompareDesc');
+        
+        if (ourEngEl) ourEngEl.textContent = `%${ourEngRate}`;
+        if (compEngLabel) compEngLabel.textContent = `vs. %${avgEng} (Rakipler)`;
+        if (compEngCompare) {
+            const diff = parseFloat((ourEngRate - avgEng).toFixed(2));
+            if (diff >= 0) {
+                compEngCompare.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> Sektör ortalamasından +${diff}% daha yüksek`;
+                compEngCompare.style.color = '#10b981';
+            } else {
+                compEngCompare.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i> Sektör ortalamasından ${Math.abs(diff)}% daha düşük`;
+                compEngCompare.style.color = '#f43f5e';
+            }
+        }
+
+        const ourFollowersEl = document.getElementById('ourFollowersVal');
+        const compFollowersLabel = document.getElementById('compFollowersAvgLabel');
+        const compFollowersCompare = document.getElementById('compFollowersCompareDesc');
+        
+        const formattedFollowers = ourFollowers >= 1000000 ? (ourFollowers / 1000000).toFixed(1) + 'M' : ourFollowers >= 1000 ? (ourFollowers / 1000).toFixed(1) + 'K' : ourFollowers;
+        const formattedAvgFollowers = avgFollowers >= 1000000 ? (avgFollowers / 1000000).toFixed(1) + 'M' : avgFollowers >= 1000 ? (avgFollowers / 1000).toFixed(1) + 'K' : avgFollowers;
+
+        if (ourFollowersEl) ourFollowersEl.textContent = formattedFollowers;
+        if (compFollowersLabel) compFollowersLabel.textContent = `vs. ${formattedAvgFollowers} (Ortalama)`;
+        if (compFollowersCompare) {
+            if (ourFollowers >= avgFollowers) {
+                compFollowersCompare.innerHTML = `<i class="fa-solid fa-circle-check"></i> Sektör lideri konumundasınız`;
+                compFollowersCompare.style.color = '#10b981';
+            } else {
+                compFollowersCompare.innerHTML = `<i class="fa-solid fa-circle-info"></i> Büyüme ve reklam potansiyeli yüksek`;
+                compFollowersCompare.style.color = '#3b82f6';
+            }
+        }
+
+        const ourFreqEl = document.getElementById('ourFreqVal');
+        const compFreqLabel = document.getElementById('compFreqAvgLabel');
+        const compFreqCompare = document.getElementById('compFreqCompareDesc');
+        
+        if (ourFreqEl) ourFreqEl.textContent = `${ourFreq} Post`;
+        if (compFreqLabel) compFreqLabel.textContent = `vs. ${avgFreq} Post (Rakipler)`;
+        if (compFreqCompare) {
+            const diff = ourFreq - avgFreq;
+            if (diff >= 0) {
+                const pct = Math.round((diff / (avgFreq || 1)) * 100);
+                compFreqCompare.innerHTML = `<i class="fa-solid fa-bolt"></i> Rakiplere göre +${pct}% daha aktifsiniz`;
+                compFreqCompare.style.color = '#10b981';
+            } else {
+                const pct = Math.round((Math.abs(diff) / (avgFreq || 1)) * 100);
+                compFreqCompare.innerHTML = `<i class="fa-solid fa-calendar-minus"></i> Rakiplere göre %${pct} daha az paylaşım`;
+                compFreqCompare.style.color = '#f43f5e';
+            }
+        }
+
+        // Render Sleek Comparison Chart Bars
+        const chartWrapper = document.getElementById('competitorChartWrapper');
+        if (chartWrapper) {
+            chartWrapper.innerHTML = '';
+            
+            // Add Biz (Our Brand)
+            const ourBar = document.createElement('div');
+            ourBar.style.marginBottom = '4px';
+            ourBar.innerHTML = `
+                <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 700; margin-bottom: 6px;">
+                    <span style="color: #6366f1;">Biz (${brand.name})</span>
+                    <span style="color: #6366f1;">%${ourEngRate}</span>
+                </div>
+                <div style="width: 100%; height: 12px; background-color: #f1f5f9; border-radius: 50px; overflow: hidden; border: 1px solid rgba(99, 102, 241, 0.2);">
+                    <div style="width: ${Math.min(ourEngRate * 15, 100)}%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); border-radius: 50px;"></div>
+                </div>
+            `;
+            chartWrapper.appendChild(ourBar);
+
+            // Add Competitors
+            competitors.forEach(c => {
+                const compBar = document.createElement('div');
+                compBar.style.marginBottom = '4px';
+                compBar.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 700; margin-bottom: 6px;">
+                        <span style="color: #334155;">${c.name}</span>
+                        <span style="color: #64748b;">%${c.engagement}</span>
+                    </div>
+                    <div style="width: 100%; height: 12px; background-color: #f1f5f9; border-radius: 50px; overflow: hidden; border: 1px solid #e2e8f0;">
+                        <div style="width: ${Math.min(c.engagement * 15, 100)}%; height: 100%; background-color: #94a3b8; border-radius: 50px;"></div>
+                    </div>
+                `;
+                chartWrapper.appendChild(compBar);
+            });
+        }
+
+        // Render AI SWOT Insights
+        const insightOpp = document.getElementById('competitorInsightOpportunity');
+        const insightThreat = document.getElementById('competitorInsightThreat');
+        
+        if (brand.industry === 'Gıda & İçecek' || brand.id === 'coffee') {
+            if (insightOpp) insightOpp.textContent = "Rakipleriniz (özellikle Espressolab) reels paylaşımlarında 'Kahve demleme teknikleri' konseptiyle yüksek etkileşim yakalıyor. Benzer video formatlarını AI video editörümüzle başlatarak bu kitleyi çekebilirsiniz.";
+            if (insightThreat) insightThreat.textContent = "Starbucks Türkiye, sadakat kartı reklam bütçelerini dijitalde %30 artırdı. Müşteri tutundurma için haftalık kampanya hikayelerine ve lokal indirim reklamlarına ağırlık vermeliyiz.";
+        } else if (brand.industry === 'Sağlık & Spor' || brand.id === 'fitness') {
+            if (insightOpp) insightOpp.textContent = "MACFit üyelerin başarı hikayelerini (öncesi-sonrası) video formatında paylaşarak organik etkileşimi artırıyor. Benzer reels taslaklarını AI Composer ile kurgulayabilirsiniz.";
+            if (insightThreat) insightThreat.textContent = "Mars Athletic, yaz dönemi üyelik kampanyalarında influencer işbirliklerine yöneldi. Benzer etki için mikro-influencer bütçesi ayırmamız gerekebilir.";
+        } else if (brand.industry === 'Eğitim') {
+            if (insightOpp) insightOpp.textContent = "Udemy Türkçe, ücretsiz kısa eğitim serileriyle sosyal mecralardan web trafiğini besliyor. Haftalık 2 adet bilgilendirici eğitim kartı serisi planlamalıyız.";
+            if (insightThreat) insightThreat.textContent = "Bahçeşehir Koleji kurumsal LinkedIn paylaşımlarını sıklaştırdı. B2B marka bilinirliğinizi artırmak için LinkedIn içeriklerinizi çoğaltmalısınız.";
+        } else {
+            if (insightOpp) insightOpp.textContent = "Rakipleriniz haftalık paylaşım sıklığında geride kalıyor. Her gün düzenli ve özgün AI destekli paylaşımlar yaparak organik görünürlüğünüzü ikiye katlayabilirsiniz.";
+            if (insightThreat) insightThreat.textContent = "Sektördeki en yakın rakibiniz doğrudan DM satış otomasyonları kurdu. Müşteri yanıt hızımızı artırmak için Gelen Kutusu modülümüzü aktif kullanmalıyız.";
+        }
+
+        // Render Competitors Table Rows
+        const tableBody = document.getElementById('competitorsTableBody');
+        if (tableBody) {
+            tableBody.innerHTML = '';
+            competitors.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #e2e8f0';
+                tr.innerHTML = `
+                    <td style="padding: 12px; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #475569; font-size: 11px;">
+                            ${c.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <span style="font-weight: 700; color: #1e293b;">${c.name}</span>
+                    </td>
+                    <td style="padding: 12px;">
+                        <i class="fa-brands fa-${c.platform.toLowerCase()} text-${c.platform === 'Instagram' ? 'ig' : c.platform === 'Facebook' ? 'fb' : c.platform === 'LinkedIn' ? 'li' : 'x'}" style="font-size: 14px;"></i> ${c.platform}
+                    </td>
+                    <td style="padding: 12px; font-weight: 600; color: #334155;">${c.followers.toLocaleString('tr-TR')}</td>
+                    <td style="padding: 12px; font-weight: 700; color: #10b981;">+${c.growth}%</td>
+                    <td style="padding: 12px; color: #475569;">Haftalık ${c.weeklyPosts} post</td>
+                    <td style="padding: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-weight: bold; font-size: 11px; width: 45px; color: #1e293b;">${Math.round(c.engagement * 18)}/100</span>
+                            <div style="width: 60px; height: 6px; background-color: #eff1f6; border-radius: 50px; overflow: hidden;">
+                                <div style="width: ${c.engagement * 18}%; height: 100%; background-color: #10b981;"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding: 12px; text-align: right;">
+                        <button class="action-btn btn-refresh-comp" data-name="${c.name}" title="Analizi Yenile" style="background: transparent; border: none; cursor: pointer; color: #64748b; margin-right: 6px;"><i class="fa-solid fa-arrows-rotate"></i></button>
+                        <button class="action-btn btn-delete-comp" data-name="${c.name}" title="Rakibi Sil" style="background: transparent; border: none; cursor: pointer; color: #ef4444;"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+            
+            // Wire Competitor Actions
+            tableBody.querySelectorAll('.btn-refresh-comp').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const name = btn.getAttribute('data-name');
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.className = 'fa-solid fa-arrows-rotate fa-spin';
+                    
+                    setTimeout(() => {
+                        const target = competitors.find(c => c.name === name);
+                        if (target) {
+                            target.engagement = parseFloat((target.engagement * (0.95 + Math.random() * 0.1)).toFixed(2));
+                            target.followers += Math.round(target.followers * (0.01 + Math.random() * 0.02));
+                            saveBrandsToStorage(brandsData);
+                            updateCompetitorsDashboard(brand);
+                            showToast(`'${name}' analizi başarıyla güncellendi! 🚀`);
+                        }
+                    }, 1200);
+                });
+            });
+
+            tableBody.querySelectorAll('.btn-delete-comp').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const name = btn.getAttribute('data-name');
+                    if (confirm(`'${name}' rakibini silmek istediğinize emin misiniz?`)) {
+                        brand.competitors = competitors.filter(c => c.name !== name);
+                        saveBrandsToStorage(brandsData);
+                        updateCompetitorsDashboard(brand);
+                        showToast(`'${name}' rakibi silindi.`);
+                    }
+                });
+            });
+        }
+    };
+
+    // Add Competitor Panel toggle
+    const btnOpenAddCompetitor = document.getElementById('btnOpenAddCompetitor');
+    const addCompetitorPanel = document.getElementById('addCompetitorPanel');
+    const addCompetitorForm = document.getElementById('addCompetitorForm');
+    const btnCancelAddCompetitor = document.getElementById('btnCancelAddCompetitor');
+
+    if (btnOpenAddCompetitor && addCompetitorPanel) {
+        btnOpenAddCompetitor.addEventListener('click', () => {
+            addCompetitorPanel.classList.toggle('hidden');
+        });
+    }
+
+    if (btnCancelAddCompetitor && addCompetitorPanel) {
+        btnCancelAddCompetitor.addEventListener('click', () => {
+            addCompetitorPanel.classList.add('hidden');
+            if (addCompetitorForm) addCompetitorForm.reset();
+        });
+    }
+
+    if (addCompetitorForm) {
+        addCompetitorForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const brand = brandsData.find(b => b.id === activeId);
+            if (!brand) return;
+
+            const name = document.getElementById('compNameInput').value.trim();
+            const platform = document.getElementById('compPlatformSelect').value;
+            const followers = parseInt(document.getElementById('compFollowersInput').value) || 1000;
+            const weeklyPosts = parseInt(document.getElementById('compFreqInput').value) || 3;
+
+            // Generate mock metrics
+            const growth = parseFloat((1.0 + Math.random() * 2.5).toFixed(1));
+            const engagement = parseFloat((2.0 + Math.random() * 3.0).toFixed(2));
+
+            const competitors = getCompetitorsForBrand(brand);
+            competitors.push({ name, platform, followers, weeklyPosts, growth, engagement });
+            saveBrandsToStorage(brandsData);
+            
+            updateCompetitorsDashboard(brand);
+            addCompetitorPanel.classList.add('hidden');
+            addCompetitorForm.reset();
+            showToast(`'${name}' rakibi başarıyla eklendi ve analizi tamamlandı! 📈`);
+        });
+    }
+
+
+    // ============================================================
+    // SANAL POS & RECURRING SUBSCRIPTION BILLING SYSTEM
+    // ============================================================
+
+    // Update POS & Billing settings tab
+    window.updatePOSDashboard = function(brand) {
+        // Initialize default POS if missing
+        if (!brand.posSettings) {
+            brand.posSettings = {
+                gateway: 'PayTR',
+                merchantId: '238491',
+                apiKey: 'pk_live_51MszB6KSD9',
+                autoCharge: true,
+                cardNumber: '5642',
+                cardHolder: 'ALİ TURAN',
+                cardExpiry: '12/28'
+            };
+            saveBrandsToStorage(brandsData);
+        }
+
+        const gatewayEl = document.getElementById('posGatewaySelect');
+        const merchantEl = document.getElementById('posMerchantId');
+        const apiKeyEl = document.getElementById('posApiKey');
+        const autoChargeEl = document.getElementById('toggleAutoCharge');
+        const autoChargeStatus = document.getElementById('autoChargeStatusText');
+        const cardDisplay = document.getElementById('registeredCardDisplay');
+        const planRateDisplay = document.getElementById('autoChargePlanRateDisplay');
+
+        // Populate POS controls
+        if (gatewayEl) gatewayEl.value = brand.posSettings.gateway;
+        if (merchantEl) merchantEl.value = brand.posSettings.merchantId;
+        if (apiKeyEl) apiKeyEl.value = brand.posSettings.apiKey;
+        if (autoChargeEl) autoChargeEl.checked = brand.posSettings.autoCharge;
+        if (autoChargeStatus) {
+            autoChargeStatus.textContent = brand.posSettings.autoCharge ? 'AKTİF (Karttan Her Ay Çekilir)' : 'PASİF (Otomatik Çekilmez)';
+            autoChargeStatus.style.color = brand.posSettings.autoCharge ? '#10b981' : '#f43f5e';
+        }
+
+        // Card rendering
+        if (cardDisplay) {
+            cardDisplay.textContent = `•••• •••• •••• ${brand.posSettings.cardNumber} | Son Kullanma: ${brand.posSettings.cardExpiry} | Kart Sahibi: ${brand.posSettings.cardHolder.toUpperCase()}`;
+        }
+
+        // Determine cost based on selected plan
+        let planRate = 27500;
+        let planName = 'Growth Pro';
+        if (brand.requirements && brand.requirements.includes('Solo')) {
+            planRate = 12500;
+            planName = 'Başlangıç';
+        } else if (brand.requirements && brand.requirements.includes('Enterprise')) {
+            planRate = 59500;
+            planName = 'Enterprise';
+        } else if (brand.payment === '4000') {
+            planRate = 12500;
+            planName = 'Başlangıç';
+        } else if (brand.payment === '80000') {
+            planRate = 59500;
+            planName = 'Enterprise';
+        }
+
+        if (planRateDisplay) {
+            planRateDisplay.textContent = `Her Ayın 1'inde ₺${planRate.toLocaleString('tr-TR')} Çekilecektir`;
+        }
+
+        // Update current plan meta box values
+        const currentPlanName = document.getElementById('dashboardCurrentPlanName');
+        const currentPlanRate = document.getElementById('dashboardCurrentPlanRate');
+        const currentPlanPaymentMethod = document.getElementById('dashboardCurrentPlanPaymentMethod');
+        
+        if (currentPlanName) currentPlanName.textContent = planName;
+        if (currentPlanRate) currentPlanRate.textContent = `Abonelik Bedeli: ₺${planRate.toLocaleString('tr-TR')} / Ay`;
+        if (currentPlanPaymentMethod) {
+            currentPlanPaymentMethod.textContent = `Ödeme Yöntemi: Kredi Kartı (${brand.posSettings.gateway})`;
+        }
+
+        // Render simulated billing records table
+        renderPaymentHistoryTable(brand, planRate, brand.posSettings.gateway);
+    };
+
+    // Helper to render billing logs dynamically
+    function renderPaymentHistoryTable(brand, rate, gateway) {
+        const tableBody = document.getElementById('paymentHistoryTableBody');
+        if (!tableBody) return;
+
+        // Generate past monthly dates (June, May, April 2026)
+        const entries = [
+            { date: '01.06.2026', amount: rate, gateway: gateway, status: 'Başarılı' },
+            { date: '01.05.2026', amount: rate, gateway: gateway, status: 'Başarılı' },
+            { date: '01.04.2026', amount: rate, gateway: gateway, status: 'Başarılı' }
+        ];
+
+        tableBody.innerHTML = '';
+        entries.forEach(e => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #e2e8f0';
+            tr.innerHTML = `
+                <td style="padding: 10px 8px; font-weight: 600; color: #475569;">${e.date}</td>
+                <td style="padding: 10px 8px; font-weight: 700; color: #1e293b;">₺${e.amount.toLocaleString('tr-TR')}</td>
+                <td style="padding: 10px 8px; color: #64748b;">${e.gateway} POS</td>
+                <td style="padding: 10px 8px;"><span style="background-color: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: bold; border: 1px solid rgba(16, 185, 129, 0.2);">${e.status}</span></td>
+                <td style="padding: 10px 8px; text-align: right;"><a href="#" class="btn-receipt-download" style="color: #6366f1; text-decoration: underline; font-weight: bold;" onclick="event.preventDefault(); alert('${e.date} tarihli ₺${e.amount.toLocaleString('tr-TR')} tutarındaki fatura makbuzu indiriliyor...');"><i class="fa-solid fa-file-pdf"></i> İndir</a></td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+
+    // Save POS settings
+    const btnSavePOSSettings = document.getElementById('btnSavePOSSettings');
+    if (btnSavePOSSettings) {
+        btnSavePOSSettings.addEventListener('click', () => {
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const brand = brandsData.find(b => b.id === activeId);
+            if (!brand) return;
+
+            const gateway = document.getElementById('posGatewaySelect').value;
+            const merchantId = document.getElementById('posMerchantId').value.trim();
+            const apiKey = document.getElementById('posApiKey').value.trim();
+            const autoCharge = document.getElementById('toggleAutoCharge').checked;
+
+            brand.posSettings = {
+                ...brand.posSettings,
+                gateway,
+                merchantId,
+                apiKey,
+                autoCharge
+            };
+            saveBrandsToStorage(brandsData);
+            updatePOSDashboard(brand);
+            showToast(`${gateway} POS ayarları ve otomatik çekim tercihleri kaydedildi! 💳`);
+        });
+    }
+
+    // Auto charge toggle listener
+    const toggleAutoCharge = document.getElementById('toggleAutoCharge');
+    if (toggleAutoCharge) {
+        toggleAutoCharge.addEventListener('change', () => {
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const brand = brandsData.find(b => b.id === activeId);
+            if (!brand) return;
+
+            const autoChargeStatus = document.getElementById('autoChargeStatusText');
+            if (autoChargeStatus) {
+                autoChargeStatus.textContent = toggleAutoCharge.checked ? 'AKTİF (Karttan Her Ay Çekilir)' : 'PASİF (Otomatik Çekilmez)';
+                autoChargeStatus.style.color = toggleAutoCharge.checked ? '#10b981' : '#f43f5e';
+            }
+        });
+    }
+
+    // Wire dashboard Plan Upgrade buttons
+    document.querySelectorAll('.btn-upgrade-dashboard').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const plan = btn.getAttribute('data-plan');
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const brand = brandsData.find(b => b.id === activeId);
+            if (!brand) return;
+
+            let planName = 'Growth Pro';
+            let planRate = 27500;
+            let reqTag = 'Growth Pro';
+            if (plan === 'starter') {
+                planName = 'Başlangıç';
+                planRate = 12500;
+                reqTag = 'Solo';
+            } else if (plan === 'agency') {
+                planName = 'Enterprise';
+                planRate = 59500;
+                reqTag = 'Enterprise';
+            }
+
+            if (confirm(`Aboneliğinizi '${planName}' (Aylık ₺${planRate.toLocaleString('tr-TR')}) planına yükseltmek istiyor musunuz? Ödeme kayıtlı kredi kartınızdan tahsil edilecektir.`)) {
+                brand.requirements = `Plan: ${reqTag}. ` + (brand.requirements || '');
+                brand.payment = planRate.toString();
+                
+                // Initialize POS settings if missing
+                if (!brand.posSettings) {
+                    brand.posSettings = {
+                        gateway: 'PayTR',
+                        merchantId: '238491',
+                        apiKey: 'pk_live_51MszB6KSD9',
+                        autoCharge: true,
+                        cardNumber: '5642',
+                        cardHolder: 'ALİ TURAN',
+                        cardExpiry: '12/28'
+                    };
+                }
+                
+                saveBrandsToStorage(brandsData);
+                updatePOSDashboard(brand);
+                
+                // Show success message
+                showToast(`Tebrikler! ${planName} planına başarıyla geçildi ve ilk ödeme ${brand.posSettings.gateway} ile tahsil edildi. 🚀`);
+            }
+        });
+    });
+
     // Initial render for active brand
     populateBrandFormExtended(brandsData[0]);
+    initQuickActions();
 
 });
 
