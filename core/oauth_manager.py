@@ -371,7 +371,7 @@ class BlueskyAuth:
 _oauth_state_store: dict[str, dict] = {}
 
 
-def start_oauth_flow(platform: str) -> dict:
+def start_oauth_flow(platform: str, brand_id: str = "global") -> dict:
     """
     Verilen platform için OAuth başlatma parametrelerini döner.
     Return: { "redirect_url": str, "state": str }
@@ -381,29 +381,29 @@ def start_oauth_flow(platform: str) -> dict:
 
     if platform in ("meta", "facebook", "instagram", "threads", "whatsapp", "meta_ads"):
         url = MetaOAuth.authorization_url(state)
-        _oauth_state_store[state] = {"platform": platform}
+        _oauth_state_store[state] = {"platform": platform, "brand_id": brand_id}
 
     elif platform in ("google", "youtube", "google_ads"):
         url = GoogleOAuth.authorization_url(state)
-        _oauth_state_store[state] = {"platform": platform}
+        _oauth_state_store[state] = {"platform": platform, "brand_id": brand_id}
 
     elif platform == "linkedin":
         url = LinkedInOAuth.authorization_url(state)
-        _oauth_state_store[state] = {"platform": platform}
+        _oauth_state_store[state] = {"platform": platform, "brand_id": brand_id}
 
     elif platform == "x":
         verifier, challenge = _pkce_pair()
         url = XOAuth.authorization_url(state, challenge)
-        _oauth_state_store[state] = {"platform": platform, "code_verifier": verifier}
+        _oauth_state_store[state] = {"platform": platform, "code_verifier": verifier, "brand_id": brand_id}
 
     elif platform == "tiktok":
         verifier, challenge = _pkce_pair()
         url = TikTokOAuth.authorization_url(state, challenge)
-        _oauth_state_store[state] = {"platform": platform, "code_verifier": verifier}
+        _oauth_state_store[state] = {"platform": platform, "code_verifier": verifier, "brand_id": brand_id}
 
     elif platform == "pinterest":
         url = PinterestOAuth.authorization_url(state)
-        _oauth_state_store[state] = {"platform": platform}
+        _oauth_state_store[state] = {"platform": platform, "brand_id": brand_id}
 
     else:
         return {"error": f"Desteklenmeyen platform: {platform}"}
@@ -414,7 +414,7 @@ def start_oauth_flow(platform: str) -> dict:
 def handle_oauth_callback(platform: str, code: str, state: str) -> dict:
     """
     OAuth callback'ten gelen code ve state ile token alışverişi yapar.
-    Return: { "success": bool, "platform": str, "token_data": dict }
+    Return: { "success": bool, "platform": str, "token_data": dict, "brand_id": str }
     """
     platform = platform.lower()
     state_data = _oauth_state_store.pop(state, None)
@@ -422,6 +422,7 @@ def handle_oauth_callback(platform: str, code: str, state: str) -> dict:
     if state_data is None:
         return {"success": False, "error": "Geçersiz veya süresi dolmuş state parametresi."}
 
+    brand_id = state_data.get("brand_id", "global")
     token_data: dict = {}
 
     try:
@@ -499,7 +500,7 @@ def handle_oauth_callback(platform: str, code: str, state: str) -> dict:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-    return {"success": True, "platform": platform, "token_data": token_data}
+    return {"success": True, "platform": platform, "token_data": token_data, "brand_id": brand_id}
 
 
 def connect_bluesky(identifier: str, app_password: str) -> dict:

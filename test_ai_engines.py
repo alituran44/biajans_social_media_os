@@ -2,6 +2,13 @@ import os
 import sys
 from unittest.mock import MagicMock, patch
 
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass # python < 3.7
+
 # Ensure the project root and 'core' directory can be imported correctly
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -22,7 +29,14 @@ def run_mock_tests():
     mock_gemini_response = MagicMock()
     mock_gemini_response.text = """
     {
-        "instagram_facebook_caption": "🚀 Hazır mısınız? Dijital dünyayı sarsacak yeni yapay zeka motorumuz yayında! 💡 Bu motor, sosyal medya stratejilerinizi baştan yazacak. Detaylar için link profilde! #CTA",
+        "instagram_caption": "🚀 Hazır mısınız? Dijital dünyayı sarsacak yeni yapay zeka motorumuz yayında! 💡 Bu motor, sosyal medya stratejilerinizi baştan yazacak. Detaylar için link profilde! #CTA",
+        "facebook_post": "Yapay zeka motorumuz yayında!",
+        "youtube": {
+            "video_title": "Yeni Yapay Zeka Motoru",
+            "video_description": "Yapay zeka motorumuzun detayları.",
+            "script_outline": "1. Giriş",
+            "tags": ["yapayzeka"]
+        },
         "hashtags": ["yapayzeka", "dijitalpazarlama", "sosyalmedya", "girisimcilik"],
         "image_prompt": "A modern cyberpunk style office setup, with glowing neon monitors displaying marketing dashboards, a clean minimalist aesthetic, dramatic lighting, high angle shot, realistic photo style, 8k resolution"
     }
@@ -43,9 +57,10 @@ def run_mock_tests():
             print(f"User Idea Input: '{idea_prompt}'")
             if result:
                 print("[SUCCESS] Content generated successfully!")
-                print(f"Captured Caption:  {result.get('instagram_facebook_caption')}")
-                print(f"Captured Hashtags: {result.get('hashtags')}")
-                print(f"Captured Image Prompt: {result.get('image_prompt')}")
+                print(f"Captured Instagram Caption:  {result.get('instagram_caption')}")
+                print(f"Captured Facebook Post:      {result.get('facebook_post')}")
+                print(f"Captured Hashtags:           {result.get('hashtags')}")
+                print(f"Captured Image Prompt:       {result.get('image_prompt')}")
             else:
                 print("[FAILURE] Content generation returned None.")
 
@@ -86,13 +101,13 @@ def check_live_status():
     gemini_configured = bool(Config.GEMINI_API_KEY) and "your_gemini_api_key_here" not in Config.GEMINI_API_KEY
     openai_configured = bool(Config.OPENAI_API_KEY) and "your_openai_api_key_here" not in Config.OPENAI_API_KEY
     
-    print(f"Gemini API Key Configured: {'[YES] ✔' if gemini_configured else '[NO] ✘ (Check .env file)'}")
-    print(f"OpenAI API Key Configured: {'[YES] ✔' if openai_configured else '[NO] ✘ (Check .env file)'}")
+    print(f"Gemini API Key Configured: {'[YES] OK' if gemini_configured else '[NO] MISSING (Check .env file)'}")
+    print(f"OpenAI API Key Configured: {'[YES] OK' if openai_configured else '[NO] MISSING (Check .env file)'}")
     
     if not gemini_configured or not openai_configured:
-        print("\n💡 İpucu: Gerçek API testlerini gerçekleştirmek için projeyi oluşturduğumuz dizindeki")
-        print("   '.env.template' dosyasını '.env' olarak kopyalayabilir ve içerisine")
-        print("   kendi API anahtarlarınızı ekleyebilirsiniz.")
+        print("\nIPUCU: Gercek API testlerini gerceklestirmek icin projeyi olusturdugumuz dizindeki")
+        print("   '.env.template' dosyasini '.env' olarak kopyalayabilir ve icerisine")
+        print("   kendi API anahtarlarinizi ekleyebilirsiniz.")
 
 if __name__ == "__main__":
     check_live_status()

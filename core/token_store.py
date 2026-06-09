@@ -63,9 +63,26 @@ def _save_all(data: dict) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+# Helper to load tokens specifically for a brand
+def _load_brand_tokens(brand_id: str = "global") -> dict:
+    all_tokens = _load_all()
+    # Check if there is flat format
+    is_old_format = False
+    for k, v in all_tokens.items():
+        if k in ["meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"] and isinstance(v, dict) and "access_token" in v:
+            is_old_format = True
+            break
+            
+    if is_old_format:
+        # Migrate flat format to global brand
+        all_tokens = {"global": all_tokens}
+        _save_all(all_tokens)
+        
+    return all_tokens.get(brand_id, {})
+
 # ─── Public API ──────────────────────────────────────────────────────────────
 
-def save_token(platform: str, token_data: dict, profile: Optional[dict] = None) -> None:
+def save_token(platform: str, token_data: dict, profile: Optional[dict] = None, brand_id: str = "global") -> None:
     """
     Token'ı kaydet.
     token_data: { access_token, refresh_token (opsiyonel), expires_at, token_type }
@@ -73,27 +90,40 @@ def save_token(platform: str, token_data: dict, profile: Optional[dict] = None) 
     """
     key = _resolve_platform(platform)
     all_tokens = _load_all()
-    all_tokens[key] = {
+    
+    is_old_format = False
+    for k, v in all_tokens.items():
+        if k in ["meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"] and isinstance(v, dict) and "access_token" in v:
+            is_old_format = True
+            break
+    if is_old_format:
+        all_tokens = {"global": all_tokens}
+        
+    if brand_id not in all_tokens:
+        all_tokens[brand_id] = {}
+        
+    all_tokens[brand_id][key] = {
         **token_data,
         "connected_at": int(time.time()),
         "profile": profile or {},
     }
     _save_all(all_tokens)
-    print(f"[TokenStore] ✅ '{key}' token kaydedildi.")
+    print(f"[TokenStore] ✅ '{key}' token kaydedildi (Marka: {brand_id}).")
 
 
-def get_token(platform: str) -> Optional[dict]:
+def get_token(platform: str, brand_id: str = "global") -> Optional[dict]:
     """
     Verilen platform için token kaydını döner.
     Token bulunamazsa None döner.
     """
     key = _resolve_platform(platform)
-    return _load_all().get(key)
+    brand_tokens = _load_brand_tokens(brand_id)
+    return brand_tokens.get(key)
 
 
-def is_connected(platform: str) -> bool:
+def is_connected(platform: str, brand_id: str = "global") -> bool:
     """Platforma ait geçerli bir token var mı?"""
-    token = get_token(platform)
+    token = get_token(platform, brand_id)
     if not token:
         return False
     access = token.get("access_token", "")
@@ -106,45 +136,46 @@ def is_connected(platform: str) -> bool:
     return True
 
 
-def is_expired(platform: str) -> bool:
+def is_expired(platform: str, brand_id: str = "global") -> bool:
     """Token mevcut ama süresi dolmuş mu?"""
-    token = get_token(platform)
+    token = get_token(platform, brand_id)
     if not token:
         return False
     expires_at = token.get("expires_at", 0)
     return expires_at > 0 and expires_at < time.time() + 30
 
 
-def revoke_token(platform: str) -> None:
+def revoke_token(platform: str, brand_id: str = "global") -> None:
     """Platformun token kaydını sil (bağlantıyı kes)."""
     key = _resolve_platform(platform)
     all_tokens = _load_all()
-    if key in all_tokens:
-        del all_tokens[key]
+    
+    is_old_format = False
+    for k, v in all_tokens.items():
+        if k in ["meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"] and isinstance(v, dict) and "access_token" in v:
+            is_old_format = True
+            break
+    if is_old_format:
+        all_tokens = {"global": all_tokens}
+        
+    if brand_id in all_tokens and key in all_tokens[brand_id]:
+        del all_tokens[brand_id][key]
         _save_all(all_tokens)
-        print(f"[TokenStore] 🔌 '{key}' bağlantısı kesildi.")
+        print(f"[TokenStore] 🔌 '{key}' bağlantısı kesildi (Marka: {brand_id}).")
 
 
-def get_all_connection_status() -> dict:
+def get_all_connection_status(brand_id: str = "global") -> dict:
     """
     Tüm platformların bağlantı durumunu döner.
     Frontend'in /api/connections/status endpoint'i için kullanılır.
-
-    Return örneği:
-    {
-        "meta":      { "connected": true,  "profile": {...}, "expires_at": 123 },
-        "google":    { "connected": false, "profile": {}, "expires_at": 0 },
-        "linkedin":  { "connected": true,  "profile": {...}, "expires_at": 456 },
-        ...
-    }
     """
-    all_tokens = _load_all()
+    brand_tokens = _load_brand_tokens(brand_id)
     platforms = [
         "meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"
     ]
     status = {}
     for p in platforms:
-        token = all_tokens.get(p, {})
+        token = brand_tokens.get(p, {})
         access = token.get("access_token", "")
         expires_at = token.get("expires_at", 0)
         connected = bool(access) and (expires_at == 0 or expires_at > time.time() + 30)
@@ -162,13 +193,13 @@ def get_all_connection_status() -> dict:
     return status
 
 
-def try_refresh_token(platform: str) -> bool:
+def try_refresh_token(platform: str, brand_id: str = "global") -> bool:
     """
     Eğer token süresi dolmuşsa yenilemeyi dene.
     Başarılıysa True, başarısız veya refresh_token yoksa False döner.
     """
     key = _resolve_platform(platform)
-    token = get_token(key)
+    token = get_token(key, brand_id)
     if not token:
         return False
 
@@ -193,11 +224,22 @@ def try_refresh_token(platform: str) -> bool:
         token["expires_at"] = int(time.time()) + result.get("expires_in", 3600)
         if "refresh_token" in result:
             token["refresh_token"] = result["refresh_token"]
+        
         all_tokens = _load_all()
-        all_tokens[key] = token
+        is_old_format = False
+        for k, v in all_tokens.items():
+            if k in ["meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"] and isinstance(v, dict) and "access_token" in v:
+                is_old_format = True
+                break
+        if is_old_format:
+            all_tokens = {"global": all_tokens}
+            
+        if brand_id not in all_tokens:
+            all_tokens[brand_id] = {}
+        all_tokens[brand_id][key] = token
         _save_all(all_tokens)
-        print(f"[TokenStore] 🔄 '{key}' token başarıyla yenilendi.")
+        print(f"[TokenStore] 🔄 '{key}' token başarıyla yenilendi (Marka: {brand_id}).")
         return True
 
-    print(f"[TokenStore] ❌ '{key}' token yenilenemedi: {result.get('error')}")
+    print(f"[TokenStore] ❌ '{key}' token yenilenemedi: {result.get('error')} (Marka: {brand_id})")
     return False

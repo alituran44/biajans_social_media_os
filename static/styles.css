@@ -2386,3 +2386,269 @@ input:checked + .slider:before {
 #sandPlansBilling, button[data-settings-tab='planlar'], #planlar-tab {
     display: none !important;
 }
+
+/* --- BRAND ACCENTS FOR CONNECTION CARDS --- */
+.conn-card.bg-web { border-color: rgba(99, 102, 241, 0.2); }
+.conn-card.bg-web i { color: #6366f1; }
+.conn-card.bg-web:hover { background: rgba(99, 102, 241, 0.05); border-color: #6366f1; }
+
+.conn-card.bg-blog { border-color: rgba(234, 88, 12, 0.2); }
+.conn-card.bg-blog i { color: #ea580c; }
+.conn-card.bg-blog:hover { background: rgba(234, 88, 12, 0.05); border-color: #ea580c; }
+
+.conn-card.bg-fb { border-color: rgba(24, 119, 242, 0.2); }
+.conn-card.bg-fb i { color: #1877f2; }
+.conn-card.bg-fb:hover { background: rgba(24, 119, 242, 0.05); border-color: #1877f2; }
+
+.conn-card.bg-ig { border-color: rgba(219, 39, 119, 0.2); }
+.conn-card.bg-ig i { color: #db2777; }
+.conn-card.bg-ig:hover { background: rgba(219, 39, 119, 0.05); border-color: #db2777; }
+
+.conn-card.bg-threads { border-color: rgba(15, 23, 42, 0.2); }
+.conn-card.bg-threads i { color: #0f172a; }
+.conn-card.bg-threads:hover { background: rgba(15, 23, 42, 0.05); border-color: #0f172a; }
+
+.conn-card.bg-x { border-color: rgba(15, 23, 42, 0.2); }
+.conn-card.bg-x i { color: #0f172a; }
+.conn-card.bg-x:hover { background: rgba(15, 23, 42, 0.05); border-color: #0f172a; }
+
+.conn-card.bg-bluesky { border-color: rgba(2, 132, 199, 0.2); }
+.conn-card.bg-bluesky i { color: #0284c7; }
+.conn-card.bg-bluesky:hover { background: rgba(2, 132, 199, 0.05); border-color: #0284c7; }
+
+.conn-card.bg-li { border-color: rgba(0, 119, 181, 0.2); }
+.conn-card.bg-li i { color: #0077b5; }
+.conn-card.bg-li:hover { background: rgba(0, 119, 181, 0.05); border-color: #0077b5; }
+
+.conn-card.bg-pin { border-color: rgba(189, 8, 28, 0.2); }
+.conn-card.bg-pin i { color: #bd081c; }
+.conn-card.bg-pin:hover { background: rgba(189, 8, 28, 0.05); border-color: #bd081c; }
+
+.conn-card.bg-tt-p, .conn-card.bg-tt-b { border-color: rgba(0, 0, 0, 0.2); }
+.conn-card.bg-tt-p i, .conn-card.bg-tt-b i { color: #000000; }
+.conn-card.bg-tt-p:hover, .conn-card.bg-tt-b:hover { background: rgba(0, 0, 0, 0.03); border-color: #000000; box-shadow: 2px 2px 0px rgba(0,242,254,0.15), -2px -2px 0px rgba(254,44,85,0.15); }
+
+.conn-card.bg-g-biz { border-color: rgba(59, 130, 246, 0.2); }
+.conn-card.bg-g-biz i { color: #3b82f6; }
+.conn-card.bg-g-biz:hover { background: rgba(59, 130, 246, 0.05); border-color: #3b82f6; }
+
+.conn-card.bg-yt { border-color: rgba(255, 0, 0, 0.2); }
+.conn-card.bg-yt i { color: #ff0000; }
+.conn-card.bg-yt:hover { background: rgba(255, 0, 0, 0.05); border-color: #ff0000; }
+
+.conn-card.bg-twitch { border-color: rgba(145, 70, 255, 0.2); }
+.conn-card.bg-twitch i { color: #9146ff; }
+.conn-card.bg-twitch:hover { background: rgba(145, 70, 255, 0.05); border-color: #9146ff; }
+
+.conn-card.bg-meta-ads { border-color: rgba(24, 119, 242, 0.2); }
+.conn-card.bg-meta-ads i { color: #1877f2; }
+.conn-card.bg-meta-ads:hover { background: rgba(24, 119, 242, 0.05); border-color: #1877f2; }
+
+.conn-card.bg-g-ads { border-color: rgba(249, 171, 0, 0.2); }
+.conn-card.bg-g-ads i { color: #f9ab00; }
+.conn-card.bg-g-ads:hover { background: rgba(249, 171, 0, 0.05); border-color: #f9ab00; }
+
+.conn-card.bg-tt-ads { border-color: rgba(0, 242, 254, 0.2); }
+.conn-card.bg-tt-ads i { color: #00f2fe; }
+.conn-card.bg-tt-ads:hover { background: rgba(0, 242, 254, 0.05); border-color: #00f2fe; }
+
+.conn-card.bg-looker { border-color: rgba(15, 157, 88, 0.2); }
+.conn-card.bg-looker i { color: #0f9d58; }
+.conn-card.bg-looker:hover { background: rgba(15, 157, 88, 0.05); border-color: #0f9d58; }
+
+.conn-card.bg-wa { border-color: rgba(37, 211, 102, 0.2); }
+.conn-card.bg-wa i { color: #25d366; }
+.conn-card.bg-wa:hover { background: rgba(37, 211, 102, 0.05); border-color: #25d366; }
+
+.conn-card.bg-email { border-color: rgba(13, 148, 136, 0.2); }
+.conn-card.bg-email i { color: #0d9488; }
+.conn-card.bg-email:hover { background: rgba(13, 148, 136, 0.05); border-color: #0d9488; }
+
+/* Help modal guide block highlight animation */
+.help-guide-highlight {
+    animation: guide-pulse 2s ease-in-out;
+    border-radius: 8px;
+    padding: 8px;
+    margin-left: 6px !important;
+}
+
+@keyframes guide-pulse {
+    0% {
+        box-shadow: 0 0 0 0px rgba(99, 102, 241, 0.4);
+        background-color: rgba(99, 102, 241, 0.05);
+        border-left-color: #6366f1;
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+        background-color: rgba(99, 102, 241, 0.15);
+        border-left-color: #4f46e5;
+    }
+    100% {
+        box-shadow: 0 0 0 0px rgba(99, 102, 241, 0);
+        background-color: transparent;
+    }
+}
+
+/* ==========================================
+   SMARTLINKS HIGH-FIDELITY LIVE EDITOR & PREVIEW
+   ========================================== */
+#slSimulatorPhone {
+    --bg-gradient: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    --text-color: #0f172a;
+    --btn-bg: #ffffff;
+    --btn-text: #0f172a;
+    --btn-border: 1px solid #e2e8f0;
+    --btn-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    --btn-hover-bg: #f8fafc;
+    background: var(--bg-gradient) !important;
+    color: var(--text-color) !important;
+}
+
+#slSimulatorPhone.theme-clean-light {
+    --bg-gradient: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    --text-color: #0f172a;
+    --btn-bg: #ffffff;
+    --btn-text: #0f172a;
+    --btn-border: 1px solid #e2e8f0;
+    --btn-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+
+#slSimulatorPhone.theme-dark-night {
+    --bg-gradient: linear-gradient(to bottom, #0f172a, #020617);
+    --text-color: #ffffff;
+    --btn-bg: #1e293b;
+    --btn-text: #ffffff;
+    --btn-border: 1px solid #334155;
+    --btn-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+#slSimulatorPhone.theme-soft-lavender {
+    --bg-gradient: linear-gradient(to bottom, #f5f3ff, #ede9fe);
+    --text-color: #4c1d95;
+    --btn-bg: #ffffff;
+    --btn-text: #5b21b6;
+    --btn-border: 1px solid #ddd6fe;
+    --btn-shadow: 0 4px 10px rgba(91,33,182,0.05);
+}
+
+#slSimulatorPhone.theme-ocean-breeze {
+    --bg-gradient: linear-gradient(to bottom, #0284c7, #0369a1);
+    --text-color: #ffffff;
+    --btn-bg: rgba(255, 255, 255, 0.15);
+    --btn-text: #ffffff;
+    --btn-border: 1px solid rgba(255, 255, 255, 0.25);
+    --btn-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+#slSimulatorPhone.theme-sunset-glow {
+    --bg-gradient: linear-gradient(135deg, #f97316 0%, #db2777 100%);
+    --text-color: #ffffff;
+    --btn-bg: #ffffff;
+    --btn-text: #db2777;
+    --btn-border: none;
+    --btn-shadow: 0 4px 12px rgba(219,39,119,0.15);
+}
+
+/* Styled simulator buttons list */
+.sl-sim-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    background: var(--btn-bg);
+    color: var(--btn-text) !important;
+    border: var(--btn-border);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--btn-shadow);
+    transition: all 0.2s ease-in-out;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sl-sim-btn i {
+    position: absolute;
+    left: 16px;
+    font-size: 13px;
+}
+
+/* Link Builder items layout */
+.sl-builder-row {
+    display: flex;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    padding: 10px;
+    border-radius: 8px;
+    align-items: center;
+    position: relative;
+}
+
+.sl-builder-row .remove-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.sl-builder-row .remove-btn:hover {
+    background: #dc2626;
+}
+
+.sl-builder-row select, .sl-builder-row input {
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Custom Brand Settings Dropdown Switcher Styles */
+.custom-brand-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.custom-brand-item:hover {
+    background-color: #f8fafc;
+}
+
+.custom-brand-item:active {
+    transform: scale(0.99);
+}
+
+.custom-brand-item:last-child {
+    border-bottom: none;
+}
+
+#settingsBrandDropdownMenu {
+    transform-origin: top;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#settingsBrandDropdownMenu.hidden {
+    opacity: 0;
+    transform: scaleY(0.8);
+    pointer-events: none;
+    display: none !important;
+}
+
+#settingsBrandDropdownMenu:not(.hidden) {
+    opacity: 1;
+    transform: scaleY(1);
+    display: block !important;
+}
+

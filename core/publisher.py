@@ -4,8 +4,8 @@ from datetime import datetime
 from core.token_store import get_token
 
 # --- BLUESKY ---
-def publish_to_bluesky(text: str, media_url: str = None) -> dict:
-    token = get_token("bluesky")
+def publish_to_bluesky(text: str, media_url: str = None, brand_id: str = "global") -> dict:
+    token = get_token("bluesky", brand_id=brand_id)
     if not token or not token.get("access_token") or not token.get("did"):
         return {"success": False, "error": "Bluesky bağlanmamış veya token süresi dolmuş."}
         
@@ -42,8 +42,8 @@ def publish_to_bluesky(text: str, media_url: str = None) -> dict:
         return {"success": False, "platform": "bluesky", "error": str(e)}
 
 # --- X (TWITTER) ---
-def publish_to_x(text: str, media_url: str = None) -> dict:
-    token = get_token("x")
+def publish_to_x(text: str, media_url: str = None, brand_id: str = "global") -> dict:
+    token = get_token("x", brand_id=brand_id)
     if not token or not token.get("access_token"):
         return {"success": False, "error": "X (Twitter) bağlanmamış veya token eksik."}
         
@@ -67,8 +67,8 @@ def publish_to_x(text: str, media_url: str = None) -> dict:
         return {"success": False, "platform": "x", "error": str(e)}
 
 # --- FACEBOOK ---
-def publish_to_facebook(text: str, media_url: str = None) -> dict:
-    token = get_token("facebook") or get_token("meta")
+def publish_to_facebook(text: str, media_url: str = None, brand_id: str = "global") -> dict:
+    token = get_token("facebook", brand_id=brand_id) or get_token("meta", brand_id=brand_id)
     if not token or not token.get("access_token"):
         return {"success": False, "error": "Facebook bağlanmamış."}
     
@@ -94,8 +94,8 @@ def publish_to_facebook(text: str, media_url: str = None) -> dict:
         return {"success": False, "platform": "facebook", "error": str(e)}
 
 # --- INSTAGRAM ---
-def publish_to_instagram(text: str, media_url: str = None) -> dict:
-    token = get_token("instagram") or get_token("meta")
+def publish_to_instagram(text: str, media_url: str = None, brand_id: str = "global") -> dict:
+    token = get_token("instagram", brand_id=brand_id) or get_token("meta", brand_id=brand_id)
     if not token or not token.get("access_token"):
         return {"success": False, "error": "Instagram bağlanmamış."}
     
@@ -131,8 +131,8 @@ def publish_to_instagram(text: str, media_url: str = None) -> dict:
         return {"success": False, "platform": "instagram", "error": str(e)}
 
 # --- LINKEDIN ---
-def publish_to_linkedin(text: str, media_url: str = None) -> dict:
-    token = get_token("linkedin")
+def publish_to_linkedin(text: str, media_url: str = None, brand_id: str = "global") -> dict:
+    token = get_token("linkedin", brand_id=brand_id)
     if not token or not token.get("access_token"):
         return {"success": False, "error": "LinkedIn bağlanmamış."}
         
@@ -176,7 +176,7 @@ def publish_to_linkedin(text: str, media_url: str = None) -> dict:
         return {"success": False, "platform": "linkedin", "error": str(e)}
 
 # --- TIKTOK ---
-def publish_to_tiktok(text: str, media_url: str = None) -> dict:
+def publish_to_tiktok(text: str, media_url: str = None, brand_id: str = "global") -> dict:
     return {"success": False, "error": "TikTok API doğrudan paylaşıma şu an için izin vermemektedir. Gönderi TikTok taslaklarınıza (Inbox) kaydedildi. Uygulama üzerinden yayınlayabilirsiniz."}
 
 # --- YOUTUBE ---
@@ -267,22 +267,22 @@ def publish_to_gmb(text: str, media_url: str = None) -> dict:
     except Exception as e:
         return {"success": False, "platform": "gmb", "error": str(e)}
 
-def publish_content(platform: str, text: str, media_url: str = None) -> dict:
+def publish_content(platform: str, text: str, media_url: str = None, brand_id: str = "global") -> dict:
     """Yayınlama Yönlendiricisi (Router)"""
     platform = platform.lower()
     
     if platform == "bluesky":
-        return publish_to_bluesky(text, media_url)
+        return publish_to_bluesky(text, media_url, brand_id=brand_id)
     elif platform in ["x", "twitter"]:
-        return publish_to_x(text, media_url)
+        return publish_to_x(text, media_url, brand_id=brand_id)
     elif platform == "facebook":
-        return publish_to_facebook(text, media_url)
+        return publish_to_facebook(text, media_url, brand_id=brand_id)
     elif platform == "instagram":
-        return publish_to_instagram(text, media_url)
+        return publish_to_instagram(text, media_url, brand_id=brand_id)
     elif platform == "linkedin":
-        return publish_to_linkedin(text, media_url)
+        return publish_to_linkedin(text, media_url, brand_id=brand_id)
     elif platform == "tiktok":
-        return publish_to_tiktok(text, media_url)
+        return publish_to_tiktok(text, media_url, brand_id=brand_id)
     elif platform == "youtube":
         return publish_to_youtube(text, media_url)
     elif platform == "whatsapp":

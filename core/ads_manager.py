@@ -3,12 +3,12 @@ import requests
 from datetime import datetime
 from core.token_store import get_token
 
-def create_meta_ad_campaign(budget_try: int, audience: dict, creative: dict, ad_account_id: str) -> dict:
+def create_meta_ad_campaign(budget_try: int, audience: dict, creative: dict, ad_account_id: str, brand_id: str = "global") -> dict:
     """
     Kapsamlı Meta Ads (Facebook/Instagram) kampanya oluşturma fonksiyonu.
     Graph API kullanılarak Campaign, AdSet ve Ad sırasıyla oluşturulur.
     """
-    token = get_token("meta_ads") or get_token("facebook") or get_token("meta")
+    token = get_token("meta_ads", brand_id=brand_id) or get_token("facebook", brand_id=brand_id) or get_token("meta", brand_id=brand_id)
     if not token or not token.get("access_token"):
         return {"success": False, "error": "Meta Ads yetkilendirmesi bulunamadı. Lütfen Ayarlar > Entegrasyonlar kısmından Meta Ads'i bağlayın."}
     
@@ -90,12 +90,12 @@ def create_meta_ad_campaign(budget_try: int, audience: dict, creative: dict, ad_
     except Exception as e:
         return {"success": False, "platform": "meta_ads", "error": str(e)}
 
-def create_google_ad_campaign(budget_try: int, audience: dict, creative: dict, customer_id: str) -> dict:
+def create_google_ad_campaign(budget_try: int, audience: dict, creative: dict, customer_id: str, brand_id: str = "global") -> dict:
     """
     Google Ads kampanyası oluşturma. Google Ads API karmaşık olduğu için
     Rest arayüzüne uyumlu kapsamlı yapılandırma gönderilir.
     """
-    token = get_token("google_ads") or get_token("google")
+    token = get_token("google_ads", brand_id=brand_id) or get_token("google", brand_id=brand_id)
     if not token or not token.get("access_token"):
         return {"success": False, "error": "Google Ads yetkilendirmesi bulunamadı."}
         
@@ -111,11 +111,11 @@ def create_google_ad_campaign(budget_try: int, audience: dict, creative: dict, c
         }
     }
 
-def create_tiktok_ad_campaign(budget_try: int, audience: dict, creative: dict, advertiser_id: str) -> dict:
+def create_tiktok_ad_campaign(budget_try: int, audience: dict, creative: dict, advertiser_id: str, brand_id: str = "global") -> dict:
     """
     TikTok for Business API üzerinden reklam çıkışı.
     """
-    token = get_token("tiktok_ads") or get_token("tiktok")
+    token = get_token("tiktok_ads", brand_id=brand_id) or get_token("tiktok", brand_id=brand_id)
     if not token or not token.get("access_token"):
         return {"success": False, "error": "TikTok Ads yetkilendirmesi bulunamadı."}
         
@@ -129,7 +129,7 @@ def create_tiktok_ad_campaign(budget_try: int, audience: dict, creative: dict, a
         }
     }
 
-def launch_ads(platform: str, config: dict) -> dict:
+def launch_ads(platform: str, config: dict, brand_id: str = "global") -> dict:
     """Ads yönlendiricisi"""
     platform = platform.lower()
     budget = int(config.get("budget", 100))
@@ -138,10 +138,10 @@ def launch_ads(platform: str, config: dict) -> dict:
     account_id = config.get("account_id", "test_account")
     
     if platform in ["meta_ads", "facebook_ads", "instagram_ads"]:
-        return create_meta_ad_campaign(budget, audience, creative, account_id)
+        return create_meta_ad_campaign(budget, audience, creative, account_id, brand_id=brand_id)
     elif platform == "google_ads":
-        return create_google_ad_campaign(budget, audience, creative, account_id)
+        return create_google_ad_campaign(budget, audience, creative, account_id, brand_id=brand_id)
     elif platform == "tiktok_ads":
-        return create_tiktok_ad_campaign(budget, audience, creative, account_id)
+        return create_tiktok_ad_campaign(budget, audience, creative, account_id, brand_id=brand_id)
     else:
         return {"success": False, "error": f"Desteklenmeyen reklam platformu: {platform}"}

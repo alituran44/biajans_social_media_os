@@ -201,12 +201,26 @@ document.addEventListener('DOMContentLoaded', () => {
         promptBoxOutput.textContent = 'Prompt hazırlanıyor...';
 
         try {
+            // Load AI settings from localStorage
+            const activeAiProvider = localStorage.getItem('activeAiProvider') || 'default';
+            const aiApiKey = localStorage.getItem(activeAiProvider + 'ApiKey') || '';
+            const aiModel = localStorage.getItem(activeAiProvider + 'Model') || '';
+
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ prompt: prompt })
+                body: JSON.stringify({ 
+                    prompt: prompt,
+                    ai_provider: activeAiProvider,
+                    ai_api_key: aiApiKey,
+                    ai_model: aiModel,
+                    // Legacy properties for compatibility
+                    use_openrouter: (activeAiProvider === 'openrouter'),
+                    openrouter_api_key: localStorage.getItem('openrouterApiKey') || '',
+                    openrouter_model: localStorage.getItem('openrouterModel') || ''
+                })
             });
 
             if (!response.ok) {
@@ -355,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch('/api/publish', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ platform: platformToPublish, text: textToPublish, media_url: mediaUrl })
+                    body: JSON.stringify({ platform: platformToPublish, text: textToPublish, media_url: mediaUrl, brand: getCurrentBrandId() })
                 });
                 
                 const resData = await response.json();
@@ -541,12 +555,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Unified View Navigation Controller (Ozet, Analitik, Raporlama, Gelen Kutusu, Akilli Baglantilar, Reklamlar, Hashtag Takip, Settings)
     const allViews = [
-        { btnId: 'ozetBtn', secId: 'analitikSection' },
+        { btnId: 'ozetBtn', secId: null },
         { btnId: 'navPlanlama', secId: 'planlamaSection' },
         { btnId: 'navAnalitik', secId: 'analitikSection' },
         { btnId: 'navRaporlama', secId: 'raporlamaSection' },
         { btnId: 'sideRaporlama', secId: 'raporlamaSection' },
-        { btnId: 'sideRaporlar', secId: 'raporlamaSection' },
         { btnId: 'navGelenKutusu', secId: 'gelenKutusuSection' },
         { btnId: 'navAkilliBaglantilar', secId: 'akilliBaglantilarSection' },
         { btnId: 'navReklamlar', secId: 'reklamlarSection' },
@@ -603,6 +616,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (activeBtn.classList.contains('footer-item')) {
                 activeBtn.style.backgroundColor = '#1b1b22';
                 activeBtn.style.color = '#ffffff';
+            }
+        }
+        
+        if (targetSecId === 'akilliBaglantilarSection') {
+            if (typeof loadSmartLinks === 'function') {
+                loadSmartLinks();
             }
         }
     }
@@ -747,12 +766,243 @@ document.addEventListener('DOMContentLoaded', () => {
         window.aiInstructions.pinterest   = getVal('aiPinterestInstructions');
         window.aiInstructions.tiktok      = getVal('aiTiktokInstructions');
         window.aiInstructions.youtube     = getVal('aiYoutubeInstructions');
-        showToast("Yapay zeka asistanı talimatları başarıyla kaydedildi!");
+
+        // Save AI settings to localStorage
+        const activeProvSelect = document.getElementById('aiProviderSelectAccount') || document.getElementById('aiProviderSelectBrand');
+        if (activeProvSelect) {
+            localStorage.setItem('activeAiProvider', activeProvSelect.value);
+        }
+        
+        const providers = ['openrouter', 'openai', 'anthropic', 'gemini'];
+        providers.forEach(p => {
+            const keyInput = document.getElementById(p + 'ApiKeyInputAccount') || document.getElementById(p + 'ApiKeyInputBrand');
+            const modelSelect = document.getElementById(p + 'ModelSelectAccount') || document.getElementById(p + 'ModelSelectBrand');
+            
+            if (keyInput) {
+                localStorage.setItem(p + 'ApiKey', keyInput.value.trim());
+            }
+            if (modelSelect) {
+                localStorage.setItem(p + 'Model', modelSelect.value);
+            }
+        });
+
+        syncComposerSelect();
+        showToast("Yapay zeka talimatları ve API yapılandırması başarıyla kaydedildi!");
     }
 
     ['saveAiConfigBtn', 'saveAiConfigBtnAccount', 'saveAiConfigBtnBrand'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.addEventListener('click', saveAiConfigHandler);
+    });
+
+    // Load AI settings from localStorage on startup
+    const openrouterModelSelectComposer = document.getElementById('openrouterModelSelectComposer');
+    const savedProvider = localStorage.getItem('activeAiProvider') || 'default';
+    
+    // Set provider select values
+    const provSelect1 = document.getElementById('aiProviderSelectAccount');
+    const provSelect2 = document.getElementById('aiProviderSelectBrand');
+    if (provSelect1) provSelect1.value = savedProvider;
+    if (provSelect2) provSelect2.value = savedProvider;
+
+    // Load API Keys and Models
+    const providersList = ['openrouter', 'openai', 'anthropic', 'gemini'];
+    const defaultModels = {
+        openrouter: 'google/gemma-2-9b-it:free',
+        openai: 'gpt-4o-mini',
+        anthropic: 'claude-3-5-sonnet-20241022',
+        gemini: 'gemini-1.5-flash'
+    };
+
+    providersList.forEach(p => {
+        const savedKey = localStorage.getItem(p + 'ApiKey') || '';
+        const savedModel = localStorage.getItem(p + 'Model') || defaultModels[p];
+
+        const keyInput1 = document.getElementById(p + 'ApiKeyInputAccount');
+        const keyInput2 = document.getElementById(p + 'ApiKeyInputBrand');
+        if (keyInput1) keyInput1.value = savedKey;
+        if (keyInput2) keyInput2.value = savedKey;
+
+        const modelSelect1 = document.getElementById(p + 'ModelSelectAccount');
+        const modelSelect2 = document.getElementById(p + 'ModelSelectBrand');
+        if (modelSelect1) modelSelect1.value = savedModel;
+        if (modelSelect2) modelSelect2.value = savedModel;
+
+        // Sync inputs in real time
+        setupInputSync(keyInput1, keyInput2, 'input', 'value');
+        setupInputSync(modelSelect1, modelSelect2, 'change', 'value');
+    });
+
+    // Sync provider select inputs
+    setupInputSync(provSelect1, provSelect2, 'change', 'value');
+    if (provSelect1) {
+        provSelect1.addEventListener('change', () => {
+            updateAiFieldsDisplay(provSelect1.value);
+            localStorage.setItem('activeAiProvider', provSelect1.value);
+            syncComposerSelect();
+        });
+    }
+    if (provSelect2) {
+        provSelect2.addEventListener('change', () => {
+            updateAiFieldsDisplay(provSelect2.value);
+            localStorage.setItem('activeAiProvider', provSelect2.value);
+            syncComposerSelect();
+        });
+    }
+
+    // Set fields visibility display on startup
+    updateAiFieldsDisplay(savedProvider);
+    syncComposerSelect();
+
+    // Helper visibility toggler
+    function updateAiFieldsDisplay(provider) {
+        // Account fields
+        document.querySelectorAll('.ai-fields-group-account').forEach(el => el.style.display = 'none');
+        if (provider === 'openrouter') {
+            const el = document.getElementById('aiFieldsOpenRouterAccount');
+            if (el) el.style.display = 'grid';
+        } else if (provider === 'openai') {
+            const el = document.getElementById('aiFieldsOpenAIAccount');
+            if (el) el.style.display = 'grid';
+        } else if (provider === 'anthropic') {
+            const el = document.getElementById('aiFieldsAnthropicAccount');
+            if (el) el.style.display = 'grid';
+        } else if (provider === 'gemini') {
+            const el = document.getElementById('aiFieldsGeminiAccount');
+            if (el) el.style.display = 'grid';
+        } else {
+            const el = document.getElementById('aiFieldsDefaultAccount');
+            if (el) el.style.display = 'block';
+        }
+
+        // Brand fields
+        document.querySelectorAll('.ai-fields-group-brand').forEach(el => el.style.display = 'none');
+        if (provider === 'openrouter') {
+            const el = document.getElementById('aiFieldsOpenRouterBrand');
+            if (el) el.style.display = 'block';
+        } else if (provider === 'openai') {
+            const el = document.getElementById('aiFieldsOpenAIBrand');
+            if (el) el.style.display = 'block';
+        } else if (provider === 'anthropic') {
+            const el = document.getElementById('aiFieldsAnthropicBrand');
+            if (el) el.style.display = 'block';
+        } else if (provider === 'gemini') {
+            const el = document.getElementById('aiFieldsGeminiBrand');
+            if (el) el.style.display = 'block';
+        } else {
+            const el = document.getElementById('aiFieldsDefaultBrand');
+            if (el) el.style.display = 'block';
+        }
+    }
+
+    // Real-time synchronization event listeners
+    function setupInputSync(el1, el2, eventName, propName) {
+        if (!el1 || !el2) return;
+        el1.addEventListener(eventName, () => {
+            el2[propName] = el1[propName];
+        });
+        el2.addEventListener(eventName, () => {
+            el1[propName] = el2[propName];
+        });
+    }
+
+    function parseModelValue(val) {
+        if (val === 'default') {
+            return { provider: 'default', model: 'default' };
+        } else if (val.startsWith('openai:')) {
+            return { provider: 'openai', model: val.replace('openai:', '') };
+        } else if (val.startsWith('anthropic:')) {
+            return { provider: 'anthropic', model: val.replace('anthropic:', '') };
+        } else if (val.startsWith('gemini:')) {
+            return { provider: 'gemini', model: val.replace('gemini:', '') };
+        } else {
+            return { provider: 'openrouter', model: val };
+        }
+    }
+
+    function syncComposerSelect() {
+        const composer = document.getElementById('openrouterModelSelectComposer');
+        if (!composer) return;
+        const provider = localStorage.getItem('activeAiProvider') || 'default';
+        if (provider === 'default') {
+            composer.value = 'default';
+        } else {
+            const model = localStorage.getItem(provider + 'Model') || defaultModels[provider];
+            if (provider === 'openrouter') {
+                composer.value = model;
+            } else {
+                composer.value = provider + ':' + model;
+            }
+        }
+    }
+
+    // Sync Composer selection directly to settings
+    if (openrouterModelSelectComposer) {
+        openrouterModelSelectComposer.addEventListener('change', () => {
+            const val = openrouterModelSelectComposer.value;
+            const parsed = parseModelValue(val);
+            
+            localStorage.setItem('activeAiProvider', parsed.provider);
+            if (parsed.provider !== 'default') {
+                localStorage.setItem(parsed.provider + 'Model', parsed.model);
+            }
+            
+            // Sync values to settings UI
+            const p1 = document.getElementById('aiProviderSelectAccount');
+            const p2 = document.getElementById('aiProviderSelectBrand');
+            if (p1) p1.value = parsed.provider;
+            if (p2) p2.value = parsed.provider;
+            
+            if (parsed.provider !== 'default') {
+                const modelSelect1 = document.getElementById(parsed.provider + 'ModelSelectAccount');
+                const modelSelect2 = document.getElementById(parsed.provider + 'ModelSelectBrand');
+                if (modelSelect1) modelSelect1.value = parsed.model;
+                if (modelSelect2) modelSelect2.value = parsed.model;
+            }
+            
+            updateAiFieldsDisplay(parsed.provider);
+            const modelNameOnly = parsed.model.split('/').pop().split(':')[0];
+            showToast(`Yazım Modeli Değiştirildi: ${modelNameOnly}`);
+        });
+    }
+
+    // Dynamic password togglers visibility
+    document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            if (!input) return;
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) icon.className = 'fa-solid fa-eye';
+            } else {
+                input.type = 'password';
+                if (icon) icon.className = 'fa-solid fa-eye-slash';
+            }
+        });
+    });
+
+    // Logo click listener to switch to main dashboard Composer
+    const headerLogoArea = document.getElementById('headerLogoArea');
+    if (headerLogoArea) {
+        headerLogoArea.addEventListener('click', () => {
+            showView(null, 'ozetBtn');
+        });
+    }
+
+    // Toggle checked class on channel-check-pill when checkbox changes
+    document.querySelectorAll('.channel-check-pill').forEach(pill => {
+        const checkbox = pill.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    pill.classList.add('checked');
+                } else {
+                    pill.classList.remove('checked');
+                }
+            });
+        }
     });
 
     // 5. Connect platform cards — Gerçek OAuth akışı
@@ -783,7 +1033,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         try {
-            const res = await fetch(`/auth/${slug}/start`);
+            const brandId = getCurrentBrandId();
+            const res = await fetch(`/auth/${slug}/start?brand=${brandId}`);
             const data = await res.json();
 
             if (data.configured === false) {
@@ -818,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function _showOAuthSetupGuide(network, slug) {
-        // Credentials yokken kılavuz toast mesajı göster
+        // Credentials yokken kılavuz toast mesajı göster ve modalı aç
         const portalLinks = {
             'meta': 'developers.facebook.com/apps',
             'facebook': 'developers.facebook.com/apps',
@@ -834,14 +1085,83 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const portal = portalLinks[slug] || 'developer portal';
         showToast(
-            `${network} için OAuth credentials yapılandırılmamış. ".env" dosyasına ${network.toUpperCase()}_CLIENT_ID ekleyin (${portal}).`,
+            `${network} için OAuth credentials yapılandırılmamış. Kurulum adımları açılıyor...`,
             true
         );
+        if (window.openHowToConnectFor) {
+            window.openHowToConnectFor(network);
+        }
     }
 
     document.querySelectorAll('.conn-card').forEach(card => {
         card.addEventListener('click', () => {
             const network = card.getAttribute('data-network');
+            if (card.classList.contains('active-connection')) {
+                showToast(`${network} zaten bağlı durumda. Bağlantıyı kesmek için sağ tıklayın.`, true);
+                return;
+            }
+            
+            // Web, Blog, E-posta, Looker Stüdyosu, Twitch - OAuth flow yok, direkt yardım rehberini aç
+            const noOAuthPlatforms = ['Web', 'Blog', 'E-posta', 'Looker Stüdyosu', 'Twitch'];
+            if (noOAuthPlatforms.includes(network)) {
+                if (window.openHowToConnectFor) {
+                    window.openHowToConnectFor(network);
+                }
+                return;
+            }
+
+            // Bluesky - App password flow
+            if (network === 'Bluesky') {
+                const identifier = prompt("Bluesky Kullanıcı Adı (örn: adiniz.bsky.social):");
+                if (!identifier) return;
+                const appPassword = prompt("Bluesky Uygulama Şifresi (App Password):");
+                if (!appPassword) return;
+                
+                // Yükleniyor durumu
+                card.style.pointerEvents = 'none';
+                card.style.opacity = '0.7';
+                const h4 = card.querySelector('h4');
+                const originalTitle = h4 ? h4.textContent : 'Bluesky';
+                if (h4) h4.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Bağlanıyor...';
+
+                fetch('/api/connect/bluesky', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: identifier, app_password: appPassword, brand: getCurrentBrandId() })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    card.style.pointerEvents = 'auto';
+                    card.style.opacity = '1';
+                    if (h4) h4.textContent = originalTitle;
+                    
+                    if (data.success) {
+                        card.classList.add('active-connection');
+                        if (!card.querySelector('.conn-active-badge')) {
+                            const badge = document.createElement('span');
+                            badge.className = 'conn-active-badge';
+                            badge.style.cssText = 'position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background-color:#10b981;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;';
+                            badge.innerHTML = '<i class="fa-solid fa-check"></i>';
+                            card.style.position = 'relative';
+                            card.appendChild(badge);
+                        }
+                        updateSidebarPlatformStatus('Bluesky', true);
+                        updateConnectedBrandStatsCount();
+                        showToast("Bluesky başarıyla bağlandı!");
+                    } else {
+                        showToast(`Bluesky bağlantısı başarısız: ${data.error}`, true);
+                    }
+                })
+                .catch(err => {
+                    card.style.pointerEvents = 'auto';
+                    card.style.opacity = '1';
+                    if (h4) h4.textContent = originalTitle;
+                    showToast(`Bluesky bağlantısı sırasında hata: ${err.message}`, true);
+                });
+                return;
+            }
+
+            // Normal OAuth Platformları
             connectPlatform(card, network);
         });
     });
@@ -859,7 +1179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetch('/api/disconnect', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ platform: slug }),
+                    body: JSON.stringify({ platform: slug, brand: getCurrentBrandId() }),
                 });
                 document.querySelectorAll(`.conn-card[data-network="${network}"]`).forEach(c => {
                     c.classList.remove('active-connection');
@@ -892,26 +1212,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Helper to dynamically update sidebar platform state (removing "+" and adding checked dot!)
-    function updateSidebarPlatformStatus(network) {
+    function updateSidebarPlatformStatus(network, isConnected = true) {
         document.querySelectorAll('.platform-item').forEach(item => {
             const spanText = item.querySelector('span').textContent.trim();
             if (spanText.toLowerCase() === network.toLowerCase() || (network === 'TikTok Kişisel' && spanText === 'TikTok')) {
                 const plus = item.querySelector('.plus-icon');
-                if (plus) plus.remove();
-                
-                // Show collapsible caret arrow indicator
                 const caret = item.querySelector('.submenu-caret');
-                if (caret) caret.classList.remove('hidden');
-                
                 const dot = item.querySelector('.active-dot');
-                if (dot) {
-                    dot.classList.remove('hidden');
+                const platformGroup = item.closest('.platform-group');
+                const submenu = platformGroup ? platformGroup.querySelector('.sidebar-submenu') : null;
+
+                if (isConnected) {
+                    if (plus) plus.classList.add('hidden');
+                    if (caret) caret.classList.remove('hidden');
+                    if (dot) dot.classList.remove('hidden');
+                    item.classList.add('connected');
                 } else {
-                    const newDot = document.createElement('span');
-                    newDot.className = 'active-dot';
-                    item.appendChild(newDot);
+                    if (plus) plus.classList.remove('hidden');
+                    if (caret) caret.classList.add('hidden');
+                    if (dot) dot.classList.add('hidden');
+                    item.classList.remove('connected');
+                    if (submenu) submenu.classList.add('hidden');
                 }
-                item.classList.add('connected');
             }
         });
     }
@@ -1399,6 +1721,36 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 { text: 'Merhaba! WhatsApp kataloğunuz üzerinden doğrudan sipariş verebiliyor muyuz? Bir de 150 TL üzeri kargo ücretsiz kampanyası devam ediyor mu? 🌸', isSender: false }
             ],
             replyPreset: 'Harika, çok teşekkürler! Hemen kataloğunuzdan ürünleri seçip siparişimi buradan tamamlıyorum. 📱👍'
+        },
+        'Ahmet Selim': {
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80',
+            handle: 'ahmet.selim@example.com',
+            platform: 'email',
+            tag: 'Destek',
+            tagClass: 'tag-lead',
+            note: 'Filtre kahve makinesi indirim kodu istiyor.',
+            time: '10 dk',
+            unread: true,
+            messages: [
+                { text: 'Merhaba, web sitenizdeki abonelik bültenine kaydoldum fakat indirim kuponu e-postası gelmedi. Kontrol edebilir misiniz?', isSender: false },
+                { text: 'Merhaba Ahmet Bey, e-posta adresinizi kontrol ettim. Aktivasyon linkini onaylamadığınız için kupon gönderilmemiş görünüyor. Şimdi onayınız yapıldı, gelen kutunuzu kontrol edebilir misiniz?', isSender: true },
+                { text: 'Çok teşekkürler, şimdi e-postam geldi! Kuponu hemen kullanıyorum. Kolay gelsin.', isSender: false }
+            ],
+            replyPreset: 'Harika Ahmet Bey! Siparişinizle ilgili herhangi bir sorunuz olursa bize her zaman bu mail üzerinden ulaşabilirsiniz.'
+        },
+        'Selin Soylu': {
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&q=80',
+            handle: 'selin.soylu@agency.com',
+            platform: 'email',
+            tag: 'Ortaklık',
+            tagClass: 'tag-recurring',
+            note: 'Yeni marka lansman çekimleri için sponsorluk teklifi.',
+            time: '2 sa',
+            unread: false,
+            messages: [
+                { text: 'Merhabalar, biAjans ekibi! Yeni kuracağımız sağlıklı atıştırmalık markamızın lansman çekimleri için ürün yerleştirme ve sponsorluk detaylarını görüşmek isteriz. Sunumumuzu ekte paylaşıyorum.', isSender: false }
+            ],
+            replyPreset: 'İlginiz için teşekkürler Selin Hanım! Sunumunuzu pazarlama ekibimizle paylaştım, en geç yarın gün sonuna kadar detaylı geri dönüş sağlayacağız.'
         }
     };
 
@@ -1433,14 +1785,17 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             if (chat.platform === 'linkedin') platformColor = '#0077b5';
             if (chat.platform === 'x') platformColor = '#0f172a';
             if (chat.platform === 'whatsapp') platformColor = '#25d366';
+            if (chat.platform === 'email') platformColor = '#0d9488';
 
             const lastMessageText = chat.messages[chat.messages.length - 1].text;
+            const isEmail = chat.platform === 'email';
+            const iconClass = chat.platform === 'x' ? 'fa-brands fa-x-twitter' : isEmail ? 'fa-solid fa-envelope' : `fa-brands fa-${chat.platform}`;
 
             threadItem.innerHTML = `
                 <div style="position: relative; flex-shrink: 0;">
                     <img src="${chat.avatar}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
                     <span style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; background-color: ${platformColor}; color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; border: 1.5px solid white;">
-                        <i class="fa-brands fa-${chat.platform === 'x' ? 'x-twitter' : chat.platform}"></i>
+                        <i class="${iconClass}"></i>
                     </span>
                 </div>
                 <div style="overflow: hidden; text-align: left; width: 100%;">
@@ -1504,9 +1859,13 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             if (chat.platform === 'linkedin') platformColor = '#0077b5';
             if (chat.platform === 'x') platformColor = '#0f172a';
             if (chat.platform === 'whatsapp') platformColor = '#25d366';
+            if (chat.platform === 'email') platformColor = '#0d9488';
+            
+            const isEmail = chat.platform === 'email';
+            const iconClass = chat.platform === 'x' ? 'fa-brands fa-x-twitter' : isEmail ? 'fa-solid fa-envelope' : `fa-brands fa-${chat.platform}`;
             
             activePlatformIcon.style.backgroundColor = platformColor;
-            activePlatformIcon.innerHTML = `<i class="fa-brands fa-${chat.platform === 'x' ? 'x-twitter' : chat.platform}"></i>`;
+            activePlatformIcon.innerHTML = `<i class="${iconClass}"></i>`;
         }
 
         viewport.innerHTML = '';
@@ -1734,6 +2093,19 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     const checkSchedIG = document.getElementById('checkSchedIG');
     const checkSchedFB = document.getElementById('checkSchedFB');
     const checkSchedTT = document.getElementById('checkSchedTT');
+    const checkSchedYT = document.getElementById('checkSchedYT');
+    const checkSchedLI = document.getElementById('checkSchedLI');
+
+    // Photo/Image elements for calendar scheduling
+    const schedulePostImageUrl = document.getElementById('schedulePostImageUrl');
+    const btnSchedulePostAutoImage = document.getElementById('btnSchedulePostAutoImage');
+    const schedulePostImagePreviewContainer = document.getElementById('schedulePostImagePreviewContainer');
+    const schedulePostImagePreview = document.getElementById('schedulePostImagePreview');
+
+    // Photo/Image elements for calendar editing/viewing
+    const editPostImageUrl = document.getElementById('editPostImageUrl');
+    const editPostImagePreviewContainer = document.getElementById('editPostImagePreviewContainer');
+    const editPostImagePreview = document.getElementById('editPostImagePreview');
 
     const postDetailModal = document.getElementById('postDetailModal');
     const postDetailCloseBtn = document.getElementById('postDetailCloseBtn');
@@ -1874,7 +2246,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 if (post.platform === 'linkedin') { platClass = 'li'; iconClass = 'linkedin-in'; }
 
                 pill.className = `calendar-post-pill ${platClass}`;
-                pill.innerHTML = `<i class="fa-brands fa-${iconClass}"></i> ${post.text}`;
+                const cameraIcon = post.image_url ? ' <i class="fa-solid fa-camera" title="Görsel ekli" style="margin-left: 4px;"></i>' : '';
+                pill.innerHTML = `<i class="fa-brands fa-${iconClass}"></i> ${post.text}${cameraIcon}`;
                 
                 pill.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -1897,10 +2270,166 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     }
 
     // Modal helper functions
+    const updateImagePreview = (input, container, imgEl) => {
+        if (input && container && imgEl) {
+            const val = input.value.trim();
+            if (val) {
+                imgEl.src = val;
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+    };
+
+    if (schedulePostImageUrl) {
+        schedulePostImageUrl.addEventListener('input', () => {
+            updateImagePreview(schedulePostImageUrl, schedulePostImagePreviewContainer, schedulePostImagePreview);
+        });
+    }
+    if (editPostImageUrl) {
+        editPostImageUrl.addEventListener('input', () => {
+            updateImagePreview(editPostImageUrl, editPostImagePreviewContainer, editPostImagePreview);
+        });
+    }
+
     function openSchedulePostModal(date) {
         if (!schedulePostModal) return;
         if (schedulePostDate) schedulePostDate.value = date;
         if (schedulePostText) schedulePostText.value = '';
+        if (schedulePostImageUrl) {
+            schedulePostImageUrl.value = '';
+            if (schedulePostImagePreviewContainer) schedulePostImagePreviewContainer.style.display = 'none';
+        }
+
+        // AI Görseli Al butonu kontrolü
+        if (btnSchedulePostAutoImage) {
+            if (activeCampaignData && activeCampaignData.image_url) {
+                btnSchedulePostAutoImage.style.display = 'inline-block';
+                btnSchedulePostAutoImage.onclick = (e) => {
+                    e.preventDefault();
+                    if (schedulePostImageUrl) {
+                        schedulePostImageUrl.value = activeCampaignData.image_url;
+                        updateImagePreview(schedulePostImageUrl, schedulePostImagePreviewContainer, schedulePostImagePreview);
+                    }
+                };
+            } else {
+                btnSchedulePostAutoImage.style.display = 'none';
+                btnSchedulePostAutoImage.onclick = null;
+            }
+        }
+
+        // Hazır Gönderiler Bölümünü Doldur
+        const readyContainer = document.getElementById('readyPostsContainer');
+        const readyList = document.getElementById('readyPostsList');
+        
+        if (readyContainer && readyList) {
+            readyList.innerHTML = '';
+            let hasReady = false;
+
+            if (activeCampaignData) {
+                const addReadyOption = (platform, text, title = '') => {
+                    if (!text) return;
+                    hasReady = true;
+
+                    const item = document.createElement('div');
+                    item.style.display = 'flex';
+                    item.style.alignItems = 'center';
+                    item.style.justifyContent = 'space-between';
+                    item.style.gap = '8px';
+                    item.style.padding = '8px 10px';
+                    item.style.background = 'var(--card-bg)';
+                    item.style.border = '1px solid var(--card-border)';
+                    item.style.borderRadius = '6px';
+
+                    let iconHtml = '';
+                    let pName = '';
+                    let pillColor = '';
+                    if (platform === 'instagram') { iconHtml = '<i class="fa-brands fa-instagram text-ig"></i>'; pName = 'Instagram'; pillColor = '#db2777'; }
+                    if (platform === 'facebook') { iconHtml = '<i class="fa-brands fa-facebook text-fb"></i>'; pName = 'Facebook'; pillColor = '#1877f2'; }
+                    if (platform === 'youtube') { iconHtml = '<i class="fa-brands fa-youtube text-yt"></i>'; pName = 'YouTube'; pillColor = '#ef4444'; }
+                    if (platform === 'linkedin') { iconHtml = '<i class="fa-brands fa-linkedin text-li" style="color: #0077b5;"></i>'; pName = 'LinkedIn'; pillColor = '#0077b5'; }
+
+                    const labelDiv = document.createElement('div');
+                    labelDiv.style.display = 'flex';
+                    labelDiv.style.flexDirection = 'column';
+                    labelDiv.style.gap = '2px';
+                    labelDiv.style.flex = '1';
+                    labelDiv.style.minWidth = '0';
+
+                    const platformTitle = document.createElement('span');
+                    platformTitle.style.fontWeight = 'bold';
+                    platformTitle.style.fontSize = '11px';
+                    platformTitle.style.color = pillColor;
+                    platformTitle.innerHTML = `${iconHtml} ${pName}`;
+
+                    const textPreview = document.createElement('span');
+                    textPreview.style.fontSize = '10.5px';
+                    textPreview.style.color = 'var(--text-secondary)';
+                    textPreview.style.whiteSpace = 'nowrap';
+                    textPreview.style.overflow = 'hidden';
+                    textPreview.style.textOverflow = 'ellipsis';
+                    textPreview.textContent = title ? `${title} - ${text}` : text;
+
+                    labelDiv.appendChild(platformTitle);
+                    labelDiv.appendChild(textPreview);
+
+                    const selectBtn = document.createElement('button');
+                    selectBtn.className = 'btn btn-outline-all';
+                    selectBtn.style.padding = '4px 10px';
+                    selectBtn.style.fontSize = '10px';
+                    selectBtn.style.height = 'auto';
+                    selectBtn.textContent = 'Kullan';
+                    
+                    selectBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (schedulePostText) {
+                            schedulePostText.value = title ? `Başlık: ${title}\n\nAçıklama: ${text}` : text;
+                        }
+                        
+                        // Select target checkbox and trigger design updates
+                        const platforms = {
+                            instagram: checkSchedIG,
+                            facebook: checkSchedFB,
+                            tiktok: checkSchedTT,
+                            youtube: checkSchedYT,
+                            linkedin: checkSchedLI
+                        };
+
+                        Object.keys(platforms).forEach(k => {
+                            const chk = platforms[k];
+                            if (chk) {
+                                chk.checked = (k === platform);
+                                chk.dispatchEvent(new Event('change'));
+                            }
+                        });
+
+                        showToast(`${pName} hazır gönderisi forma dolduruldu! ✨`);
+                    });
+
+                    item.appendChild(labelDiv);
+                    item.appendChild(selectBtn);
+                    readyList.appendChild(item);
+                };
+
+                if (activeCampaignData.instagram_caption) {
+                    addReadyOption('instagram', activeCampaignData.instagram_caption);
+                }
+                if (activeCampaignData.facebook_post) {
+                    addReadyOption('facebook', activeCampaignData.facebook_post);
+                }
+                if (activeCampaignData.youtube && (activeCampaignData.youtube.video_title || activeCampaignData.youtube.video_description)) {
+                    addReadyOption('youtube', activeCampaignData.youtube.video_description, activeCampaignData.youtube.video_title);
+                }
+            }
+
+            if (hasReady) {
+                readyContainer.style.display = 'block';
+            } else {
+                readyContainer.style.display = 'none';
+            }
+        }
+
         schedulePostModal.classList.remove('hidden');
     }
 
@@ -1931,11 +2460,15 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             if (checkSchedIG && checkSchedIG.checked) selectedPlats.push('instagram');
             if (checkSchedFB && checkSchedFB.checked) selectedPlats.push('facebook');
             if (checkSchedTT && checkSchedTT.checked) selectedPlats.push('tiktok');
+            if (checkSchedYT && checkSchedYT.checked) selectedPlats.push('youtube');
+            if (checkSchedLI && checkSchedLI.checked) selectedPlats.push('linkedin');
 
             if (selectedPlats.length === 0) {
                 showToast("Lütfen en az bir platform seçin!", true);
                 return;
             }
+
+            const imgUrl = schedulePostImageUrl ? schedulePostImageUrl.value.trim() : '';
 
             // Schedule for each selected platform
             selectedPlats.forEach(plat => {
@@ -1944,7 +2477,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                     date: date,
                     time: time,
                     platform: plat,
-                    text: text
+                    text: text,
+                    image_url: imgUrl
                 });
             });
 
@@ -1961,6 +2495,10 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         if (editPostText) editPostText.value = post.text;
         if (editPostDate) editPostDate.value = post.date;
         if (editPostTime) editPostTime.value = post.time;
+        if (editPostImageUrl) {
+            editPostImageUrl.value = post.image_url || '';
+            updateImagePreview(editPostImageUrl, editPostImagePreviewContainer, editPostImagePreview);
+        }
 
         if (editPostPlatformBadge) {
             let color = '#db2777';
@@ -2004,6 +2542,9 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 post.text = text;
                 post.date = date;
                 post.time = time;
+                if (editPostImageUrl) {
+                    post.image_url = editPostImageUrl.value.trim();
+                }
                 closePostDetailModal();
                 renderSocialCalendar();
                 showToast("Gönderi detayları başarıyla güncellendi.");
@@ -2073,6 +2614,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     const hashtagSessionInput = document.getElementById('hashtagSessionInput');
     const btnNetXSess = document.getElementById('btnNetXSess');
     const btnNetIGSess = document.getElementById('btnNetIGSess');
+    const btnNetGoogleSess = document.getElementById('btnNetGoogleSess');
     const hashtagSessionStart = document.getElementById('hashtagSessionStart');
     const hashtagSessionDuration = document.getElementById('hashtagSessionDuration');
     const btnCreateHashtagSession = document.getElementById('btnCreateHashtagSession');
@@ -2083,9 +2625,10 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     const hashtagSearchInput = document.getElementById('hashtagSearchInput');
     const hashtagSessionTableBody = document.getElementById('hashtagSessionTableBody');
 
-    let hashtagTrackerBalance = 0;
+    let hashtagTrackerBalance = 10;
     let selectedSessNetX = true;
     let selectedSessNetIG = false;
+    let selectedSessNetGoogle = false;
 
     let hashtagSessions = [
         {
@@ -2097,18 +2640,20 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             duration: 8,
             status: 'completed',
             xPosts: '21.6K',
-            igPosts: '0'
+            igPosts: '0',
+            googleVolume: '0'
         },
         {
             id: 'sess2',
             hashtag: '#inbound19',
-            networks: ['x', 'instagram'],
+            networks: ['x', 'instagram', 'google'],
             created: '4 Eylül 2019, 09:17',
             start: '4 Eylül 2019, 01:00',
             duration: 3,
             status: 'completed',
             xPosts: '19.5K',
-            igPosts: '3.14K'
+            igPosts: '3.14K',
+            googleVolume: '1.24K'
         },
         {
             id: 'sess3',
@@ -2119,18 +2664,20 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             duration: 4,
             status: 'completed',
             xPosts: '75.8K',
-            igPosts: '5.54K'
+            igPosts: '5.54K',
+            googleVolume: '0'
         },
         {
             id: 'sess4',
             hashtag: '#GPIS18',
-            networks: ['x'],
+            networks: ['x', 'google'],
             created: '4 Eylül 2018, 15:20',
             start: '4 Eylül 2018, 01:00',
             duration: 4,
             status: 'completed',
             xPosts: '31.3K',
-            igPosts: '0'
+            igPosts: '0',
+            googleVolume: '450'
         },
         {
             id: 'sess5',
@@ -2141,7 +2688,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             duration: 5,
             status: 'completed',
             xPosts: '9.4K',
-            igPosts: '0'
+            igPosts: '0',
+            googleVolume: '0'
         }
     ];
 
@@ -2150,9 +2698,9 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         btnNetXSess.addEventListener('click', () => {
             selectedSessNetX = !selectedSessNetX;
             if (selectedSessNetX) {
-                btnNetXSess.style.cssText = 'flex: 1; padding: 6px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1.5px solid var(--accent); background-color: #fefcf0;';
+                btnNetXSess.style.cssText = 'flex: 1; padding: 8px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1.5px solid var(--accent); background-color: #fefcf0; border-radius: 4px; transition: all 0.2s ease;';
             } else {
-                btnNetXSess.style.cssText = 'flex: 1; padding: 6px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1px solid var(--card-border); background-color: #ffffff;';
+                btnNetXSess.style.cssText = 'flex: 1; padding: 8px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1px solid var(--card-border); background-color: #ffffff; border-radius: 4px; transition: all 0.2s ease;';
             }
         });
     }
@@ -2161,22 +2709,38 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         btnNetIGSess.addEventListener('click', () => {
             selectedSessNetIG = !selectedSessNetIG;
             if (selectedSessNetIG) {
-                btnNetIGSess.style.cssText = 'flex: 1; padding: 6px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1.5px solid var(--accent); background-color: #fefcf0;';
+                btnNetIGSess.style.cssText = 'flex: 1; padding: 8px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1.5px solid var(--accent); background-color: #fefcf0; border-radius: 4px; transition: all 0.2s ease;';
             } else {
-                btnNetIGSess.style.cssText = 'flex: 1; padding: 6px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1px solid var(--card-border); background-color: #ffffff;';
+                btnNetIGSess.style.cssText = 'flex: 1; padding: 8px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1px solid var(--card-border); background-color: #ffffff; border-radius: 4px; transition: all 0.2s ease;';
             }
         });
     }
 
-    // Purchase day credits simulator
-    if (btnPurchaseTrackerDays) {
-        btnPurchaseTrackerDays.addEventListener('click', () => {
-            hashtagTrackerBalance += 5;
-            if (hashtagBalanceLabel) {
-                hashtagBalanceLabel.textContent = `Bakiyeniz: ${hashtagTrackerBalance} gün`;
-                hashtagBalanceLabel.style.color = '#b45309';
+    if (btnNetGoogleSess) {
+        btnNetGoogleSess.addEventListener('click', () => {
+            selectedSessNetGoogle = !selectedSessNetGoogle;
+            if (selectedSessNetGoogle) {
+                btnNetGoogleSess.style.cssText = 'flex: 1; padding: 8px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1.5px solid var(--accent); background-color: #fefcf0; border-radius: 4px; transition: all 0.2s ease;';
+            } else {
+                btnNetGoogleSess.style.cssText = 'flex: 1; padding: 8px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1px solid var(--card-border); background-color: #ffffff; border-radius: 4px; transition: all 0.2s ease;';
             }
-            showToast("5 gün takip kredisi bakiyenize başarıyla tanımlandı! 💰");
+        });
+    }
+
+    // Purchase day credits simulator replaced with connection handlers
+    const btnGoToConnectionsFromTracker = document.getElementById('btnGoToConnectionsFromTracker');
+    if (btnGoToConnectionsFromTracker) {
+        btnGoToConnectionsFromTracker.addEventListener('click', () => {
+            const connectionsModal = document.getElementById('connectionsModal');
+            if (connectionsModal) connectionsModal.classList.remove('hidden');
+        });
+    }
+
+    const btnRefreshHashtagConnections = document.getElementById('btnRefreshHashtagConnections');
+    if (btnRefreshHashtagConnections) {
+        btnRefreshHashtagConnections.addEventListener('click', async () => {
+            await syncConnectionStatus();
+            showToast("Bağlantı durumları başarıyla yenilendi! 🔄");
         });
     }
 
@@ -2198,6 +2762,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             let netIcons = '';
             if (sess.networks.includes('x')) netIcons += '<i class="fa-brands fa-x-twitter" style="margin-left: 4px; color: #000;"></i>';
             if (sess.networks.includes('instagram')) netIcons += '<i class="fa-brands fa-instagram" style="margin-left: 4px; color: #db2777;"></i>';
+            if (sess.networks.includes('google')) netIcons += '<i class="fa-brands fa-google" style="margin-left: 4px; color: #4285f4;"></i>';
 
             // Durum badge
             let statusTag = '';
@@ -2215,8 +2780,9 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 <td style="padding: 12px 8px; color: var(--text-secondary);">${sess.start}</td>
                 <td style="padding: 12px 8px; text-align: center; font-weight: bold; color: var(--text-primary);">${sess.duration}</td>
                 <td style="padding: 12px 8px;">${statusTag}</td>
-                <td style="padding: 12px 8px; text-align: right; font-weight: bold; color: var(--text-primary);">${sess.xPosts}</td>
-                <td style="padding: 12px 8px; text-align: right; font-weight: bold; color: var(--text-primary);">${sess.igPosts}</td>
+                <td style="padding: 12px 8px; text-align: right; font-weight: bold; color: var(--text-primary);">${sess.xPosts || '0'}</td>
+                <td style="padding: 12px 8px; text-align: right; font-weight: bold; color: var(--text-primary);">${sess.igPosts || '0'}</td>
+                <td style="padding: 12px 8px; text-align: right; font-weight: bold; color: var(--text-primary);">${sess.googleVolume || '0'}</td>
                 <td style="padding: 12px 8px; text-align: center; display: flex; gap: 4px; justify-content: center; align-items: center; min-height: 44px;">
                     <button class="hashtag-action-btn" title="Gerçek Zamanlı Monitör" disabled style="opacity: 0.4;"><i class="fa-solid fa-clock-rotate-left"></i></button>
                     <button class="hashtag-action-btn" title="Analitik Panel"><i class="fa-solid fa-chart-pie"></i></button>
@@ -2271,33 +2837,23 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 return;
             }
 
-            if (!selectedSessNetX && !selectedSessNetIG) {
-                showToast("Lütfen izlenecek en az bir sosyal ağ seçin!", true);
+            if (!selectedSessNetX && !selectedSessNetIG && !selectedSessNetGoogle) {
+                showToast("Lütfen izlenecek en az bir ağ seçin!", true);
                 return;
-            }
-
-            // Balance check
-            if (hashtagTrackerBalance < durationVal) {
-                showToast("Oturum oluşturmak için bakiyeniz yetersiz. Lütfen kredi gün satın alın! 💰", true);
-                return;
-            }
-
-            // Deduct from balance
-            hashtagTrackerBalance -= durationVal;
-            if (hashtagBalanceLabel) {
-                hashtagBalanceLabel.textContent = `Bakiyeniz: ${hashtagTrackerBalance} gün`;
             }
 
             // Setup networks
             const nets = [];
             if (selectedSessNetX) nets.push('x');
             if (selectedSessNetIG) nets.push('instagram');
+            if (selectedSessNetGoogle) nets.push('google');
 
             // Format date-time
             const now = new Date();
             const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-            const timeStr = `${now.getHours() < 10 ? '0' + now.getHours() : now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
-            const createdStr = `${now.getDate()} ${monthNames[now.getMonth()]} ${now.getFullYear()}, ${timeStr}`;
+            const timeStr = `${now.getHours() < 10 ? '0' + now.getHours() : now.getHours()}`;
+            const minStr = `${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
+            const createdStr = `${now.getDate()} ${monthNames[now.getMonth()]} ${now.getFullYear()}, ${timeStr}:${minStr}`;
 
             const newSess = {
                 id: 'sess_' + Date.now(),
@@ -2308,7 +2864,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 duration: durationVal,
                 status: 'tracking',
                 xPosts: selectedSessNetX ? '12' : '0',
-                igPosts: selectedSessNetIG ? '6' : '0'
+                igPosts: selectedSessNetIG ? '6' : '0',
+                googleVolume: selectedSessNetGoogle ? '8' : '0'
             };
 
             hashtagSessions.unshift(newSess);
@@ -2322,6 +2879,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 if (found) {
                     if (selectedSessNetX) found.xPosts = '124';
                     if (selectedSessNetIG) found.igPosts = '84';
+                    if (selectedSessNetGoogle) found.googleVolume = '92';
                     renderHashtagSessions();
                     showToast(`"${hashtagVal}" oturumunda yeni gönderiler izlendi! 📈`);
                 }
@@ -2661,22 +3219,68 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     // ==========================================
     async function syncConnectionStatus() {
         try {
-            const res  = await fetch('/api/connections/status');
+            const brandId = getCurrentBrandId();
+            const res  = await fetch(`/api/connections/status?brand=${brandId}`);
             const data = await res.json();
             if (!data || !data.connections) return;
 
             const connections = data.connections;
 
+            // Update Hashtag Tracker status indicators if they exist
+            const hashtagConnXStatus = document.getElementById('hashtagConnXStatus');
+            const hashtagConnIGStatus = document.getElementById('hashtagConnIGStatus');
+
+            if (hashtagConnXStatus) {
+                if (connections.x && connections.x.connected) {
+                    hashtagConnXStatus.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 8px; color: #10b981;"></i> Aktif';
+                    hashtagConnXStatus.style.color = '#10b981';
+                } else {
+                    hashtagConnXStatus.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 8px; color: #ef4444;"></i> Bağlantı Yok';
+                    hashtagConnXStatus.style.color = '#ef4444';
+                }
+            }
+
+            if (hashtagConnIGStatus) {
+                if (connections.meta && connections.meta.connected) {
+                    hashtagConnIGStatus.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 8px; color: #10b981;"></i> Aktif';
+                    hashtagConnIGStatus.style.color = '#10b981';
+                } else {
+                    hashtagConnIGStatus.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 8px; color: #ef4444;"></i> Bağlantı Yok';
+                    hashtagConnIGStatus.style.color = '#ef4444';
+                }
+            }
+
+            const hashtagConnGoogleStatus = document.getElementById('hashtagConnGoogleStatus');
+            if (hashtagConnGoogleStatus) {
+                if (connections.google && connections.google.connected) {
+                    hashtagConnGoogleStatus.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 8px; color: #10b981;"></i> Aktif';
+                    hashtagConnGoogleStatus.style.color = '#10b981';
+                } else {
+                    hashtagConnGoogleStatus.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 8px; color: #ef4444;"></i> Bağlantı Yok';
+                    hashtagConnGoogleStatus.style.color = '#ef4444';
+                }
+            }
+
             // Platform slug → data-network değerleri eşleştirmesi
             const slugToNetworkNames = {
                 meta:       ['Facebook', 'Instagram', 'Threads', 'WhatsApp', 'Meta Reklamlar'],
-                google:     ['YouTube', 'Google Ads', 'Looker Stüdyosu'],
+                google:     ['YouTube', 'Google Ads', 'Looker Stüdyosu', 'Google İşletme Profili'],
                 linkedin:   ['LinkedIn'],
                 x:          ['X'],
-                tiktok:     ['TikTok Kişisel', 'TikTok Ads'],
+                tiktok:     ['TikTok Kişisel', 'TikTok İşletmesi', 'TikTok Reklamları', 'TikTok Ads'],
                 pinterest:  ['Pinterest'],
                 bluesky:    ['Bluesky'],
             };
+
+            // Clear all connection states first
+            document.querySelectorAll('.conn-card').forEach(card => {
+                card.classList.remove('active-connection');
+                const badge = card.querySelector('.conn-active-badge');
+                if (badge) badge.remove();
+            });
+            Object.values(slugToNetworkNames).flat().forEach(name => {
+                updateSidebarPlatformStatus(name, false);
+            });
 
             Object.entries(connections).forEach(([slug, info]) => {
                 if (!info.connected) return;
@@ -2740,7 +3344,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                         platform: platform,
                         budget: budget,
                         creative: { text: text },
-                        account_id: 'act_123456789'
+                        account_id: 'act_123456789',
+                        brand: getCurrentBrandId()
                     })
                 });
                 
@@ -2760,7 +3365,1445 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
+    // --- GOOGLE HASHTAG GUIDE & SIMULATION LOGIC ---
+    const googleHashtagGuideModal = document.getElementById('googleHashtagGuideModal');
+    const btnGoogleTrackerGuide = document.getElementById('btnGoogleTrackerGuide');
+    const googleHashtagGuideCloseBtn = document.getElementById('googleHashtagGuideCloseBtn');
+    const googleHashtagGuideClose = document.getElementById('googleHashtagGuideClose');
+    const btnConnectGoogleSearchMock = document.getElementById('btnConnectGoogleSearchMock');
+
+    const hashtagRowX = document.getElementById('hashtagRowX');
+    const hashtagRowIG = document.getElementById('hashtagRowIG');
+    const hashtagRowGoogle = document.getElementById('hashtagRowGoogle');
+
+    function openGoogleGuide() {
+        if (googleHashtagGuideModal) {
+            googleHashtagGuideModal.classList.remove('hidden');
+        }
+    }
+
+    function closeGoogleGuide() {
+        if (googleHashtagGuideModal) {
+            googleHashtagGuideModal.classList.add('hidden');
+        }
+    }
+
+    if (btnGoogleTrackerGuide) {
+        btnGoogleTrackerGuide.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openGoogleGuide();
+        });
+    }
+
+    if (googleHashtagGuideCloseBtn) {
+        googleHashtagGuideCloseBtn.addEventListener('click', closeGoogleGuide);
+    }
+    if (googleHashtagGuideClose) {
+        googleHashtagGuideClose.addEventListener('click', closeGoogleGuide);
+    }
+
+    async function connectMockPlatform(platform, platformLabel) {
+        try {
+            const brandId = getCurrentBrandId();
+            const res = await fetch('/api/connect/mock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform: platform, brand: brandId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`✅ ${platformLabel} simüle bağlantısı kuruldu!`);
+                await syncConnectionStatus();
+            } else {
+                showToast(`❌ Bağlantı hatası: ${data.error}`, true);
+            }
+        } catch (err) {
+            showToast(`❌ Bağlantı hatası: ${err.message}`, true);
+        }
+    }
+
+    if (btnConnectGoogleSearchMock) {
+        btnConnectGoogleSearchMock.addEventListener('click', async () => {
+            btnConnectGoogleSearchMock.disabled = true;
+            const origText = btnConnectGoogleSearchMock.textContent;
+            btnConnectGoogleSearchMock.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Bağlanıyor...';
+            
+            await connectMockPlatform('google', 'Google Search API');
+            
+            btnConnectGoogleSearchMock.disabled = false;
+            btnConnectGoogleSearchMock.textContent = origText;
+            closeGoogleGuide();
+        });
+    }
+
+    // Bind connection row click events to prompt/help modal
+    if (hashtagRowX) {
+        hashtagRowX.addEventListener('click', () => {
+            const startReal = confirm("X / Twitter API bağlantısını gerçek hesabınızla kurmak için 'Tamam'a tıklayın.\nTest amaçlı hızlı simüle bağlantı kurmak için 'İptal'e tıklayın.");
+            if (startReal) {
+                const connectionsModal = document.getElementById('connectionsModal');
+                if (connectionsModal) connectionsModal.classList.remove('hidden');
+                const card = document.querySelector('.conn-card[data-network="X"]');
+                if (card) card.click();
+            } else {
+                connectMockPlatform('x', 'X / Twitter API');
+            }
+        });
+    }
+
+    if (hashtagRowIG) {
+        hashtagRowIG.addEventListener('click', () => {
+            const startReal = confirm("Instagram Graph API bağlantısını gerçek hesabınızla kurmak için 'Tamam'a tıklayın.\nTest amaçlı hızlı simüle bağlantı kurmak için 'İptal'e tıklayın.");
+            if (startReal) {
+                const connectionsModal = document.getElementById('connectionsModal');
+                if (connectionsModal) connectionsModal.classList.remove('hidden');
+                const card = document.querySelector('.conn-card[data-network="Instagram"]');
+                if (card) card.click();
+            } else {
+                connectMockPlatform('instagram', 'Instagram Graph API');
+            }
+        });
+    }
+
+    if (hashtagRowGoogle) {
+        hashtagRowGoogle.addEventListener('click', (e) => {
+            if (e.target.id === 'btnGoogleTrackerGuide') return;
+            openGoogleGuide();
+        });
+    }
+
+    // --- HOW TO CONNECT HELPER MODAL LOGIC ---
+    const btnHowToConnect = document.getElementById('btnHowToConnect');
+    const howToConnectModal = document.getElementById('howToConnectModal');
+    const howToConnectCloseBtn = document.getElementById('howToConnectCloseBtn');
+    const btnHowToConnectClose = document.getElementById('btnHowToConnectClose');
+
+    if (btnHowToConnect && howToConnectModal) {
+        btnHowToConnect.addEventListener('click', (e) => {
+            e.preventDefault();
+            howToConnectModal.classList.remove('hidden');
+        });
+    }
+
+    function closeHowToConnectModal() {
+        if (howToConnectModal) {
+            howToConnectModal.classList.add('hidden');
+        }
+    }
+
+    if (howToConnectCloseBtn) howToConnectCloseBtn.addEventListener('click', closeHowToConnectModal);
+    if (btnHowToConnectClose) btnHowToConnectClose.addEventListener('click', closeHowToConnectModal);
+
+    // Tab switching logic inside help modal
+    const helpTabBtns = document.querySelectorAll('.help-tab-btn');
+    const helpTabPanels = document.querySelectorAll('.help-tab-panel');
+
+    helpTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Reset all buttons
+            helpTabBtns.forEach(b => {
+                b.classList.remove('active');
+                b.style.color = '#64748b';
+                b.style.borderBottomColor = 'transparent';
+            });
+            // Style active button
+            btn.classList.add('active');
+            btn.style.color = '#6366f1';
+            btn.style.borderBottomColor = '#6366f1';
+
+            // Show target panel
+            const targetTab = btn.getAttribute('data-help-tab');
+            helpTabPanels.forEach(panel => {
+                if (panel.id === `help-panel-${targetTab}`) {
+                    panel.style.display = 'flex';
+                } else {
+                    panel.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // Helper to open guides for a specific platform
+    window.openHowToConnectFor = function(network) {
+        if (!howToConnectModal) return;
+
+        // Open modal
+        howToConnectModal.classList.remove('hidden');
+
+        // Map network name to the correct tab category
+        const socialPlatforms = [
+            'Facebook', 'Instagram', 'Threads', 'X', 'Bluesky', 
+            'LinkedIn', 'Pinterest', 'TikTok Kişisel', 'TikTok İşletmesi', 
+            'YouTube', 'Twitch'
+        ];
+        const adsPlatforms = [
+            'Meta Reklamlar', 'Google Ads', 'TikTok Reklamları', 'Looker Stüdyosu'
+        ];
+
+        let tabType = 'web';
+        if (socialPlatforms.includes(network)) {
+            tabType = 'social';
+        } else if (adsPlatforms.includes(network)) {
+            tabType = 'ads';
+        }
+
+        // Click the corresponding tab button
+        const tabBtn = document.querySelector(`.help-tab-btn[data-help-tab="${tabType}"]`);
+        if (tabBtn) {
+            tabBtn.click();
+        }
+
+        // Scroll to and highlight the platform guide block
+        setTimeout(() => {
+            const platformSelector = network.replace(/\s+/g, '-');
+            const guideBlock = document.querySelector(`[data-help-platform~="${platformSelector}"]`);
+            if (guideBlock) {
+                guideBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Add flash pulse effect
+                guideBlock.classList.add('help-guide-highlight');
+                setTimeout(() => {
+                    guideBlock.classList.remove('help-guide-highlight');
+                }, 2000);
+            }
+        }, 120);
+    };
+
+    // Bind connect buttons inside guide modal
+    document.querySelectorAll('.btn-help-connect').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const network = btn.getAttribute('data-connect-network');
+            const card = document.querySelector(`.conn-card[data-network="${network}"]`);
+            if (card) {
+                closeHowToConnectModal();
+                card.click();
+            }
+        });
+    });
+
+    // ==========================================================================
+    // SMARTLINKS LIVE EDITOR & SIMULATOR LOGIC
+    // ==========================================================================
+
+    const slAvatarUrlInput = document.getElementById('slAvatarUrl');
+    const slTitleInput = document.getElementById('slTitle');
+    const slSubtitleInput = document.getElementById('slSubtitle');
+    const slThemeSelect = document.getElementById('slThemeSelect');
+    const slLinksContainer = document.getElementById('slLinksContainer');
+    const slAddLinkBtn = document.getElementById('slAddLinkBtn');
+    const slSaveBtn = document.getElementById('slSaveBtn');
+
+    // Simulator elements
+    const slSimAvatar = document.getElementById('slSimAvatar');
+    const slSimTitle = document.getElementById('slSimTitle');
+    const slSimSubtitle = document.getElementById('slSimSubtitle');
+    const slSimLinks = document.getElementById('slSimLinks');
+    const slSimulatorPhone = document.getElementById('slSimulatorPhone');
+
+    // Live URL Bar elements
+    const slLiveUrlBar = document.getElementById('slLiveUrlBar');
+    const slLiveUrlText = document.getElementById('slLiveUrlText');
+    const slCopyUrlBtn = document.getElementById('slCopyUrlBtn');
+    const slVisitUrlBtn = document.getElementById('slVisitUrlBtn');
+
+    // Map brand values to actual slugs or names
+    function getSelectedBrandValue() {
+        const brandSelect = document.getElementById('brandSelect');
+        return brandSelect ? brandSelect.value : 'global';
+    }
+
+    function getSelectedBrandName() {
+        const brandSelect = document.getElementById('brandSelect');
+        if (brandSelect && brandSelect.selectedIndex >= 0) {
+            return brandSelect.options[brandSelect.selectedIndex].text;
+        }
+        return 'Boş marka';
+    }
+
+    // Load SmartLinks data for active brand
+    window.loadSmartLinks = async function() {
+        if (!slAvatarUrlInput) return;
+        const brand = getSelectedBrandValue();
+        try {
+            const response = await fetch(`/api/smartlinks/load?brand=${brand}`);
+            const resData = await response.json();
+            if (resData.success && resData.data) {
+                const data = resData.data;
+                slAvatarUrlInput.value = data.avatar || '';
+                slTitleInput.value = data.title || getSelectedBrandName();
+                slSubtitleInput.value = data.subtitle || '';
+                slThemeSelect.value = data.theme || 'clean-light';
+                
+                // Clear and rebuild rows
+                slLinksContainer.innerHTML = '';
+                if (Array.isArray(data.links) && data.links.length > 0) {
+                    data.links.forEach(link => addLinkRow(link.title, link.url, link.icon));
+                } else {
+                    // Default links if none exist
+                    addLinkRow('Web Sitemiz', 'https://example.com', 'fa-solid fa-globe');
+                    addLinkRow('Instagram Profilimiz', 'https://instagram.com', 'fa-brands fa-instagram');
+                }
+                
+                // Show URL bar for the brand
+                if (brand) {
+                    const pageUrl = `${window.location.origin}/sl/${brand}`;
+                    slLiveUrlText.textContent = pageUrl;
+                    slVisitUrlBtn.href = `/sl/${brand}`;
+                    slLiveUrlBar.classList.remove('hidden');
+                }
+
+                updateSmartLinksPreview();
+            }
+        } catch (err) {
+            console.error('SmartLinks loading error:', err);
+            showToast('Akıllı bağlantı ayarları yüklenemedi.', true);
+        }
+    };
+
+    // Add a single row to the links builder
+    function addLinkRow(title = '', url = '', icon = 'fa-solid fa-link') {
+        if (!slLinksContainer) return;
+        const row = document.createElement('div');
+        row.className = 'sl-builder-row';
+        row.innerHTML = `
+            <select class="sl-link-icon form-control-custom" style="width: auto; flex-shrink: 0; min-width: 90px; padding: 6px 8px;">
+                <option value="fa-solid fa-globe">🌐 Site</option>
+                <option value="fa-brands fa-instagram">📸 Instagram</option>
+                <option value="fa-brands fa-whatsapp">💬 WhatsApp</option>
+                <option value="fa-brands fa-facebook">👥 Facebook</option>
+                <option value="fa-solid fa-play">🎥 YouTube</option>
+                <option value="fa-brands fa-linkedin">💼 LinkedIn</option>
+                <option value="fa-brands fa-x-twitter">🐦 X</option>
+                <option value="fa-brands fa-tiktok">🎵 TikTok</option>
+                <option value="fa-brands fa-github">💻 GitHub</option>
+                <option value="fa-solid fa-envelope">✉️ E-posta</option>
+            </select>
+            <input type="text" class="sl-link-title form-control-custom" placeholder="Buton Metni" value="${title}" style="flex: 1; padding: 6px 10px;">
+            <input type="text" class="sl-link-url form-control-custom" placeholder="URL Adresi" value="${url}" style="flex: 2; padding: 6px 10px;">
+            <button class="remove-btn" title="Bağlantıyı Sil"><i class="fa-solid fa-trash"></i></button>
+        `;
+
+        // Set initial icon selection
+        const select = row.querySelector('.sl-link-icon');
+        select.value = icon;
+
+        // Bind live updates
+        row.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('input', updateSmartLinksPreview);
+            input.addEventListener('change', updateSmartLinksPreview);
+        });
+
+        // Bind remove button
+        row.querySelector('.remove-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            row.remove();
+            updateSmartLinksPreview();
+        });
+
+        slLinksContainer.appendChild(row);
+        updateSmartLinksPreview();
+    }
+
+    // Real-time update of mockup simulator preview
+    function updateSmartLinksPreview() {
+        if (!slSimAvatar || !slSimTitle || !slSimSubtitle || !slSimLinks || !slSimulatorPhone) return;
+
+        // Avatar
+        const avatarUrl = slAvatarUrlInput.value.trim();
+        slSimAvatar.src = avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80';
+
+        // Title & Subtitle
+        slSimTitle.textContent = slTitleInput.value.trim() || getSelectedBrandName();
+        slSimSubtitle.textContent = slSubtitleInput.value.trim() || 'Açıklama girilmedi...';
+
+        // Theme classes
+        slSimulatorPhone.className = '';
+        const theme = slThemeSelect.value;
+        slSimulatorPhone.classList.add(`theme-${theme}`);
+
+        // Rebuild simulated buttons
+        slSimLinks.innerHTML = '';
+        const rows = slLinksContainer.querySelectorAll('.sl-builder-row');
+        rows.forEach(row => {
+            const iconVal = row.querySelector('.sl-link-icon').value;
+            const titleVal = row.querySelector('.sl-link-title').value.trim();
+            const urlVal = row.querySelector('.sl-link-url').value.trim();
+
+            if (titleVal) {
+                const btn = document.createElement('a');
+                btn.className = 'sl-sim-btn';
+                btn.href = urlVal || '#';
+                btn.target = '_blank';
+                btn.innerHTML = `<i class="${iconVal}"></i> ${titleVal}`;
+                slSimLinks.appendChild(btn);
+            }
+        });
+    }
+
+    // Event listeners for basic settings inputs
+    if (slAvatarUrlInput) slAvatarUrlInput.addEventListener('input', updateSmartLinksPreview);
+    if (slTitleInput) slTitleInput.addEventListener('input', updateSmartLinksPreview);
+    if (slSubtitleInput) slSubtitleInput.addEventListener('input', updateSmartLinksPreview);
+    if (slThemeSelect) slThemeSelect.addEventListener('change', updateSmartLinksPreview);
+
+    // Add link row trigger
+    if (slAddLinkBtn) {
+        slAddLinkBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            addLinkRow('', '', 'fa-solid fa-link');
+        });
+    }
+
+    // Save & Publish trigger
+    if (slSaveBtn) {
+        slSaveBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const brand = getSelectedBrandValue();
+            
+            // Build links payload
+            const links = [];
+            const rows = slLinksContainer.querySelectorAll('.sl-builder-row');
+            rows.forEach((row, idx) => {
+                const iconVal = row.querySelector('.sl-link-icon').value;
+                const titleVal = row.querySelector('.sl-link-title').value.trim();
+                const urlVal = row.querySelector('.sl-link-url').value.trim();
+                if (titleVal) {
+                    links.push({
+                        id: idx + 1,
+                        title: titleVal,
+                        url: urlVal,
+                        icon: iconVal
+                    });
+                }
+            });
+
+            const payload = {
+                brand: brand,
+                title: slTitleInput.value.trim() || getSelectedBrandName(),
+                subtitle: slSubtitleInput.value.trim(),
+                avatar: slAvatarUrlInput.value.trim(),
+                theme: slThemeSelect.value,
+                links: links
+            };
+
+            const origHtml = slSaveBtn.innerHTML;
+            slSaveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yayınlanıyor...';
+            slSaveBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/smartlinks/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const resData = await response.json();
+                if (resData.success) {
+                    showToast('Akıllı bağlantılarınız başarıyla kaydedildi ve yayınlandı!');
+                    
+                    if (brand) {
+                        const pageUrl = `${window.location.origin}/sl/${brand}`;
+                        slLiveUrlText.textContent = pageUrl;
+                        slVisitUrlBtn.href = `/sl/${brand}`;
+                        slLiveUrlBar.classList.remove('hidden');
+                    }
+                } else {
+                    showToast('Kaydetme hatası: ' + resData.error, true);
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Yayınlanırken ağ hatası oluştu: ' + err.message, true);
+            } finally {
+                slSaveBtn.innerHTML = origHtml;
+                slSaveBtn.disabled = false;
+            }
+        });
+    }
+
+    // Copy live url button trigger
+    if (slCopyUrlBtn) {
+        slCopyUrlBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const urlText = slLiveUrlText.textContent;
+            navigator.clipboard.writeText(urlText).then(() => {
+                showToast('Akıllı bağlantı URL\'si panoya kopyalandı!');
+            }).catch(err => {
+                console.error('Copy error:', err);
+            });
+        });
+    }
+
+    // Reload smartlinks when switching brand dropdown
+    const brandSelectSelector = document.getElementById('brandSelect');
+    if (brandSelectSelector) {
+        brandSelectSelector.addEventListener('change', () => {
+            const akilliSection = document.getElementById('akilliBaglantilarSection');
+            if (akilliSection && !akilliSection.classList.contains('hidden')) {
+                if (typeof window.loadSmartLinks === 'function') {
+                    window.loadSmartLinks();
+                }
+            }
+        });
+    }
+
+    // ============================================================
+    // BRAND MANAGEMENT SYSTEM
+    // Stores all brand data in localStorage under 'biAjans_brands'
+    // ============================================================
+
+    const BRANDS_KEY = 'biAjans_brands';
+
+    // Default brand data
+    const defaultBrands = [
+        {
+            id: 'global',
+            name: 'Boş marka',
+            logo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80',
+            industry: '',
+            payment: '',
+            currency: 'TL',
+            requirements: '',
+            meetingDate: '',
+            zoomLink: '',
+            onboarding: { step1: false, step2: false, step3: false, step4: false }
+        },
+        {
+            id: 'coffee',
+            name: 'Local Coffee Shop',
+            logo: 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=150&q=80',
+            industry: 'Gıda & İçecek',
+            payment: '12000',
+            currency: 'TL',
+            requirements: 'Haftalık en az 5 gönderi. Instagram reels öncelikli. Kahve sezonu kampanyaları yapılacak.',
+            meetingDate: '',
+            zoomLink: '',
+            onboarding: { step1: true, step2: true, step3: false, step4: false }
+        },
+        {
+            id: 'fitness',
+            name: 'Health & Fitness',
+            logo: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=150&q=80',
+            industry: 'Sağlık & Spor',
+            payment: '18000',
+            currency: 'TL',
+            requirements: 'Motivasyon odaklı içerik. TikTok ve Instagram eş zamanlı paylaşım. Sporcu hikayeleri ve dönüşüm videoları.',
+            meetingDate: '',
+            zoomLink: '',
+            onboarding: { step1: true, step2: false, step3: false, step4: false }
+        }
+    ];
+
+    // Load brands from localStorage or use defaults
+    function loadBrandsFromStorage() {
+        try {
+            const stored = localStorage.getItem(BRANDS_KEY);
+            return stored ? JSON.parse(stored) : defaultBrands;
+        } catch (e) {
+            return defaultBrands;
+        }
+    }
+
+    // Save brands array to localStorage
+    function saveBrandsToStorage(brands) {
+        try {
+            localStorage.setItem(BRANDS_KEY, JSON.stringify(brands));
+        } catch (e) {
+            console.warn('Brand save error:', e);
+        }
+    }
+
+    // Generate unique ID for new brand
+    function generateBrandId() {
+        return 'brand_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    }
+
+    // Helper to get connected platforms count for a brand (high fidelity mock)
+    function getBrandConnectedCount(brand) {
+        const activeId = document.getElementById('brandSelect')?.value;
+        if (brand.id === activeId) {
+            return document.querySelectorAll('.sidebar .platform-item.connected').length;
+        }
+        if (brand.id === 'coffee') return 2;
+        if (brand.id === 'fitness') return 3;
+        return 1; // Default fallback
+    }
+
+    // Custom brand dropdown renderer
+    function renderCustomBrandDropdown() {
+        const menu = document.getElementById('settingsBrandDropdownMenu');
+        if (!menu) return;
+
+        const activeId = document.getElementById('brandSelect')?.value || 'global';
+        const activeBrand = brandsData.find(b => b.id === activeId);
+
+        // Update the main toggle container
+        const titleSpan = document.getElementById('settingsBrandTitle');
+        const subtitleSpan = document.getElementById('settingsBrandSubtitle');
+        const avatarImg = document.getElementById('settingsBrandAvatarImg');
+        const avatarIcon = document.getElementById('settingsBrandAvatarIcon');
+        const countLabel = document.getElementById('brandStatsCountLabel');
+
+        if (activeBrand) {
+            if (titleSpan) titleSpan.textContent = activeBrand.name;
+            
+            const connCount = getBrandConnectedCount(activeBrand);
+            if (subtitleSpan) {
+                subtitleSpan.innerHTML = `<span id="connectedCountText">${connCount}</span> platform bağlı`;
+            }
+
+            if (avatarImg && avatarIcon) {
+                if (activeBrand.logo) {
+                    avatarImg.src = activeBrand.logo;
+                    avatarImg.style.display = 'block';
+                    avatarIcon.style.display = 'none';
+                } else {
+                    avatarImg.style.display = 'none';
+                    avatarIcon.style.display = 'block';
+                }
+            }
+
+            // Update stats count text (X / Y)
+            const currentIdx = brandsData.findIndex(b => b.id === activeId);
+            if (countLabel) {
+                countLabel.innerHTML = `Markalar (${currentIdx !== -1 ? currentIdx + 1 : 1} / ${brandsData.length}) <i class="fa-regular fa-question-circle" style="font-size: 10px; cursor: help;"></i>`;
+            }
+        }
+
+        // Render list items
+        menu.innerHTML = '';
+        brandsData.forEach(brand => {
+            const isActive = brand.id === activeId;
+            const connCount = getBrandConnectedCount(brand);
+            
+            const item = document.createElement('div');
+            item.className = 'custom-brand-item';
+            item.setAttribute('data-brand-id', brand.id);
+            
+            item.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; background-color: #cbd5e1; display: flex; align-items: center; justify-content: center; color: #ffffff;">
+                        ${brand.logo ? `<img src="${brand.logo}" style="width: 100%; height: 100%; object-fit: cover;" />` : `<i class="fa-solid fa-user-tie" style="font-size: 14px;"></i>`}
+                    </div>
+                    <div style="display: flex; flex-direction: column; text-align: left;">
+                        <span style="font-size: 13.5px; font-weight: 700; color: #1e293b;">${brand.name}</span>
+                        <span style="font-size: 10.5px; color: #94a3b8; font-weight: 600;">${connCount} platform bağlı • ${brand.industry || 'Genel'}</span>
+                    </div>
+                </div>
+                ${isActive ? `<i class="fa-solid fa-circle-check" style="color: #6366f1; font-size: 16px;"></i>` : ''}
+            `;
+            
+            item.addEventListener('click', () => {
+                const sel = document.getElementById('brandSelect');
+                if (sel) {
+                    sel.value = brand.id;
+                    sel.dispatchEvent(new Event('change'));
+                }
+                menu.classList.add('hidden');
+                showToast(`Marka seçildi: ${brand.name}`);
+            });
+            
+            menu.appendChild(item);
+        });
+    }
+
+    // Toggle dropdown visibility
+    const settingsBrandSelectToggle = document.getElementById('settingsBrandSelectToggle');
+    if (settingsBrandSelectToggle) {
+        settingsBrandSelectToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const menu = document.getElementById('settingsBrandDropdownMenu');
+            if (menu) {
+                menu.classList.toggle('hidden');
+            }
+        });
+    }
+
+    // Document click to close custom dropdown
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('settingsBrandDropdownMenu');
+        const toggle = document.getElementById('settingsBrandSelectToggle');
+        if (menu && toggle && !toggle.contains(e.target) && !menu.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+
+    // Brands Table View Modal Populator & Events
+    const btnViewAsTable = document.getElementById('btnViewAsTable');
+    const brandsTableModal = document.getElementById('brandsTableModal');
+    const brandsTableModalClose = document.getElementById('brandsTableModalClose');
+    const brandsTableModalCloseBtn = document.getElementById('brandsTableModalCloseBtn');
+    const brandsTableModalBody = document.getElementById('brandsTableModalBody');
+
+    function renderBrandsTableModal() {
+        if (!brandsTableModalBody) return;
+        brandsTableModalBody.innerHTML = '';
+        
+        brandsData.forEach(brand => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #f1f5f9';
+            tr.style.transition = 'background-color 0.2s';
+            
+            const monthlyAmountVal = brand.muhasebe?.monthlyAmount || brand.payment || '—';
+            const currencyVal = brand.muhasebe?.currency || brand.currency || 'TL';
+            const formattedBudget = monthlyAmountVal !== '—' ? formatMoney(monthlyAmountVal, currencyVal) : '—';
+            
+            const rawMeetingDate = brand.meetingDate || '';
+            let formattedMeeting = '—';
+            if (rawMeetingDate) {
+                const d = new Date(rawMeetingDate);
+                formattedMeeting = d.toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            }
+            
+            const connCount = getBrandConnectedCount(brand);
+            
+            tr.innerHTML = `
+                <td style="padding: 12px 8px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background-color: #cbd5e1; display: flex; align-items: center; justify-content: center; color: #ffffff;">
+                        ${brand.logo ? `<img src="${brand.logo}" style="width: 100%; height: 100%; object-fit: cover;" />` : `<i class="fa-solid fa-user-tie" style="font-size: 16px;"></i>`}
+                    </div>
+                </td>
+                <td style="padding: 12px 8px; font-weight: 700; color: #1e293b;">${brand.name}</td>
+                <td style="padding: 12px 8px; color: #64748b; font-weight: 600;">${brand.industry || 'Genel'}</td>
+                <td style="padding: 12px 8px; color: #0f172a; font-weight: 700;">${formattedBudget}</td>
+                <td style="padding: 12px 8px; color: #64748b; font-weight: 600;">${formattedMeeting}</td>
+                <td style="padding: 12px 8px; text-align: right;">
+                    <button class="btn btn-outline-all btn-select-table-brand" data-brand-id="${brand.id}" style="font-size: 11.5px; padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1.5px solid #6366f1; background: transparent; color: #6366f1; font-weight: 700; transition: all 0.2s;">Seç</button>
+                </td>
+            `;
+            
+            // Hover effect
+            tr.addEventListener('mouseenter', () => tr.style.backgroundColor = '#f8fafc');
+            tr.addEventListener('mouseleave', () => tr.style.backgroundColor = 'transparent');
+            
+            // Select button handler
+            const selectBtn = tr.querySelector('.btn-select-table-brand');
+            if (selectBtn) {
+                selectBtn.addEventListener('click', () => {
+                    const sel = document.getElementById('brandSelect');
+                    if (sel) {
+                        sel.value = brand.id;
+                        sel.dispatchEvent(new Event('change'));
+                    }
+                    if (brandsTableModal) brandsTableModal.classList.add('hidden');
+                    showToast(`Marka seçildi: ${brand.name}`);
+                });
+            }
+            
+            brandsTableModalBody.appendChild(tr);
+        });
+    }
+
+    if (btnViewAsTable && brandsTableModal) {
+        btnViewAsTable.addEventListener('click', () => {
+            renderBrandsTableModal();
+            brandsTableModal.classList.remove('hidden');
+        });
+    }
+
+    const closeBrandsTableModal = () => {
+        if (brandsTableModal) brandsTableModal.classList.add('hidden');
+    };
+
+    if (brandsTableModalClose) brandsTableModalClose.addEventListener('click', closeBrandsTableModal);
+    if (brandsTableModalCloseBtn) brandsTableModalCloseBtn.addEventListener('click', closeBrandsTableModal);
+    if (brandsTableModal) {
+        brandsTableModal.addEventListener('click', (e) => {
+            if (e.target === brandsTableModal) closeBrandsTableModal();
+        });
+    }
+
+    // Rebuild brand dropdown from brands array
+    function rebuildBrandDropdown(brands, selectedId) {
+        const sel = document.getElementById('brandSelect');
+        if (!sel) return;
+        const currentVal = selectedId || sel.value;
+        sel.innerHTML = '';
+        brands.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b.id;
+            opt.textContent = b.name;
+            sel.appendChild(opt);
+        });
+        if (currentVal) sel.value = currentVal;
+
+        if (typeof renderCustomBrandDropdown === 'function') {
+            renderCustomBrandDropdown();
+        }
+    }
+
+    // Populate brand config form from brand object
+    function populateBrandForm(brand) {
+        if (!brand) return;
+
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val || '';
+        };
+        const setChecked = (id, checked) => {
+            const el = document.getElementById(id);
+            if (el) el.checked = !!checked;
+        };
+
+        setVal('settingBrandNameInput', brand.name);
+        setVal('settingBrandPaymentInput', brand.payment);
+        setVal('settingBrandRequirementsInput', brand.requirements);
+        setVal('settingBrandMeetingDateInput', brand.meetingDate);
+        setVal('settingBrandZoomLinkInput', brand.zoomLink);
+
+        // Currency
+        const currSel = document.getElementById('settingBrandCurrencySelect');
+        if (currSel) currSel.value = brand.currency || 'TL';
+
+        // Logo
+        const logoImg = document.getElementById('brandAvatarPreview');
+        if (logoImg && brand.logo) logoImg.src = brand.logo;
+
+        // Brand title
+        const brandTitle = document.getElementById('settingsBrandTitle');
+        if (brandTitle) brandTitle.textContent = brand.name;
+
+        // Onboarding checkboxes
+        const ob = brand.onboarding || {};
+        setChecked('obStep1', ob.step1);
+        setChecked('obStep2', ob.step2);
+        setChecked('obStep3', ob.step3);
+        setChecked('obStep4', ob.step4);
+
+        // Zoom meeting widget
+        updateMeetingWidget(brand.meetingDate, brand.zoomLink);
+    }
+
+    // Update the green meeting widget
+    function updateMeetingWidget(meetingDate, zoomLink) {
+        const widget = document.getElementById('activeMeetingWidget');
+        const timeText = document.getElementById('activeMeetingTimeText');
+        const linkBtn = document.getElementById('activeMeetingLinkBtn');
+
+        if (!widget) return;
+
+        if (meetingDate && zoomLink) {
+            widget.style.display = 'flex';
+            widget.classList.remove('hidden');
+            const d = new Date(meetingDate);
+            if (timeText) timeText.textContent = d.toLocaleString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            if (linkBtn) linkBtn.href = zoomLink;
+        } else {
+            widget.style.display = 'none';
+            widget.classList.add('hidden');
+        }
+    }
+
+    // Initialize brand system
+    let brandsData = loadBrandsFromStorage();
+    rebuildBrandDropdown(brandsData, brandsData[0]?.id);
+    // NOTE: populateBrandForm is called below via populateBrandFormExtended after muhasebe/crm init
+
+    // Brand dropdown change → handled further below by populateBrandFormExtended
+    const brandDropdown = document.getElementById('brandSelect');
+
+    // Save Brand Settings button → persist all form values
+    const saveBrandBtn = document.getElementById('saveBrandSettingsBtn');
+    if (saveBrandBtn) {
+        // Override existing simple handler with full data save
+        saveBrandBtn.addEventListener('click', () => {
+            const selectedId = brandDropdown ? brandDropdown.value : 'global';
+            const brandIndex = brandsData.findIndex(b => b.id === selectedId);
+            if (brandIndex === -1) return;
+
+            const getVal = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+            const getChecked = id => { const el = document.getElementById(id); return el ? el.checked : false; };
+
+            const newName = getVal('settingBrandNameInput') || brandsData[brandIndex].name;
+
+            brandsData[brandIndex] = {
+                ...brandsData[brandIndex],
+                name: newName,
+                payment: getVal('settingBrandPaymentInput'),
+                currency: (document.getElementById('settingBrandCurrencySelect') || {}).value || 'TL',
+                requirements: getVal('settingBrandRequirementsInput'),
+                meetingDate: getVal('settingBrandMeetingDateInput'),
+                zoomLink: getVal('settingBrandZoomLinkInput'),
+                logo: (document.getElementById('brandAvatarPreview') || {}).src || brandsData[brandIndex].logo,
+                onboarding: {
+                    step1: getChecked('obStep1'),
+                    step2: getChecked('obStep2'),
+                    step3: getChecked('obStep3'),
+                    step4: getChecked('obStep4')
+                }
+            };
+
+            saveBrandsToStorage(brandsData);
+            rebuildBrandDropdown(brandsData, selectedId);
+
+            // Update meeting widget after save
+            updateMeetingWidget(brandsData[brandIndex].meetingDate, brandsData[brandIndex].zoomLink);
+
+            // Update preview handles
+            const formatHandle = newName.toLowerCase().replace(/\s+/g, '_');
+            const igHeader = document.querySelector('#instagramMockup .post-meta h4');
+            if (igHeader) igHeader.innerHTML = `${formatHandle} <i class="fa-solid fa-circle-check text-li"></i>`;
+            const fbHeader = document.querySelector('#facebookMockup .post-meta h4');
+            if (fbHeader) fbHeader.innerHTML = `${newName} <i class="fa-solid fa-circle-check text-li"></i>`;
+            const ytHeader = document.querySelector('#youtubeMockup .yt-channel-info h5');
+            if (ytHeader) ytHeader.textContent = newName;
+            const bioTitle = document.getElementById('bioMockupTitle');
+            if (bioTitle) bioTitle.textContent = `@${formatHandle}`;
+            const settingsBrandTitle = document.getElementById('settingsBrandTitle');
+            if (settingsBrandTitle) settingsBrandTitle.textContent = newName;
+
+            showToast('✅ Marka ayarları başarıyla kaydedildi.');
+        });
+    }
+
+    // Meeting date/link inputs → live widget update
+    const meetingDateInput = document.getElementById('settingBrandMeetingDateInput');
+    const zoomLinkInput = document.getElementById('settingBrandZoomLinkInput');
+    if (meetingDateInput) meetingDateInput.addEventListener('change', () => updateMeetingWidget(meetingDateInput.value, zoomLinkInput ? zoomLinkInput.value : ''));
+    if (zoomLinkInput) zoomLinkInput.addEventListener('input', () => updateMeetingWidget(meetingDateInput ? meetingDateInput.value : '', zoomLinkInput.value));
+
+    // ---- LOGO UPLOAD SYSTEM (File from computer + URL) ----
+
+    // Helper: set logo image on preview
+    function setLogoPreview(src) {
+        const logoImg = document.getElementById('brandAvatarPreview');
+        if (logoImg) logoImg.src = src;
+        showToast('Logo güncellendi. Kaydetmek için "Değişiklikleri kaydet" butonuna basın.');
+    }
+
+    // "Bilgisayardan Yükle" button → trigger hidden file input
+    const selectAvatarFileBtn = document.getElementById('selectAvatarFileBtn');
+    const brandLogoFileInput = document.getElementById('brandLogoFileInput');
+
+    if (selectAvatarFileBtn && brandLogoFileInput) {
+        selectAvatarFileBtn.addEventListener('click', () => {
+            brandLogoFileInput.click();
+        });
+        brandLogoFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('Lütfen geçerli bir görsel dosyası seçin.', true);
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                setLogoPreview(ev.target.result);
+            };
+            reader.readAsDataURL(file);
+            // Reset input so same file can be re-selected
+            brandLogoFileInput.value = '';
+        });
+    }
+
+    // Clicking on the avatar preview circle also triggers file picker
+    const avatarPreviewWrapper = document.getElementById('avatarPreviewWrapper');
+    if (avatarPreviewWrapper && brandLogoFileInput) {
+        avatarPreviewWrapper.addEventListener('click', () => brandLogoFileInput.click());
+        // Hover effect
+        avatarPreviewWrapper.addEventListener('mouseenter', () => {
+            const overlay = avatarPreviewWrapper.querySelector('.avatar-hover-overlay');
+            const icon = avatarPreviewWrapper.querySelector('.fa-camera');
+            if (overlay) overlay.style.background = 'rgba(0,0,0,0.45)';
+            if (icon) icon.style.opacity = '1';
+        });
+        avatarPreviewWrapper.addEventListener('mouseleave', () => {
+            const overlay = avatarPreviewWrapper.querySelector('.avatar-hover-overlay');
+            const icon = avatarPreviewWrapper.querySelector('.fa-camera');
+            if (overlay) overlay.style.background = 'rgba(0,0,0,0)';
+            if (icon) icon.style.opacity = '0';
+        });
+    }
+
+    // "URL ile Ekle" button → prompt for URL
+    const selectAvatarBtn = document.getElementById('selectAvatarBtn');
+    if (selectAvatarBtn) {
+        selectAvatarBtn.addEventListener('click', () => {
+            const url = prompt('Logo görsel URL\'sini girin (Unsplash, CDN veya doğrudan link):');
+            if (url && url.trim()) {
+                setLogoPreview(url.trim());
+            }
+        });
+    }
+
+    // ---- ADD BRAND MODAL ----
+    const addBrandModal = document.getElementById('addBrandModal');
+
+    function openAddBrandModal() {
+        if (!addBrandModal) return;
+        // Reset form
+        const form = document.getElementById('addBrandForm');
+        if (form) form.reset();
+        const preview = document.getElementById('newBrandLogoPreview');
+        const urlInput = document.getElementById('newBrandLogoUrl');
+        const defaultLogo = 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=150&q=80';
+        if (preview) preview.src = defaultLogo;
+        if (urlInput) urlInput.value = defaultLogo;
+
+        addBrandModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeAddBrandModal() {
+        if (!addBrandModal) return;
+        addBrandModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    // Open modal triggers
+    const sandAddBrand = document.getElementById('sandAddBrand');
+    if (sandAddBrand) {
+        sandAddBrand.addEventListener('click', () => {
+            // Close sandwich menu first
+            const sandwichDropdown = document.getElementById('sandwichDropdown');
+            if (sandwichDropdown) sandwichDropdown.classList.add('hidden');
+            openAddBrandModal();
+        });
+    }
+
+    // Close modal triggers
+    const addBrandModalClose = document.getElementById('addBrandModalClose');
+    const addBrandModalCancelBtn = document.getElementById('addBrandModalCancelBtn');
+    if (addBrandModalClose) addBrandModalClose.addEventListener('click', closeAddBrandModal);
+    if (addBrandModalCancelBtn) addBrandModalCancelBtn.addEventListener('click', closeAddBrandModal);
+
+    // Close on backdrop click
+    if (addBrandModal) {
+        addBrandModal.addEventListener('click', (e) => {
+            if (e.target === addBrandModal) closeAddBrandModal();
+        });
+    }
+
+    // Modal logo: file upload support
+    const newBrandLogoFileInput = document.getElementById('newBrandLogoFileInput');
+    const newBrandLogoFileBtn = document.getElementById('newBrandLogoFileBtn');
+    const newBrandLogoWrapper = document.getElementById('newBrandLogoWrapper');
+
+    function setModalLogoPreview(src) {
+        const preview = document.getElementById('newBrandLogoPreview');
+        const urlInput = document.getElementById('newBrandLogoUrl');
+        if (preview) preview.src = src;
+        if (urlInput) urlInput.value = src;
+    }
+
+    if (newBrandLogoFileBtn && newBrandLogoFileInput) {
+        newBrandLogoFileBtn.addEventListener('click', () => newBrandLogoFileInput.click());
+        newBrandLogoFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => setModalLogoPreview(ev.target.result);
+            reader.readAsDataURL(file);
+            newBrandLogoFileInput.value = '';
+        });
+    }
+
+    // Clicking the logo preview circle also picks a file
+    if (newBrandLogoWrapper && newBrandLogoFileInput) {
+        newBrandLogoWrapper.addEventListener('click', () => newBrandLogoFileInput.click());
+    }
+
+    // "URL Gir" button (modal)
+    const newBrandLogoBtn = document.getElementById('newBrandLogoBtn');
+    if (newBrandLogoBtn) {
+        newBrandLogoBtn.addEventListener('click', () => {
+            const url = prompt('Logo URL\'si girin (Unsplash, CDN veya doğrudan görsel linki):');
+            if (url && url.trim()) setModalLogoPreview(url.trim());
+        });
+    }
+
+    // Add Brand Form Submit
+    const addBrandForm = document.getElementById('addBrandForm');
+    if (addBrandForm) {
+        addBrandForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const nameInput = document.getElementById('newBrandName');
+            const name = nameInput ? nameInput.value.trim() : '';
+            if (!name) {
+                showToast('Lütfen bir marka adı girin.', true);
+                return;
+            }
+
+            const getVal = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+
+            const newBrand = {
+                id: generateBrandId(),
+                name: name,
+                logo: getVal('newBrandLogoUrl') || 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=150&q=80',
+                industry: getVal('newBrandIndustry'),
+                payment: getVal('newBrandPayment'),
+                currency: (document.getElementById('newBrandCurrency') || {}).value || 'TL',
+                requirements: getVal('newBrandRequirements'),
+                meetingDate: getVal('newBrandMeetingDate'),
+                zoomLink: getVal('newBrandZoomLink'),
+                onboarding: { step1: false, step2: false, step3: false, step4: false },
+                muhasebe: { monthlyAmount: getVal('newBrandPayment'), currency: (document.getElementById('newBrandCurrency') || {}).value || 'TL', paymentDay: 1, entries: [] },
+                crm: { contactName: '', contactTitle: '', phone: '', email: '', whatsapp: '', address: '', notes: [] }
+            };
+
+            brandsData.push(newBrand);
+            saveBrandsToStorage(brandsData);
+            rebuildBrandDropdown(brandsData, newBrand.id);
+
+            // Switch to new brand
+            const sel = document.getElementById('brandSelect');
+            if (sel) sel.value = newBrand.id;
+            populateBrandForm(newBrand);
+
+            closeAddBrandModal();
+            showToast(`✅ "${name}" markası başarıyla eklendi! Marka Ayarları sekmesinden düzenleyebilirsiniz.`);
+        });
+    }
+
+    // ---- HEADER "MARKA EKLE" BUTTON FIX ----
+    const btnAddBrandHeader = document.getElementById('btnAddBrandHeader');
+    if (btnAddBrandHeader) {
+        btnAddBrandHeader.addEventListener('click', openAddBrandModal);
+    }
+    // Also wire .btn-add-brand class (catches any others)
+    document.querySelectorAll('.btn-add-brand').forEach(btn => {
+        if (btn.id !== 'btnAddBrandHeader') {
+            btn.addEventListener('click', openAddBrandModal);
+        }
+    });
+
+    // ---- GO TO MUHASEBE TAB shortcuts ----
+    document.querySelectorAll('.goto-muhasebe-tab').forEach(el => {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            const muhBtn = document.querySelector('[data-settings-tab="muhasebe-config"]');
+            if (muhBtn) muhBtn.click();
+        });
+    });
+
+    // ---- CRM NOTE ADD BUTTON shortcut ----
+    const addCrmNoteBtn = document.getElementById('addCrmNoteBtn');
+    if (addCrmNoteBtn) {
+        addCrmNoteBtn.addEventListener('click', () => {
+            const inp = document.getElementById('crmNoteText');
+            if (inp) inp.focus();
+        });
+    }
+
+    // ============================================================
+    // MUHASEBE (ACCOUNTING) SYSTEM
+    // ============================================================
+
+    const CURRENCY_SYMBOLS = { TL: '₺', USD: '$', EUR: '€', GBP: '£' };
+
+    function formatMoney(amount, currency) {
+        const sym = CURRENCY_SYMBOLS[currency] || currency;
+        return `${sym}${Number(amount).toLocaleString('tr-TR')}`;
+    }
+
+    function getCurrentBrandId() {
+        const sel = document.getElementById('brandSelect');
+        return sel ? sel.value : 'global';
+    }
+
+    function getCurrentBrand() {
+        return brandsData.find(b => b.id === getCurrentBrandId());
+    }
+
+    function renderMuhasebeSummary(brand) {
+        if (!brand) return;
+        const m = brand.muhasebe || { monthlyAmount: brand.payment || 0, currency: brand.currency || 'TL', paymentDay: 1, entries: [] };
+        const currency = m.currency || brand.currency || 'TL';
+
+        // Set form values
+        const monthlyInput = document.getElementById('muhMonthlyInput');
+        const currSel = document.getElementById('muhCurrencySelect');
+        const dayInput = document.getElementById('muhPaymentDay');
+        if (monthlyInput) monthlyInput.value = m.monthlyAmount || brand.payment || '';
+        if (currSel) currSel.value = currency;
+        if (dayInput) dayInput.value = m.paymentDay || 1;
+
+        // Summary display
+        const muhMonthlyAmount = document.getElementById('muhMonthlyAmount');
+        if (muhMonthlyAmount) muhMonthlyAmount.textContent = m.monthlyAmount ? formatMoney(m.monthlyAmount, currency) : '—';
+
+        // Brand summary card
+        const summaryDisp = document.getElementById('brandPaymentSummaryDisplay');
+        if (summaryDisp) summaryDisp.textContent = m.monthlyAmount ? formatMoney(m.monthlyAmount, currency) : '—';
+
+        const entries = m.entries || [];
+        const paid = entries.filter(e => e.status === 'odendi');
+        const pending = entries.filter(e => e.status !== 'odendi');
+        const paidTotal = paid.reduce((s, e) => s + Number(e.amount || 0), 0);
+        const pendingTotal = pending.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+        const muhCollectedAmount = document.getElementById('muhCollectedAmount');
+        const muhCollectedCount = document.getElementById('muhCollectedCount');
+        const muhPendingAmount = document.getElementById('muhPendingAmount');
+        const muhPendingCount = document.getElementById('muhPendingCount');
+        if (muhCollectedAmount) muhCollectedAmount.textContent = paidTotal ? formatMoney(paidTotal, currency) : '—';
+        if (muhCollectedCount) muhCollectedCount.textContent = `${paid.length} ödeme`;
+        if (muhPendingAmount) muhPendingAmount.textContent = pendingTotal ? formatMoney(pendingTotal, currency) : '—';
+        if (muhPendingCount) muhPendingCount.textContent = `${pending.length} ödeme`;
+
+        renderPaymentHistory(entries, currency);
+    }
+
+    function renderPaymentHistory(entries, currency) {
+        const container = document.getElementById('paymentHistoryList');
+        if (!container) return;
+        if (!entries || entries.length === 0) {
+            container.innerHTML = `<div style="padding:32px; text-align:center; color:#94a3b8;">
+                <i class="fa-solid fa-receipt" style="font-size:32px; margin-bottom:10px; display:block; opacity:0.4;"></i>
+                <p style="font-size:12px; font-weight:600; margin:0;">Henüz ödeme kaydı yok. "Ödeme Kaydı Ekle" butonuyla ekleyin.</p>
+            </div>`;
+            return;
+        }
+        const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+        container.innerHTML = sorted.map((e, i) => {
+            const statusMap = {
+                odendi: { label: 'Ödendi', bg: '#dcfce7', color: '#166534', icon: 'fa-check-circle' },
+                bekliyor: { label: 'Bekliyor', bg: '#fef3c7', color: '#92400e', icon: 'fa-clock' },
+                gecikti: { label: 'Gecikmiş', bg: '#fee2e2', color: '#991b1b', icon: 'fa-exclamation-circle' }
+            };
+            const st = statusMap[e.status] || statusMap['bekliyor'];
+            const dateStr = e.date ? new Date(e.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+            return `<div style="display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid #f1f5f9; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+                <div style="flex:1;">
+                    <div style="font-size:12.5px; font-weight:700; color:#1e293b;">${e.description || 'Aylık Ödeme'}</div>
+                    <div style="font-size:11px; color:#94a3b8; font-weight:600; margin-top:2px;">${dateStr}</div>
+                </div>
+                <div style="font-size:14px; font-weight:800; color:#1e293b;">${formatMoney(e.amount, currency)}</div>
+                <div style="background:${st.bg}; color:${st.color}; font-size:10px; font-weight:800; padding:3px 10px; border-radius:20px; white-space:nowrap;">
+                    <i class="fa-solid ${st.icon}"></i> ${st.label}
+                </div>
+                <button onclick="deleteMuhasebeEntry(${i})" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:13px; padding:4px;" title="Sil"><i class="fa-solid fa-trash-can"></i></button>
+            </div>`;
+        }).join('');
+    }
+
+    window.deleteMuhasebeEntry = function(index) {
+        const brand = getCurrentBrand();
+        if (!brand || !brand.muhasebe) return;
+        const sorted = [...brand.muhasebe.entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const entryToDelete = sorted[index];
+        brand.muhasebe.entries = brand.muhasebe.entries.filter(e => e !== entryToDelete);
+        saveBrandsToStorage(brandsData);
+        renderMuhasebeSummary(brand);
+        showToast('Ödeme kaydı silindi.');
+    };
+
+    // Save Muhasebe settings
+    const saveMuhasebeBtn = document.getElementById('saveMuhasebeBtn');
+    if (saveMuhasebeBtn) {
+        saveMuhasebeBtn.addEventListener('click', () => {
+            const brand = getCurrentBrand();
+            if (!brand) return;
+            if (!brand.muhasebe) brand.muhasebe = { entries: [] };
+            const monthlyInput = document.getElementById('muhMonthlyInput');
+            const currSel = document.getElementById('muhCurrencySelect');
+            const dayInput = document.getElementById('muhPaymentDay');
+            brand.muhasebe.monthlyAmount = monthlyInput ? monthlyInput.value : '';
+            brand.muhasebe.currency = currSel ? currSel.value : 'TL';
+            brand.muhasebe.paymentDay = dayInput ? Number(dayInput.value) : 1;
+            // Sync to main brand fields too
+            brand.payment = brand.muhasebe.monthlyAmount;
+            brand.currency = brand.muhasebe.currency;
+            saveBrandsToStorage(brandsData);
+            renderMuhasebeSummary(brand);
+            showToast('💰 Muhasebe ayarları kaydedildi.');
+        });
+    }
+
+    // Add payment entry modal (inline prompt approach)
+    const addPaymentEntryBtn = document.getElementById('addPaymentEntryBtn');
+    if (addPaymentEntryBtn) {
+        addPaymentEntryBtn.addEventListener('click', () => {
+            const brand = getCurrentBrand();
+            if (!brand) return;
+            if (!brand.muhasebe) brand.muhasebe = { entries: [] };
+            const currency = brand.muhasebe.currency || brand.currency || 'TL';
+            const monthlyAmt = brand.muhasebe.monthlyAmount || brand.payment || '';
+
+            const amount = prompt(`Ödeme tutarı (${CURRENCY_SYMBOLS[currency] || currency}):`, monthlyAmt);
+            if (!amount || isNaN(Number(amount))) return;
+
+            const description = prompt('Açıklama:', 'Aylık Hizmet Bedeli') || 'Aylık Hizmet Bedeli';
+            const dateInput = prompt('Tarih (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+            const status = prompt('Durum (odendi / bekliyor / gecikti):', 'odendi') || 'odendi';
+
+            brand.muhasebe.entries.push({ amount: Number(amount), description, date: dateInput || new Date().toISOString().slice(0, 10), status });
+            saveBrandsToStorage(brandsData);
+            renderMuhasebeSummary(brand);
+            showToast('✅ Ödeme kaydı eklendi.');
+        });
+    }
+
+    // ============================================================
+    // CRM SYSTEM
+    // ============================================================
+
+    function renderCrmData(brand) {
+        if (!brand) return;
+        const crm = brand.crm || {};
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        setVal('crmContactName', crm.contactName);
+        setVal('crmContactTitle', crm.contactTitle);
+        setVal('crmPhone', crm.phone);
+        setVal('crmEmail', crm.email);
+        setVal('crmWhatsapp', crm.whatsapp);
+        setVal('crmAddress', crm.address);
+        renderCrmNotes(crm.notes || []);
+        updateCrmActionLinks(crm);
+    }
+
+    function updateCrmActionLinks(crm) {
+        const phoneBtn = document.getElementById('crmPhoneCallBtn');
+        const emailBtn = document.getElementById('crmEmailBtn');
+        const waBtn = document.getElementById('crmWhatsappBtn');
+        if (phoneBtn) phoneBtn.href = crm.phone ? `tel:${crm.phone}` : '#';
+        if (emailBtn) emailBtn.href = crm.email ? `mailto:${crm.email}` : '#';
+        if (waBtn) waBtn.href = crm.whatsapp ? `https://wa.me/${crm.whatsapp.replace(/\D/g, '')}` : '#';
+    }
+
+    function renderCrmNotes(notes) {
+        const container = document.getElementById('crmNotesList');
+        const countEl = document.getElementById('crmNoteCount');
+        if (!container) return;
+        if (countEl) countEl.textContent = `${notes.length} not`;
+        if (notes.length === 0) {
+            container.innerHTML = `<div style="padding:28px; text-align:center; color:#94a3b8;">
+                <i class="fa-solid fa-comments" style="font-size:28px; display:block; margin-bottom:8px; opacity:0.3;"></i>
+                <p style="font-size:12px; font-weight:600; margin:0;">Henüz iletişim notu yok.</p>
+            </div>`;
+            return;
+        }
+        const typeIcons = { telefon: '📞', email: '✉️', whatsapp: '💬', toplanti: '🎥', not: '📝', gorev: '✅' };
+        const typeBg = { telefon: '#dcfce7', email: '#ede9fe', whatsapp: '#dcfce7', toplanti: '#dbeafe', not: '#fef9c3', gorev: '#d1fae5' };
+        container.innerHTML = [...notes].reverse().map((n, revIdx) => {
+            const idx = notes.length - 1 - revIdx;
+            const icon = typeIcons[n.type] || '📝';
+            const bg = typeBg[n.type] || '#f1f5f9';
+            const dateStr = n.date ? new Date(n.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            return `<div style="display:flex; align-items:flex-start; gap:10px; padding:12px 16px; border-bottom:1px solid #f1f5f9;">
+                <div style="background:${bg}; border-radius:8px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;">${icon}</div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:12.5px; font-weight:600; color:#1e293b; word-break:break-word;">${n.text}</div>
+                    <div style="font-size:10.5px; color:#94a3b8; font-weight:600; margin-top:3px;">${dateStr}</div>
+                </div>
+                <button onclick="deleteCrmNote(${idx})" style="background:none; border:none; color:#cbd5e1; cursor:pointer; font-size:12px; padding:2px; flex-shrink:0;" title="Sil"><i class="fa-solid fa-xmark"></i></button>
+            </div>`;
+        }).join('');
+    }
+
+    window.deleteCrmNote = function(index) {
+        const brand = getCurrentBrand();
+        if (!brand || !brand.crm) return;
+        brand.crm.notes.splice(index, 1);
+        saveBrandsToStorage(brandsData);
+        renderCrmNotes(brand.crm.notes || []);
+        showToast('Not silindi.');
+    };
+
+    // Add CRM note submit
+    const addCrmNoteSubmitBtn = document.getElementById('addCrmNoteSubmitBtn');
+    if (addCrmNoteSubmitBtn) {
+        addCrmNoteSubmitBtn.addEventListener('click', () => {
+            const brand = getCurrentBrand();
+            if (!brand) return;
+            if (!brand.crm) brand.crm = { notes: [] };
+            const typeEl = document.getElementById('crmNoteType');
+            const textEl = document.getElementById('crmNoteText');
+            const text = textEl ? textEl.value.trim() : '';
+            if (!text) { showToast('Lütfen bir not girin.', true); return; }
+            brand.crm.notes.push({ type: typeEl ? typeEl.value : 'not', text, date: new Date().toISOString() });
+            saveBrandsToStorage(brandsData);
+            renderCrmNotes(brand.crm.notes);
+            if (textEl) textEl.value = '';
+            showToast('✅ İletişim notu eklendi.');
+        });
+    }
+
+    // Also allow Enter key in CRM note input
+    const crmNoteText = document.getElementById('crmNoteText');
+    if (crmNoteText) {
+        crmNoteText.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const btn = document.getElementById('addCrmNoteSubmitBtn');
+                if (btn) btn.click();
+            }
+        });
+    }
+
+    // Live CRM link updates
+    ['crmPhone', 'crmEmail', 'crmWhatsapp'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => {
+                const brand = getCurrentBrand();
+                if (!brand) return;
+                if (!brand.crm) brand.crm = {};
+                if (id === 'crmPhone') brand.crm.phone = el.value;
+                if (id === 'crmEmail') brand.crm.email = el.value;
+                if (id === 'crmWhatsapp') brand.crm.whatsapp = el.value;
+                updateCrmActionLinks(brand.crm);
+            });
+        }
+    });
+
+    // Save CRM data
+    const saveCrmBtn = document.getElementById('saveCrmBtn');
+    if (saveCrmBtn) {
+        saveCrmBtn.addEventListener('click', () => {
+            const brand = getCurrentBrand();
+            if (!brand) return;
+            if (!brand.crm) brand.crm = { notes: [] };
+            const getVal = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+            brand.crm.contactName = getVal('crmContactName');
+            brand.crm.contactTitle = getVal('crmContactTitle');
+            brand.crm.phone = getVal('crmPhone');
+            brand.crm.email = getVal('crmEmail');
+            brand.crm.whatsapp = getVal('crmWhatsapp');
+            brand.crm.address = getVal('crmAddress');
+            saveBrandsToStorage(brandsData);
+            updateCrmActionLinks(brand.crm);
+            showToast('👥 CRM bilgileri kaydedildi.');
+        });
+    }
+
+    // ---- EXTEND populateBrandForm to include Muhasebe + CRM ----
+    const _origPopulate = populateBrandForm;
+    function populateBrandFormExtended(brand) {
+        _origPopulate(brand);
+        renderMuhasebeSummary(brand);
+        renderCrmData(brand);
+        if (typeof renderCustomBrandDropdown === 'function') {
+            renderCustomBrandDropdown();
+        }
+        if (typeof syncConnectionStatus === 'function') {
+            syncConnectionStatus();
+        }
+    }
+
+    // Initialize muhasebe/crm if missing on any brand
+    brandsData.forEach(b => {
+        if (!b.muhasebe) b.muhasebe = { monthlyAmount: b.payment || '', currency: b.currency || 'TL', paymentDay: 1, entries: [] };
+        if (!b.crm) b.crm = { contactName: '', contactTitle: '', phone: '', email: '', whatsapp: '', address: '', notes: [] };
+    });
+    saveBrandsToStorage(brandsData);
+
+    // Wire single brand dropdown change listener
+    if (brandDropdown) {
+        brandDropdown.addEventListener('change', () => {
+            const brand = brandsData.find(b => b.id === brandDropdown.value);
+            if (brand) populateBrandFormExtended(brand);
+        });
+    }
+
+    // Initial render for active brand
+    populateBrandFormExtended(brandsData[0]);
+
 });
+
+
+
 
 
     
