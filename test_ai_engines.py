@@ -85,6 +85,45 @@ def run_mock_tests():
                 print(f"Returned Temporary URL: {img_url}")
             else:
                 print("[FAILURE] Image generation returned None.")
+
+    # 3. Mocking Reply Assist (google.generativeai) reply generation
+    print("\n--- Testing AIEngines.generate_reply_assist (MOCK) ---")
+    mock_gemini_reply = MagicMock()
+    mock_gemini_reply.text = "Selam! Siparişiniz yola çıktı, afiyet olsun!"
+
+    with patch('google.generativeai.GenerativeModel') as MockModel, \
+         patch('google.generativeai.configure') as mock_configure:
+        
+        mock_instance = MockModel.return_value
+        mock_instance.generate_content.return_value = mock_gemini_reply
+        
+        with patch.object(Config, 'GEMINI_API_KEY', 'mock_gemini_key'):
+            chat_context = "Müşteri: Merhaba, siparişim ne zaman kargoya verilir?\nDestek/Biz: Merhaba, siparişiniz hazırlanıyor."
+            reply = AIEngines.generate_reply_assist(
+                chat_context=chat_context,
+                platform="instagram",
+                brand_name="biAjans",
+                writing_style="Samimi ve emojili",
+                provider="gemini",
+                api_key="mock_gemini_key"
+            )
+            
+            print(f"Chat Context:\n{chat_context}")
+            if reply:
+                print("[SUCCESS] Reply generated successfully!")
+                print(f"Generated Reply: {reply}")
+            else:
+                print("[FAILURE] Reply generation returned None.")
+                
+            # Testing offline fallback
+            offline_reply = AIEngines.generate_reply_assist(
+                chat_context="Müşteri: kargo ücretsiz mi?",
+                platform="whatsapp",
+                brand_name="biAjans",
+                writing_style="Samimi ve emojili",
+                provider="default"
+            )
+            print(f"Offline Fallback Reply: {offline_reply}")
                 
     print("\n" + "="*50)
     print("MOCK TESTING COMPLETED")

@@ -9,3 +9,6 @@ __pycache__/
 
 # Log files
 *.log
+
+# SQLite database
+core/database.db

@@ -305,6 +305,7 @@
                     <a href="#" class="footer-item" id="sideRaporlama"><i class="fa-solid fa-file-export"></i> Raporlama <span class="tag-new">Yeni</span></a>
                     <a href="#" class="footer-item" id="sideHashtag"><i class="fa-solid fa-hashtag"></i> Hashtag Takipçisi</a>
                     <a href="#" class="footer-item" id="sideRakip"><i class="fa-solid fa-ranking-star"></i> Rakip Analizi</a>
+                    <a href="#" class="footer-item" id="sideKlavuz"><i class="fa-solid fa-circle-question"></i> Bağlantı Kılavuzu</a>
                     <a href="#" class="footer-item" id="hesapAyarlariSideBtn"><i class="fa-solid fa-circle-user"></i> Hesap ayarları</a>
                     <a href="#" class="footer-item" id="markaAyarlariSideBtn"><i class="fa-solid fa-sliders"></i> Marka ayarları</a>
                     <a href="#" class="footer-item" id="markaAyarlariBtn" style="display:none;"></a>
@@ -3779,6 +3780,377 @@
                                         <!-- Injected dynamically by JS -->
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Kullanıcı Yönetimi Section -->
+                    <section class="card settings-section hidden animate-slide-up" id="userMgmtSection" style="padding: 24px; text-align: left; background-color: #ffffff; border-radius: 8px; border: 1px solid var(--card-border); font-family: var(--font-body);">
+                        <div class="card-header" style="justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-users text-li" style="font-size: 20px; color: var(--primary);"></i>
+                                <h2 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0;">Kullanıcı Yönetimi (Ekip Üyeleri)</h2>
+                            </div>
+                            <button class="btn btn-primary" id="btnOpenAddUser" style="background-color: var(--primary); border: none; padding: 8px 16px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; color: white;">
+                                <i class="fa-solid fa-user-plus" style="margin-right: 4px;"></i> Yeni Kullanıcı Ekle
+                            </button>
+                        </div>
+
+                        <!-- Add User Panel (Hidden by default) -->
+                        <div id="addUserPanel" class="hidden animate-slide-up" style="background: #f8fafc; border: 1px solid var(--card-border); padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+                            <h3 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0 0 16px 0;">Yeni Kullanıcı Detayları</h3>
+                            <form id="addUserForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; align-items: flex-end;">
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Kullanıcı Adı</label>
+                                    <input type="text" id="newUsernameInput" class="form-control" placeholder="Örn: ahmet" required style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px; border-radius: 6px; outline: none; font-weight: 600;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">E-posta Adresi</label>
+                                    <input type="email" id="newEmailInput" class="form-control" placeholder="Örn: ahmet@biajans.com" required style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px; border-radius: 6px; outline: none; font-weight: 600;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Şifre</label>
+                                    <input type="password" id="newPasswordInput" class="form-control" placeholder="••••••••" required style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px; border-radius: 6px; outline: none; font-weight: 600;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Rol</label>
+                                    <select id="newRoleSelect" class="form-control" style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px; border-radius: 6px; outline: none; font-weight: 600; cursor: pointer;">
+                                        <option value="admin">Yönetici (Admin)</option>
+                                        <option value="member">Ekip Üyesi (Member)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="submit" class="btn btn-primary" style="flex: 1; background: var(--primary); border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; color: white;">Kaydet</button>
+                                    <button type="button" id="btnCancelAddUser" class="btn btn-outline" style="border: 1px solid #cbd5e1; background: transparent; color: #475569; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">Vazgeç</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Users List Table -->
+                        <div class="card" style="border: 1px solid var(--card-border); padding: 20px; background: #ffffff;">
+                            <h4 style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px 0;">Sistemdeki Ekip Üyeleri</h4>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12.5px;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid var(--card-border); color: var(--text-secondary); font-weight: bold;">
+                                            <th style="padding: 10px 12px;">ID</th>
+                                            <th style="padding: 10px 12px;">Kullanıcı Adı</th>
+                                            <th style="padding: 10px 12px;">E-posta</th>
+                                            <th style="padding: 10px 12px;">Rol</th>
+                                            <th style="padding: 10px 12px;">Kayıt Tarihi</th>
+                                            <th style="padding: 10px 12px; text-align: right;">İşlemler</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody">
+                                        <!-- Injected dynamically by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Görevlerim Section -->
+                    <section class="card settings-section hidden animate-slide-up" id="myTasksSection" style="padding: 24px; text-align: left; background-color: #ffffff; border-radius: 8px; border: 1px solid var(--card-border); font-family: var(--font-body);">
+                        <div class="card-header" style="justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-list-check text-li" style="font-size: 20px; color: var(--accent);"></i>
+                                <h2 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0;">Görevlerim & Onay Süreçleri (Kanban Panosu)</h2>
+                            </div>
+                            <button class="btn btn-primary" id="btnOpenAddTask" style="background-color: var(--accent); border: none; padding: 8px 16px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; color: white;">
+                                <i class="fa-solid fa-plus" style="margin-right: 4px;"></i> Yeni Görev Ekle
+                            </button>
+                        </div>
+
+                        <!-- Add Task Panel (Hidden by default) -->
+                        <div id="addTaskPanel" class="hidden animate-slide-up" style="background: #f8fafc; border: 1px solid var(--card-border); padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+                            <h3 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0 0 16px 0;">Yeni Görev Detayları</h3>
+                            <form id="addTaskForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: flex-end;">
+                                <div style="grid-column: span 2;">
+                                    <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Görev Başlığı</label>
+                                    <input type="text" id="taskTitleInput" class="form-control" placeholder="Örn: Facebook kapak fotoğrafını yenile" required style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px; border-radius: 6px; outline: none; font-weight: 600;">
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Açıklama</label>
+                                    <textarea id="taskDescInput" class="form-control" placeholder="Görevin detaylı açıklaması..." style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px; border-radius: 6px; outline: none; font-weight: 600; font-family: inherit; height: 60px; resize: none;"></textarea>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Atanan Üye</label>
+                                    <select id="taskAssigneeSelect" class="form-control" style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px; border-radius: 6px; outline: none; font-weight: 600; cursor: pointer;">
+                                        <!-- Dynamically populated by JS -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Teslim Tarihi</label>
+                                    <input type="date" id="taskDueDateInput" class="form-control" style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px; border-radius: 6px; outline: none; font-weight: 600;">
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="submit" class="btn btn-primary" style="flex: 1; background: var(--accent); border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; color: white;">Kaydet</button>
+                                    <button type="button" id="btnCancelAddTask" class="btn btn-outline" style="border: 1px solid #cbd5e1; background: transparent; color: #475569; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">Vazgeç</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Kanban Columns Grid -->
+                        <div class="kanban-board" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px;">
+                            <!-- Column 1: Yapılacak (Pending) -->
+                            <div class="kanban-col" id="col-pending" style="background: #f8fafc; border: 1px solid var(--card-border); border-radius: 8px; padding: 16px; min-height: 400px; display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                                    <span style="font-weight: 800; font-size: 13px; color: #64748b; display: flex; align-items: center; gap: 6px;"><i class="fa-regular fa-clock"></i> Yapılacak</span>
+                                    <span class="badge" id="count-pending" style="background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 20px; font-weight: bold; font-size: 11px;">0</span>
+                                </div>
+                                <div class="kanban-cards-container" id="container-pending" style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                                    <!-- Dynamic Cards -->
+                                </div>
+                            </div>
+
+                            <!-- Column 2: Yapılıyor (In Progress) -->
+                            <div class="kanban-col" id="col-progress" style="background: #f0f7ff; border: 1px solid #d0e7ff; border-radius: 8px; padding: 16px; min-height: 400px; display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 2px solid #c0e0ff; padding-bottom: 8px;">
+                                    <span style="font-weight: 800; font-size: 13px; color: #1e3a8a; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-spinner fa-spin"></i> Yapılıyor</span>
+                                    <span class="badge" id="count-progress" style="background: #d0e7ff; color: #1e3a8a; padding: 2px 8px; border-radius: 20px; font-weight: bold; font-size: 11px;">0</span>
+                                </div>
+                                <div class="kanban-cards-container" id="container-progress" style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                                    <!-- Dynamic Cards -->
+                                </div>
+                            </div>
+
+                            <!-- Column 3: Tamamlandı (Done) -->
+                            <div class="kanban-col" id="col-done" style="background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; padding: 16px; min-height: 400px; display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 2px solid #bbf7d0; padding-bottom: 8px;">
+                                    <span style="font-weight: 800; font-size: 13px; color: #14532d; display: flex; align-items: center; gap: 6px;"><i class="fa-regular fa-circle-check"></i> Tamamlandı</span>
+                                    <span class="badge" id="count-done" style="background: #dcfce7; color: #14532d; padding: 2px 8px; border-radius: 20px; font-weight: bold; font-size: 11px;">0</span>
+                                </div>
+                                <div class="kanban-cards-container" id="container-done" style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                                    <!-- Dynamic Cards -->
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Bağlantı Kılavuzu Section -->
+                    <section class="card settings-section hidden animate-slide-up" id="klavuzSection" style="padding: 24px; text-align: left; background-color: #ffffff; border-radius: 8px; border: 1px solid var(--card-border); font-family: var(--font-body);">
+                        <div class="card-header" style="justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-circle-question" style="font-size: 20px; color: var(--primary);"></i>
+                                <h2 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0;">Sosyal Medya & API Bağlantı Kılavuzu</h2>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 24px; min-height: 480px; flex-wrap: wrap;">
+                            <!-- Sol Menü: Platformlar -->
+                            <div style="flex: 1; min-width: 200px; max-width: 250px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid var(--card-border); padding-right: 16px;">
+                                <button class="guide-tab-btn active" data-guide-platform="meta" style="display: flex; align-items: center; gap: 10px; padding: 12px; border: none; background: var(--primary-glow); color: var(--primary); text-align: left; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                                    <i class="fa-brands fa-facebook" style="font-size: 16px;"></i> Meta (FB, IG, Threads)
+                                </button>
+                                <button class="guide-tab-btn" data-guide-platform="x" style="display: flex; align-items: center; gap: 10px; padding: 12px; border: none; background: transparent; color: var(--text-secondary); text-align: left; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                                    <i class="fa-brands fa-x-twitter" style="font-size: 16px;"></i> X (Twitter)
+                                </button>
+                                <button class="guide-tab-btn" data-guide-platform="linkedin" style="display: flex; align-items: center; gap: 10px; padding: 12px; border: none; background: transparent; color: var(--text-secondary); text-align: left; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                                    <i class="fa-brands fa-linkedin" style="font-size: 16px;"></i> LinkedIn
+                                </button>
+                                <button class="guide-tab-btn" data-guide-platform="google" style="display: flex; align-items: center; gap: 10px; padding: 12px; border: none; background: transparent; color: var(--text-secondary); text-align: left; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                                    <i class="fa-brands fa-google" style="font-size: 16px;"></i> Google (YouTube, Ads)
+                                </button>
+                                <button class="guide-tab-btn" data-guide-platform="tiktok" style="display: flex; align-items: center; gap: 10px; padding: 12px; border: none; background: transparent; color: var(--text-secondary); text-align: left; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                                    <i class="fa-brands fa-tiktok" style="font-size: 16px;"></i> TikTok
+                                </button>
+                                <button class="guide-tab-btn" data-guide-platform="bluesky" style="display: flex; align-items: center; gap: 10px; padding: 12px; border: none; background: transparent; color: var(--text-secondary); text-align: left; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                                    <i class="fa-solid fa-square-rss" style="font-size: 16px;"></i> Bluesky
+                                </button>
+                                <button class="guide-tab-btn" data-guide-platform="whatsapp" style="display: flex; align-items: center; gap: 10px; padding: 12px; border: none; background: transparent; color: var(--text-secondary); text-align: left; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                                    <i class="fa-brands fa-whatsapp" style="font-size: 16px;"></i> WhatsApp Business
+                                </button>
+                                <button class="guide-tab-btn" data-guide-platform="twitch" style="display: flex; align-items: center; gap: 10px; padding: 12px; border: none; background: transparent; color: var(--text-secondary); text-align: left; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                                    <i class="fa-brands fa-twitch" style="font-size: 16px;"></i> Twitch (Seğirme)
+                                </button>
+                                <button class="guide-tab-btn" data-guide-platform="web" style="display: flex; align-items: center; gap: 10px; padding: 12px; border: none; background: transparent; color: var(--text-secondary); text-align: left; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;">
+                                    <i class="fa-solid fa-wifi" style="font-size: 16px;"></i> Web & Blog (RSS)
+                                </button>
+                            </div>
+
+                            <!-- Sağ Panel: Kılavuz İçeriği -->
+                            <div style="flex: 2; min-width: 320px; display: flex; flex-direction: column; gap: 20px;">
+                                
+                                <!-- Meta Guide -->
+                                <div class="guide-content-panel" id="guide-content-meta" style="display: block;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: #1877f2; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-brands fa-facebook"></i> Meta (Facebook, Instagram & Threads) Kurulumu</h3>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">Meta uygulamalarınızı biAjans'a bağlamak için bir Meta Geliştirici Uygulaması oluşturmanız gerekir.</p>
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">Adım Adım Yapılandırma:</h4>
+                                    <ol style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding-left: 20px; margin-bottom: 20px;">
+                                        <li><a href="https://developers.facebook.com/" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: underline;">Meta for Developers</a> portalına gidip giriş yapın.</li>
+                                        <li><strong>Uygulamalarım</strong> -> <strong>Uygulama Oluştur</strong> butonuna tıklayın.</li>
+                                        <li>Uygulama türünü <strong>Diğer</strong> -> <strong>İşletme (Business)</strong> seçerek ilerleyin.</li>
+                                        <li>Uygulama ayarlarına gidin ve soldaki menüden <strong>Facebook Girişi (Facebook Login)</strong> ve <strong>Instagram Graph API</strong> ürünlerini ekleyin.</li>
+                                        <li>Facebook Girişi -> Ayarlar kısmına gelin ve <strong>Geçerli OAuth Yönlendirme URI'leri</strong> alanına aşağıdaki adresi girin:</li>
+                                    </ol>
+                                    
+                                    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-dark); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 20px; font-family: monospace; font-size: 12px;">
+                                        <span style="flex: 1; word-break: break-all; color: var(--text-primary);" id="metaRedirectUri">http://localhost:8080/auth/meta/callback</span>
+                                        <button type="button" class="btn-copy-uri" data-target-id="metaRedirectUri" style="padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; border: 1px solid var(--card-border); background: white; color: var(--text-secondary);"><i class="fa-regular fa-copy"></i> Kopyala</button>
+                                    </div>
+                                    
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">.env Dosyası Yapılandırması:</h4>
+                                    <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 8px;">Geliştirici portalından aldığınız uygulama anahtarlarını projenizin kök dizinindeki <code>.env</code> dosyasına yazın:</p>
+                                    <pre style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; margin: 0; line-height: 1.5; text-align: left;">META_APP_ID=buraya_app_id_değerini_yazın
+META_APP_SECRET=buraya_app_secret_değerini_yazın</pre>
+                                </div>
+
+                                <!-- X Guide -->
+                                <div class="guide-content-panel" id="guide-content-x" style="display: none;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: #0f1419; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-brands fa-x-twitter"></i> X (Twitter) API Kurulumu</h3>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">X / Twitter hesabınızdan otomatik paylaşım yapabilmek için OAuth 2.0 PKCE yetkilendirmesini kurmanız gerekmektedir.</p>
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">Adım Adım Yapılandırma:</h4>
+                                    <ol style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding-left: 20px; margin-bottom: 20px;">
+                                        <li><a href="https://developer.x.com/en/portal/dashboard" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: underline;">X Developer Portal</a>'a giriş yapın.</li>
+                                        <li>Bir <strong>Project</strong> oluşturun ve altına yeni bir <strong>App</strong> ekleyin.</li>
+                                        <li>Uygulama ayarlarında <strong>User Authentication Settings</strong> bölümünü düzenleyin:</li>
+                                        <li>App permissions alanını <strong>Read and Write and Direct Message</strong> olarak ayarlayın.</li>
+                                        <li>Type of App kısmını <strong>Web App, Automated App or Bot</strong> seçin.</li>
+                                        <li><strong>Callback URL / Redirect URI</strong> alanına şu adresi ekleyin:</li>
+                                    </ol>
+                                    
+                                    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-dark); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 20px; font-family: monospace; font-size: 12px;">
+                                        <span style="flex: 1; word-break: break-all; color: var(--text-primary);" id="xRedirectUri">http://localhost:8080/auth/x/callback</span>
+                                        <button type="button" class="btn-copy-uri" data-target-id="xRedirectUri" style="padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; border: 1px solid var(--card-border); background: white; color: var(--text-secondary);"><i class="fa-regular fa-copy"></i> Kopyala</button>
+                                    </div>
+                                    
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">.env Dosyası Yapılandırması:</h4>
+                                    <pre style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; margin: 0; line-height: 1.5; text-align: left;">X_CLIENT_ID=buraya_client_id_yazın
+X_CLIENT_SECRET=buraya_client_secret_yazın</pre>
+                                </div>
+
+                                <!-- LinkedIn Guide -->
+                                <div class="guide-content-panel" id="guide-content-linkedin" style="display: none;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: #0077b5; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-brands fa-linkedin"></i> LinkedIn API Kurulumu</h3>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">LinkedIn profilinizde veya şirket sayfanızda otomatik paylaşım yapabilmek için LinkedIn Developer portalından uygulama oluşturmanız gerekir.</p>
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">Adım Adım Yapılandırma:</h4>
+                                    <ol style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding-left: 20px; margin-bottom: 20px;">
+                                        <li><a href="https://www.linkedin.com/developers/" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: underline;">LinkedIn Developers</a> portalına gidin.</li>
+                                        <li><strong>Create App</strong> butonuna basın, uygulama adını ve şirket sayfanızı bağlayın.</li>
+                                        <li>Uygulamanızın <strong>Products</strong> sekmesine gidin ve <strong>Share on LinkedIn</strong> ile <strong>Sign In with LinkedIn</strong> ürünlerini etkinleştirin (Onaylanması birkaç dakika sürer).</li>
+                                        <li><strong>Auth</strong> sekmesine gidin ve <strong>Authorized Redirect URLs for your app</strong> alanına şu adresi ekleyin:</li>
+                                    </ol>
+                                    
+                                    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-dark); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 20px; font-family: monospace; font-size: 12px;">
+                                        <span style="flex: 1; word-break: break-all; color: var(--text-primary);" id="linkedinRedirectUri">http://localhost:8080/auth/linkedin/callback</span>
+                                        <button type="button" class="btn-copy-uri" data-target-id="linkedinRedirectUri" style="padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; border: 1px solid var(--card-border); background: white; color: var(--text-secondary);"><i class="fa-regular fa-copy"></i> Kopyala</button>
+                                    </div>
+                                    
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">.env Dosyası Yapılandırması:</h4>
+                                    <pre style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; margin: 0; line-height: 1.5; text-align: left;">LINKEDIN_CLIENT_ID=buraya_client_id_yazın
+LINKEDIN_CLIENT_SECRET=buraya_client_secret_yazın</pre>
+                                </div>
+
+                                <!-- Google Guide -->
+                                <div class="guide-content-panel" id="guide-content-google" style="display: none;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: #ea4335; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-brands fa-google"></i> Google & YouTube API Kurulumu</h3>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">YouTube video analizleri ve Google Ads metriklerini çekmek için Google Cloud Console üzerinden OAuth 2.0 yapılandırması yapılması gerekir.</p>
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">Adım Adım Yapılandırma:</h4>
+                                    <ol style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding-left: 20px; margin-bottom: 20px;">
+                                        <li><a href="https://console.cloud.google.com/" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: underline;">Google Cloud Console</a>'a gidin ve yeni bir proje oluşturun.</li>
+                                        <li>Sol menüden API & Hizmetler -> Kitaplık (Library) kısmına gidip <strong>YouTube Data API v3</strong> ve <strong>YouTube Analytics API</strong> hizmetlerini aratıp etkinleştirin.</li>
+                                        <li><strong>OAuth İzin Ekranı (OAuth Consent Screen)</strong> sekmesine gidin, Kullanıcı Türünü <strong>Harici (External)</strong> seçip formu doldurun.</li>
+                                        <li><strong>Kimlik Bilgileri (Credentials)</strong> sekmesine gelin, <strong>+ Kimlik Bilgisi Oluştur</strong> -> <strong>OAuth İstemci Kimliği (OAuth Client ID)</strong> seçin.</li>
+                                        <li>Uygulama türünü <strong>Web Uygulaması</strong> yapın ve <strong>Yetkilendirilmiş Yönlendirme URI'leri</strong> alanına aşağıdaki callback adresini ekleyin:</li>
+                                    </ol>
+                                    
+                                    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-dark); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 20px; font-family: monospace; font-size: 12px;">
+                                        <span style="flex: 1; word-break: break-all; color: var(--text-primary);" id="googleRedirectUri">http://localhost:8080/auth/google/callback</span>
+                                        <button type="button" class="btn-copy-uri" data-target-id="googleRedirectUri" style="padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; border: 1px solid var(--card-border); background: white; color: var(--text-secondary);"><i class="fa-regular fa-copy"></i> Kopyala</button>
+                                    </div>
+                                    
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">.env Dosyası Yapılandırması:</h4>
+                                    <pre style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; margin: 0; line-height: 1.5; text-align: left;">GOOGLE_CLIENT_ID=buraya_client_id_yazın
+GOOGLE_CLIENT_SECRET=buraya_client_secret_yazın</pre>
+                                </div>
+
+                                <!-- TikTok Guide -->
+                                <div class="guide-content-panel" id="guide-content-tiktok" style="display: none;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: #000000; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-brands fa-tiktok"></i> TikTok API Kurulumu</h3>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">TikTok üzerinden video ve istatistik analizi yapabilmek için TikTok Developer portalından yapılandırma yapılması gerekir.</p>
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">Adım Adım Yapılandırma:</h4>
+                                    <ol style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding-left: 20px; margin-bottom: 20px;">
+                                        <li><a href="https://developers.tiktok.com/" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: underline;">TikTok Developers</a> portalına gidin.</li>
+                                        <li>Uygulama oluşturarak <strong>Login Kit</strong> ve <strong>Share Kit</strong> ürünlerini ekleyin.</li>
+                                        <li>Redirect URI / Callback URL kısmına şu adresi ekleyin:</li>
+                                    </ol>
+                                    
+                                    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-dark); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 20px; font-family: monospace; font-size: 12px;">
+                                        <span style="flex: 1; word-break: break-all; color: var(--text-primary);" id="tiktokRedirectUri">http://localhost:8080/auth/tiktok/callback</span>
+                                        <button type="button" class="btn-copy-uri" data-target-id="tiktokRedirectUri" style="padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; border: 1px solid var(--card-border); background: white; color: var(--text-secondary);"><i class="fa-regular fa-copy"></i> Kopyala</button>
+                                    </div>
+                                    
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">.env Dosyası Yapılandırması:</h4>
+                                    <pre style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; margin: 0; line-height: 1.5; text-align: left;">TIKTOK_CLIENT_KEY=buraya_client_key_yazın
+TIKTOK_CLIENT_SECRET=buraya_client_secret_yazın</pre>
+                                </div>
+
+                                <!-- Bluesky Guide -->
+                                <div class="guide-content-panel" id="guide-content-bluesky" style="display: none;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: #0284c7; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-square-rss"></i> Bluesky Uygulama Şifresi Kurulumu</h3>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">Bluesky, OAuth gerektirmeden, kullanıcı hesapları üzerinden üretilen güvenli <strong>App Password (Uygulama Şifresi)</strong> ile entegre olabilmektedir.</p>
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">Adım Adım Yapılandırma:</h4>
+                                    <ol style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding-left: 20px; margin-bottom: 20px;">
+                                        <li>Bluesky uygulamanızı açın ve **Ayarlar (Settings)** -> **Uygulama Şifreleri (App Passwords)** bölümüne gidin.</li>
+                                        <li>**Uygulama Şifresi Oluştur (Create App Password)** düğmesine tıklayın, şifreye bir isim (örn: `biAjans`) verin.</li>
+                                        <li>Oluşturulan şifreyi kopyalayın (Bu şifre yalnızca bir kez gösterilir).</li>
+                                        <li>Arayüzdeki Bluesky Bağlan kutusuna veya <code>.env</code> dosyanıza şu bilgileri ekleyin:</li>
+                                    </ol>
+                                    
+                                    <pre style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; margin: 0; line-height: 1.5; text-align: left;">BLUESKY_IDENTIFIER=kullanici_adiniz.bsky.social
+BLUESKY_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx</pre>
+                                </div>
+
+                                <!-- WhatsApp Guide -->
+                                <div class="guide-content-panel" id="guide-content-whatsapp" style="display: none;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: #25d366; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-brands fa-whatsapp"></i> WhatsApp Business API Kurulumu</h3>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">WhatsApp Business Cloud API üzerinden anlık bildirimler göndermek ve mesajları yanıtlamak için WhatsApp entegrasyonu kurun.</p>
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">Adım Adım Yapılandırma:</h4>
+                                    <ol style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding-left: 20px; margin-bottom: 20px;">
+                                        <li><a href="https://developers.facebook.com/" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: underline;">Meta Geliştirici Portalı</a>'na gidin ve işletme uygulamanıza <strong>WhatsApp</strong> ürününü ekleyin.</li>
+                                        <li>WhatsApp Kurulum adımlarını izleyerek geçici veya kalıcı bir **Telefon Numarası ID (Phone Number ID)** ve **İşletme Hesabı ID (WhatsApp Business Account ID)** edinin.</li>
+                                        <li>Bir Sistem Kullanıcısı oluşturarak süresiz geçerli bir **Sistem Kullanıcısı Token'ı (Access Token)** oluşturun.</li>
+                                        <li>Bu bilgileri <code>.env</code> dosyanıza ekleyin:</li>
+                                    </ol>
+                                    
+                                    <pre style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; margin: 0; line-height: 1.5; text-align: left;">WHATSAPP_PHONE_NUMBER_ID=buraya_phone_id_yazın
+WHATSAPP_BUSINESS_ACCOUNT_ID=buraya_account_id_yazın
+WHATSAPP_ACCESS_TOKEN=EAAG...</pre>
+                                </div>
+
+                                <!-- Twitch Guide -->
+                                <div class="guide-content-panel" id="guide-content-twitch" style="display: none;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: #9146ff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-brands fa-twitch"></i> Twitch (Seğirme) API Kurulumu</h3>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">Twitch yayınlarınızı ve takipçi verilerinizi izlemek için Twitch API entegrasyonu kurun.</p>
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">Adım Adım Yapılandırma:</h4>
+                                    <ol style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding-left: 20px; margin-bottom: 20px;">
+                                        <li><a href="https://dev.twitch.tv/console" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: underline;">Twitch Developer Console</a>'a gidin ve giriş yapın.</li>
+                                        <li>**Register Your Application** kısmından yeni bir uygulama kaydedin.</li>
+                                        <li>Redirect URI alanına aşağıdaki callback adresini ekleyin:</li>
+                                    </ol>
+                                    
+                                    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-dark); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 20px; font-family: monospace; font-size: 12px;">
+                                        <span style="flex: 1; word-break: break-all; color: var(--text-primary);" id="twitchRedirectUri">http://localhost:8080/auth/twitch/callback</span>
+                                        <button type="button" class="btn-copy-uri" data-target-id="twitchRedirectUri" style="padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; border: 1px solid var(--card-border); background: white; color: var(--text-secondary);"><i class="fa-regular fa-copy"></i> Kopyala</button>
+                                    </div>
+                                    
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">.env Dosyası Yapılandırması:</h4>
+                                    <pre style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; margin: 0; line-height: 1.5; text-align: left;">TWITCH_CLIENT_ID=buraya_client_id_yazın
+TWITCH_CLIENT_SECRET=buraya_client_secret_yazın</pre>
+                                </div>
+
+                                <!-- Web & Blog Guide -->
+                                <div class="guide-content-panel" id="guide-content-web" style="display: none;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: #475569; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-wifi"></i> Web Sayfası & Blog RSS Bağlantısı</h3>
+                                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">Web sitenizdeki veya blogunuzdaki yeni yazıları otomatik takip edip sosyal medyada paylaşmak için RSS / XML beslemelerini bağlayın.</p>
+                                    <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-primary); margin-bottom: 8px;">Kurulum Detayları:</h4>
+                                    <ol style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; padding-left: 20px; margin-bottom: 20px;">
+                                        <li>Web sayfanızın RSS besleme adresini bulun (Örn: <code>https://siteniz.com/feed/</code> veya <code>https://blogunuz.com/rss.xml</code>).</li>
+                                        <li>Arayüzdeki Web / Blog bağlantı ayarlarına bu linki girin.</li>
+                                        <li>Sistem her 30 dakikada bir sitenizi tarayarak yeni içerikleri otomatik olarak "Planlama" kısmına taslak olarak ekleyecektir.</li>
+                                    </ol>
+                                </div>
+
                             </div>
                         </div>
                     </section>

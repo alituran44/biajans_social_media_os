@@ -1,32 +1,25 @@
 """
 token_store.py
 ==============
-Güvenli token saklama ve otomatik yenileme katmanı.
-
-Tokenlar 'core/tokens.json' dosyasına kaydedilir.
-Üretim ortamında bu dosyayı şifrelenmiş bir veritabanıyla değiştirin.
-
-Yapı:
-{
-  "meta": {
-    "access_token": "...",
-    "refresh_token": "...",
-    "expires_at": 1234567890,
-    "connected_at": 1234567890,
-    "profile": { "name": "...", "id": "..." }
-  },
-  "google": { ... },
-  ...
-}
+Güvenli token saklama ve otomatik yenileme katmanı (Veritabanı & AES-256 Şifreleme destekli).
+Tokenlar SQLite veritabanına şifrelenmiş (AES-256/Fernet) olarak yazılır.
 """
 
 import json
-import os
 import time
+import base64
+import hashlib
 from typing import Optional
+from cryptography.fernet import Fernet
 
-# Token dosyası yolu
-_TOKEN_FILE = os.path.join(os.path.dirname(__file__), "tokens.json")
+from config import Config
+from core.db_manager import get_connection
+
+# ─── Fernet Şifreleme Anahtarını Derleme ──────────────────────────────────────
+# Config.APP_SECRET_KEY değerini SHA256'dan geçirip base64 url-safe formatına çeviriyoruz.
+_KEY_HASH = hashlib.sha256(Config.APP_SECRET_KEY.encode("utf-8")).digest()
+_FERNET_KEY = base64.urlsafe_b64encode(_KEY_HASH)
+_cipher = Fernet(_FERNET_KEY)
 
 # Platform grupları: alt-platformlar birincil platform tokenını paylaşır
 _PLATFORM_GROUP = {
@@ -39,87 +32,76 @@ _PLATFORM_GROUP = {
     "google_ads":"google",
 }
 
-
 def _resolve_platform(platform: str) -> str:
     """Alt-platformu birincil platform anahtarına çöz."""
     return _PLATFORM_GROUP.get(platform.lower(), platform.lower())
 
+def _encrypt_data(data: dict) -> str:
+    """Dictionary verisini JSON string yapıp AES ile şifreler."""
+    json_str = json.dumps(data)
+    encrypted_bytes = _cipher.encrypt(json_str.encode("utf-8"))
+    return encrypted_bytes.decode("utf-8")
 
-def _load_all() -> dict:
-    """Token dosyasını oku. Dosya yoksa boş dict döner."""
-    if not os.path.exists(_TOKEN_FILE):
-        return {}
-    try:
-        with open(_TOKEN_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-def _save_all(data: dict) -> None:
-    """Token dosyasına yaz."""
-    os.makedirs(os.path.dirname(_TOKEN_FILE), exist_ok=True)
-    with open(_TOKEN_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-# Helper to load tokens specifically for a brand
-def _load_brand_tokens(brand_id: str = "global") -> dict:
-    all_tokens = _load_all()
-    # Check if there is flat format
-    is_old_format = False
-    for k, v in all_tokens.items():
-        if k in ["meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"] and isinstance(v, dict) and "access_token" in v:
-            is_old_format = True
-            break
-            
-    if is_old_format:
-        # Migrate flat format to global brand
-        all_tokens = {"global": all_tokens}
-        _save_all(all_tokens)
-        
-    return all_tokens.get(brand_id, {})
+def _decrypt_data(encrypted_str: str) -> dict:
+    """AES şifreli string'i çözer ve dict'e çevirir."""
+    decrypted_bytes = _cipher.decrypt(encrypted_str.encode("utf-8"))
+    return json.loads(decrypted_bytes.decode("utf-8"))
 
 # ─── Public API ──────────────────────────────────────────────────────────────
 
 def save_token(platform: str, token_data: dict, profile: Optional[dict] = None, brand_id: str = "global") -> None:
     """
-    Token'ı kaydet.
+    Token'ı şifreleyerek veritabanına kaydeder.
     token_data: { access_token, refresh_token (opsiyonel), expires_at, token_type }
     profile:    { name, id, avatar_url } gibi ek profil bilgisi
     """
     key = _resolve_platform(platform)
-    all_tokens = _load_all()
+    encrypted_token_data = _encrypt_data(token_data)
+    profile_json = json.dumps(profile or {})
+    connected_at = int(time.time())
     
-    is_old_format = False
-    for k, v in all_tokens.items():
-        if k in ["meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"] and isinstance(v, dict) and "access_token" in v:
-            is_old_format = True
-            break
-    if is_old_format:
-        all_tokens = {"global": all_tokens}
-        
-    if brand_id not in all_tokens:
-        all_tokens[brand_id] = {}
-        
-    all_tokens[brand_id][key] = {
-        **token_data,
-        "connected_at": int(time.time()),
-        "profile": profile or {},
-    }
-    _save_all(all_tokens)
-    print(f"[TokenStore] ✅ '{key}' token kaydedildi (Marka: {brand_id}).")
-
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT OR REPLACE INTO tokens (brand_id, platform, encrypted_token_data, profile_json, connected_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (brand_id, key, encrypted_token_data, profile_json, connected_at))
+        conn.commit()
+        print(f"[TokenStore] ✅ '{key}' token şifrelenerek veritabanına kaydedildi (Marka: {brand_id}).")
+    except Exception as e:
+        print(f"[TokenStore] ❌ Token kaydedilirken hata oluştu: {e}")
+    finally:
+        conn.close()
 
 def get_token(platform: str, brand_id: str = "global") -> Optional[dict]:
     """
-    Verilen platform için token kaydını döner.
-    Token bulunamazsa None döner.
+    Verilen platform için çözülmüş token kaydını döner.
     """
     key = _resolve_platform(platform)
-    brand_tokens = _load_brand_tokens(brand_id)
-    return brand_tokens.get(key)
-
+    conn = get_connection()
+    cursor = conn.cursor()
+    token = None
+    try:
+        cursor.execute("""
+            SELECT encrypted_token_data, profile_json, connected_at 
+            FROM tokens 
+            WHERE brand_id = ? AND platform = ?
+        """, (brand_id, key))
+        row = cursor.fetchone()
+        if row:
+            token_data = _decrypt_data(row["encrypted_token_data"])
+            profile_data = json.loads(row["profile_json"]) if row["profile_json"] else {}
+            token = {
+                **token_data,
+                "connected_at": row["connected_at"],
+                "profile": profile_data
+            }
+    except Exception as e:
+        print(f"[TokenStore] ❌ Token okunurken veya çözülürken hata oluştu: {e}")
+    finally:
+        conn.close()
+    return token
 
 def is_connected(platform: str, brand_id: str = "global") -> bool:
     """Platforma ait geçerli bir token var mı?"""
@@ -135,7 +117,6 @@ def is_connected(platform: str, brand_id: str = "global") -> bool:
         return False
     return True
 
-
 def is_expired(platform: str, brand_id: str = "global") -> bool:
     """Token mevcut ama süresi dolmuş mu?"""
     token = get_token(platform, brand_id)
@@ -144,47 +125,72 @@ def is_expired(platform: str, brand_id: str = "global") -> bool:
     expires_at = token.get("expires_at", 0)
     return expires_at > 0 and expires_at < time.time() + 30
 
-
 def revoke_token(platform: str, brand_id: str = "global") -> None:
     """Platformun token kaydını sil (bağlantıyı kes)."""
     key = _resolve_platform(platform)
-    all_tokens = _load_all()
-    
-    is_old_format = False
-    for k, v in all_tokens.items():
-        if k in ["meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"] and isinstance(v, dict) and "access_token" in v:
-            is_old_format = True
-            break
-    if is_old_format:
-        all_tokens = {"global": all_tokens}
-        
-    if brand_id in all_tokens and key in all_tokens[brand_id]:
-        del all_tokens[brand_id][key]
-        _save_all(all_tokens)
-        print(f"[TokenStore] 🔌 '{key}' bağlantısı kesildi (Marka: {brand_id}).")
-
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            DELETE FROM tokens 
+            WHERE brand_id = ? AND platform = ?
+        """, (brand_id, key))
+        conn.commit()
+        print(f"[TokenStore] 🔌 '{key}' bağlantısı veritabanından kesildi (Marka: {brand_id}).")
+    except Exception as e:
+        print(f"[TokenStore] ❌ Bağlantı kesilirken hata oluştu: {e}")
+    finally:
+        conn.close()
 
 def get_all_connection_status(brand_id: str = "global") -> dict:
     """
     Tüm platformların bağlantı durumunu döner.
-    Frontend'in /api/connections/status endpoint'i için kullanılır.
     """
-    brand_tokens = _load_brand_tokens(brand_id)
     platforms = [
         "meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"
     ]
     status = {}
+    
+    # Varsayılan boş durumları doldur
     for p in platforms:
-        token = brand_tokens.get(p, {})
-        access = token.get("access_token", "")
-        expires_at = token.get("expires_at", 0)
-        connected = bool(access) and (expires_at == 0 or expires_at > time.time() + 30)
         status[p] = {
-            "connected":    connected,
-            "expires_at":   expires_at,
-            "connected_at": token.get("connected_at", 0),
-            "profile":      token.get("profile", {}),
+            "connected":    False,
+            "expires_at":   0,
+            "connected_at": 0,
+            "profile":      {},
         }
+        
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT platform, encrypted_token_data, profile_json, connected_at 
+            FROM tokens 
+            WHERE brand_id = ?
+        """, (brand_id,))
+        rows = cursor.fetchall()
+        for row in rows:
+            plat = row["platform"]
+            if plat in status:
+                try:
+                    token_data = _decrypt_data(row["encrypted_token_data"])
+                    profile_data = json.loads(row["profile_json"]) if row["profile_json"] else {}
+                    access = token_data.get("access_token", "")
+                    expires_at = token_data.get("expires_at", 0)
+                    connected = bool(access) and (expires_at == 0 or expires_at > time.time() + 30)
+                    
+                    status[plat] = {
+                        "connected":    connected,
+                        "expires_at":   expires_at,
+                        "connected_at": row["connected_at"],
+                        "profile":      profile_data,
+                    }
+                except Exception as e:
+                    print(f"[TokenStore] Status çözülürken hata: {e}")
+    except Exception as e:
+        print(f"[TokenStore] Bağlantı durumları çekilirken hata: {e}")
+    finally:
+        conn.close()
 
     # Alt-platformlar üst platformun durumunu miras alır
     for sub, parent in _PLATFORM_GROUP.items():
@@ -192,11 +198,9 @@ def get_all_connection_status(brand_id: str = "global") -> dict:
 
     return status
 
-
 def try_refresh_token(platform: str, brand_id: str = "global") -> bool:
     """
     Eğer token süresi dolmuşsa yenilemeyi dene.
-    Başarılıysa True, başarısız veya refresh_token yoksa False döner.
     """
     key = _resolve_platform(platform)
     token = get_token(key, brand_id)
@@ -207,7 +211,7 @@ def try_refresh_token(platform: str, brand_id: str = "global") -> bool:
     if not refresh_tok:
         return False
 
-    # Lazy import — döngüsel import önleme
+    # Döngüsel import önleme
     from core.oauth_manager import GoogleOAuth, XOAuth
 
     result: dict = {}
@@ -216,7 +220,6 @@ def try_refresh_token(platform: str, brand_id: str = "global") -> bool:
     elif key == "x":
         result = XOAuth.refresh_token(refresh_tok)
     else:
-        # Meta, LinkedIn, TikTok, Pinterest refresh flow eklenebilir
         return False
 
     if "access_token" in result:
@@ -225,19 +228,7 @@ def try_refresh_token(platform: str, brand_id: str = "global") -> bool:
         if "refresh_token" in result:
             token["refresh_token"] = result["refresh_token"]
         
-        all_tokens = _load_all()
-        is_old_format = False
-        for k, v in all_tokens.items():
-            if k in ["meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"] and isinstance(v, dict) and "access_token" in v:
-                is_old_format = True
-                break
-        if is_old_format:
-            all_tokens = {"global": all_tokens}
-            
-        if brand_id not in all_tokens:
-            all_tokens[brand_id] = {}
-        all_tokens[brand_id][key] = token
-        _save_all(all_tokens)
+        save_token(key, token, profile=token.get("profile"), brand_id=brand_id)
         print(f"[TokenStore] 🔄 '{key}' token başarıyla yenilendi (Marka: {brand_id}).")
         return True
 

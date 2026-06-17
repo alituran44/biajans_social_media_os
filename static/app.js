@@ -216,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ai_provider: activeAiProvider,
                     ai_api_key: aiApiKey,
                     ai_model: aiModel,
+                    ai_instructions: window.aiInstructions,
                     // Legacy properties for compatibility
                     use_openrouter: (activeAiProvider === 'openrouter'),
                     openrouter_api_key: localStorage.getItem('openrouterApiKey') || '',
@@ -568,7 +569,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { btnId: 'sideHashtag', secId: 'hashtagTakipSection' },
         { btnId: 'markaAyarlariBtn', secId: 'settingsSection' },
         { btnId: 'hesapAyarlariSideBtn', secId: 'settingsSection' },
-        { btnId: 'markaAyarlariSideBtn', secId: 'brandSettingsSection' }
+        { btnId: 'markaAyarlariSideBtn', secId: 'brandSettingsSection' },
+        { btnId: 'sideKlavuz', secId: 'klavuzSection' }
     ];
 
     function showView(targetSecId, activeBtnId) {
@@ -802,6 +804,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Save AI custom instructions
+        localStorage.setItem('aiInstructions', JSON.stringify(window.aiInstructions));
+
         syncComposerSelect();
         showToast("Yapay zeka talimatları ve API yapılandırması başarıyla kaydedildi!");
     }
@@ -810,6 +815,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById(id);
         if (btn) btn.addEventListener('click', saveAiConfigHandler);
     });
+
+    // Load AI instructions from localStorage on startup
+    try {
+        const storedInstructions = localStorage.getItem('aiInstructions');
+        if (storedInstructions) {
+            window.aiInstructions = JSON.parse(storedInstructions);
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+            setVal('aiGenWritingStyle', window.aiInstructions.writingStyle);
+            setVal('aiXInstructions', window.aiInstructions.x);
+            setVal('aiBlueskyInstructions', window.aiInstructions.bluesky);
+            setVal('aiFacebookInstructions', window.aiInstructions.facebook);
+            setVal('aiInstagramInstructions', window.aiInstructions.instagram);
+            setVal('aiThreadsInstructions', window.aiInstructions.threads);
+            setVal('aiLinkedinInstructions', window.aiInstructions.linkedin);
+            setVal('aiGoogleInstructions', window.aiInstructions.google);
+            setVal('aiPinterestInstructions', window.aiInstructions.pinterest);
+            setVal('aiTiktokInstructions', window.aiInstructions.tiktok);
+            setVal('aiYoutubeInstructions', window.aiInstructions.youtube);
+        }
+    } catch (e) {
+        console.error("Failed to load aiInstructions", e);
+    }
 
     // Load AI settings from localStorage on startup
     const openrouterModelSelectComposer = document.getElementById('openrouterModelSelectComposer');
@@ -1969,53 +1996,49 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     const inboxAiSpinner = document.getElementById('inboxAiSpinner');
 
     if (inboxAiAssistBtn) {
-        inboxAiAssistBtn.addEventListener('click', () => {
+        inboxAiAssistBtn.addEventListener('click', async () => {
             const chat = inboxChatsData[activeInboxChatKey];
             if (!chat) return;
 
             inboxAiAssistBtn.disabled = true;
             if (inboxAiSpinner) inboxAiSpinner.classList.remove('hidden');
 
-            setTimeout(() => {
-                inboxAiAssistBtn.disabled = false;
-                if (inboxAiSpinner) inboxAiSpinner.classList.add('hidden');
-
-                const lastCustMessage = chat.messages.filter(m => !m.isSender).slice(-1)[0]?.text || '';
+            try {
+                const activeAiProvider = localStorage.getItem('activeAiProvider') || 'default';
+                const aiApiKey = localStorage.getItem(activeAiProvider + 'ApiKey') || '';
+                const aiModel = localStorage.getItem(activeAiProvider + 'Model') || '';
                 const brandName = document.getElementById('settingsBrandTitle') ? document.getElementById('settingsBrandTitle').textContent : 'Boş marka';
                 const styleText = window.aiInstructions && window.aiInstructions.writingStyle ? window.aiInstructions.writingStyle : '';
 
-                // Build a gorgeous contextual generative reply in Turkish!
-                let aiResponse = "";
-                const isFriendlyStyle = styleText.toLowerCase().includes('samimi') || styleText.toLowerCase().includes('emoji');
+                const response = await fetch('/api/inbox/ai-assist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: chat.messages,
+                        platform: chat.platform,
+                        brand: brandName,
+                        writing_style: styleText,
+                        ai_provider: activeAiProvider,
+                        ai_api_key: aiApiKey,
+                        ai_model: aiModel
+                    })
+                });
 
-                if (chat.platform === 'instagram' || lastCustMessage.includes('ezme')) {
-                    if (isFriendlyStyle) {
-                        aiResponse = `Selam Melis Hanım! 🥜 Taze kavrulmuş yer fıstıklarımızdan elde ettiğimiz ezmeniz bu sabah yola çıktı! Aras Kargo takip numaranız birazdan telefonunuza SMS olarak düşecektir. Şimdiden afiyet bal olsun! Lansman fırsatımızı tercih ettiğiniz için çok teşekkürler! 🌟🥜`;
-                    } else {
-                        aiResponse = `Merhaba Melis Hanım. Lansman özel kampanyamızdan verdiğiniz fıstık ezmesi siparişiniz bu sabah Aras Kargo'ya güvenle teslim edilmiştir. Kargo takip kodunuz sistemde tanımlanmakta olup gün içerisinde tarafınıza kısa mesaj (SMS) olarak iletilecektir. İlginiz için teşekkür eder, sağlıklı günler dileriz.`;
-                    }
-                } else if (chat.platform === 'youtube' || lastCustMessage.includes('kupon')) {
-                    if (isFriendlyStyle) {
-                        aiResponse = `Selam Can Bey! ☕️ Kupon kodumuz ilk 100 kişilik stok sınırına takılmış olabilir, hiç dert etmeyin! Size özel tek kullanımlık %15 indirim kodunuz: COFFEE15. Hemen sepetinizde uygulayabilirsiniz. Keyifli demlemeler dileriz!`;
-                    } else {
-                        aiResponse = `Merhaba Can Bey. Bahsi geçen lansman indirim kuponumuz maalesef ilk 100 siparişte geçerli limitli bir koddur. Ancak markamıza gösterdiğiniz ilgi sebebiyle size özel %15 indirim kuponu tanımlanmıştır. Sipariş sayfasında COFFEE15 kodunu uygulayarak indirimli siparişinizi geçebilirsiniz.`;
-                    }
-                } else if (chat.platform === 'facebook' || lastCustMessage.includes('öğüt')) {
-                    aiResponse = `Merhaba Didem Hanım. Tebrikleriniz için çok teşekkür ederiz. Sipariş aşamasında kahvenizi dilediğiniz demleme yöntemine (Filtre Kahve Makinesi, French Press, V60, Espresso vb.) uygun olarak taptaze öğüterek gönderiyoruz. French Press için kalın öğütüm seçeneğini tercih edebilirsiniz. Şimdiden afiyet olsun!`;
-                } else if (chat.platform === 'x' || lastCustMessage.includes('stok')) {
-                    aiResponse = `Merhabalar! Etiyopya çekirdeklerimizi bu kadar beğenmenize çok mutlu olduk. Yeni taze kavrum Etiyopya çekirdeklerimiz yarın sabah stoklarda yenilenecektir. Web sitemizden bildirim listesine kaydolduysanız anlık e-posta da alacaksınız. İlginiz için teşekkürler!`;
-                } else if (chat.platform === 'whatsapp' || lastCustMessage.includes('kargo') || lastCustMessage.includes('whatsapp')) {
-                    if (isFriendlyStyle) {
-                        aiResponse = `Selam Zeynep Hanım! 🌸 Evet, WhatsApp Business kataloğumuz üzerinden doğrudan sipariş verebilirsiniz. Lansmana özel 150 TL ve üzeri tüm siparişlerde kargo tamamen ücretsizdir! Ürün kataloğumuzu inceleyip siparişinizi buradan kolayca tamamlayabilirsiniz. 😊📱`;
-                    } else {
-                        aiResponse = `Merhaba Zeynep Hanım. WhatsApp Business kataloğumuz üzerinden doğrudan sipariş almaktayız. Lansman kampanyamız kapsamında 150 TL ve üzeri tüm siparişlerde kargo ücreti alınmamaktadır. Kataloğumuz üzerinden ürünleri seçip siparişinizi doğrudan buradan oluşturabilirsiniz.`;
-                    }
-                } else {
-                    aiResponse = `Merhaba Esra Hanım. Mesajınız ve kurumsal ortaklık talebiniz için çok teşekkür ederiz. Sosyal medya ajansımıza ait güncel hizmet portfolyomuzu ve markalara özel B2B çalışma teklifimizi mail adresinize ileteceğiz. En kısa sürede ortak bir toplantıda görüşmek üzere.`;
+                if (!response.ok) {
+                    throw new Error('Yanıt oluşturulurken sunucuda hata oluştu.');
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Yanıt oluşturulamadı.');
                 }
 
                 if (inboxActiveResponseInput) {
-                    inboxActiveResponseInput.value = aiResponse;
+                    inboxActiveResponseInput.value = data.reply;
+                    
                     // Pulse input field to draw attention
                     inboxActiveResponseInput.style.borderColor = 'var(--accent)';
                     inboxActiveResponseInput.style.boxShadow = '0 0 0 3px rgba(140, 219, 41, 0.15)';
@@ -2026,7 +2049,14 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 }
 
                 showToast("Yapay zeka asistanı mesajın içeriğine ve marka ayarlarına göre harika bir yanıt taslağı hazırladı!");
-            }, 800);
+
+            } catch (error) {
+                console.error('Inbox AI Assist error:', error);
+                showToast("⚠️ Hata: " + error.message);
+            } finally {
+                inboxAiAssistBtn.disabled = false;
+                if (inboxAiSpinner) inboxAiSpinner.classList.add('hidden');
+            }
         });
     }
 
@@ -3047,8 +3077,9 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         const sandUserMgmt = document.getElementById('sandUserMgmt');
         if (sandUserMgmt) {
             sandUserMgmt.addEventListener('click', () => {
-                showToast("Kullanıcı Yönetimi: Ekip yönetimi paneli Premium planlarda aktiftir. 👥");
+                showView('userMgmtSection', null);
                 sandwichDropdown.classList.add('hidden');
+                loadUsers();
             });
         }
         
@@ -3065,8 +3096,9 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         const sandMyTasks = document.getElementById('sandMyTasks');
         if (sandMyTasks) {
             sandMyTasks.addEventListener('click', () => {
-                showToast("Görevlerim: Sosyal medya görevleriniz ve onay süreçleriniz yüklendi. 📝");
+                showView('myTasksSection', null);
                 sandwichDropdown.classList.add('hidden');
+                loadTasks();
             });
         }
         
@@ -3119,12 +3151,17 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         // Logout click
         const sandLogout = document.getElementById('sandLogout');
         if (sandLogout) {
-            sandLogout.addEventListener('click', () => {
+            sandLogout.addEventListener('click', async () => {
                 showToast("Güvenli çıkış yapılıyor... biAjans'ı tercih ettiğiniz için teşekkür ederiz! 👋");
                 sandwichDropdown.classList.add('hidden');
+                try {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                } catch (err) {
+                    console.error("Logout failed", err);
+                }
                 setTimeout(() => {
-                    location.reload();
-                }, 1200);
+                    window.location.href = '/login.html';
+                }, 1000);
             });
         }
         
@@ -5615,6 +5652,394 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     // Initial render for active brand
     populateBrandFormExtended(brandsData[0]);
     initQuickActions();
+
+    // ── Session & Authentication Check on Load ──────────────────────────────
+    let currentUser = null;
+
+    async function checkSession() {
+        try {
+            const res = await fetch('/api/auth/session');
+            const data = await res.json();
+            if (data.authenticated) {
+                currentUser = data.user;
+                
+                // Adjust visibility of user management actions if not admin
+                const btnOpenAddUser = document.getElementById('btnOpenAddUser');
+                if (btnOpenAddUser) {
+                    if (currentUser.role !== 'admin') {
+                        btnOpenAddUser.style.display = 'none';
+                    } else {
+                        btnOpenAddUser.style.display = 'block';
+                    }
+                }
+            } else {
+                window.location.href = '/login.html';
+            }
+        } catch (e) {
+            console.error("Session check failed", e);
+            window.location.href = '/login.html';
+        }
+    }
+
+    // Run session check
+    checkSession();
+
+    // ── User Management Logic ───────────────────────────────────────────────
+    const btnOpenAddUser = document.getElementById('btnOpenAddUser');
+    const addUserPanel = document.getElementById('addUserPanel');
+    const btnCancelAddUser = document.getElementById('btnCancelAddUser');
+    if (btnOpenAddUser && addUserPanel) {
+        btnOpenAddUser.addEventListener('click', () => {
+            addUserPanel.classList.toggle('hidden');
+        });
+    }
+    if (btnCancelAddUser && addUserPanel) {
+        btnCancelAddUser.addEventListener('click', () => {
+            addUserPanel.classList.add('hidden');
+        });
+    }
+
+    const addUserForm = document.getElementById('addUserForm');
+    if (addUserForm) {
+        addUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('newUsernameInput').value;
+            const email = document.getElementById('newEmailInput').value;
+            const password = document.getElementById('newPasswordInput').value;
+            const role = document.getElementById('newRoleSelect').value;
+            
+            try {
+                const res = await fetch('/api/users/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password, role })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Kullanıcı başarıyla eklendi! 🎉");
+                    addUserForm.reset();
+                    addUserPanel.classList.add('hidden');
+                    loadUsers();
+                } else {
+                    showToast("Hata: " + (data.error || "Kullanıcı eklenemedi."));
+                }
+            } catch (err) {
+                showToast("Kullanıcı eklenirken bir hata oluştu.");
+            }
+        });
+    }
+
+    async function loadUsers() {
+        try {
+            const res = await fetch('/api/users/list');
+            const data = await res.json();
+            if (data.success) {
+                const tbody = document.getElementById('usersTableBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                
+                data.users.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid var(--card-border)';
+                    
+                    const roleLabel = user.role === 'admin' ? 'Yönetici' : 'Ekip Üyesi';
+                    const dateStr = user.created_at ? new Date(user.created_at).toLocaleDateString('tr-TR') : '-';
+                    const isSelf = currentUser && currentUser.username === user.username;
+                    const isAdmin = currentUser && currentUser.role === 'admin';
+                    
+                    let actionBtn = '';
+                    if (isAdmin && !isSelf) {
+                        actionBtn = `<button onclick="deleteUser(${user.id})" class="btn" style="padding: 4px 8px; font-size: 11px; background: #fff5f5; color: #ef4444; border: 1px solid #fee2e2; border-radius: 4px; cursor: pointer;">Sil</button>`;
+                    } else if (isSelf) {
+                        actionBtn = `<span style="color: var(--text-muted); font-size: 11px;">Aktif Oturum</span>`;
+                    } else {
+                        actionBtn = `<span style="color: var(--text-muted); font-size: 11px;">Yetki Yok</span>`;
+                    }
+                    
+                    tr.innerHTML = `
+                        <td style="padding: 10px 12px; font-weight: bold;">${user.id}</td>
+                        <td style="padding: 10px 12px;">${user.username}</td>
+                        <td style="padding: 10px 12px;">${user.email}</td>
+                        <td style="padding: 10px 12px;"><span style="background: ${user.role === 'admin' ? '#fee2e2' : '#e0f2fe'}; color: ${user.role === 'admin' ? '#ef4444' : '#0369a1'}; padding: 2px 6px; border-radius: 4px; font-weight: bold;">${roleLabel}</span></td>
+                        <td style="padding: 10px 12px;">${dateStr}</td>
+                        <td style="padding: 10px 12px; text-align: right;">${actionBtn}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        } catch (err) {
+            console.error("loadUsers failed", err);
+        }
+    }
+    
+    window.deleteUser = async function(userId) {
+        if (!confirm("Bu kullanıcıyı silmek istediğinize emin misiniz?")) return;
+        try {
+            const res = await fetch('/api/users/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast("Kullanıcı başarıyla silindi. 🗑️");
+                loadUsers();
+            } else {
+                showToast("Hata: " + (data.error || "Kullanıcı silinemedi."));
+            }
+        } catch (err) {
+            showToast("Kullanıcı silinirken hata oluştu.");
+        }
+    };
+
+    // ── Task Management Logic (Kanban Board) ───────────────────────────────
+    const btnOpenAddTask = document.getElementById('btnOpenAddTask');
+    const addTaskPanel = document.getElementById('addTaskPanel');
+    const btnCancelAddTask = document.getElementById('btnCancelAddTask');
+    if (btnOpenAddTask && addTaskPanel) {
+        btnOpenAddTask.addEventListener('click', () => {
+            addTaskPanel.classList.toggle('hidden');
+            populateAssigneeSelect();
+        });
+    }
+    if (btnCancelAddTask && addTaskPanel) {
+        btnCancelAddTask.addEventListener('click', () => {
+            addTaskPanel.classList.add('hidden');
+        });
+    }
+
+    async function populateAssigneeSelect() {
+        const select = document.getElementById('taskAssigneeSelect');
+        if (!select) return;
+        try {
+            const res = await fetch('/api/users/list');
+            const data = await res.json();
+            if (data.success) {
+                select.innerHTML = '<option value="">Seçiniz...</option>';
+                data.users.forEach(user => {
+                    const opt = document.createElement('option');
+                    opt.value = user.username;
+                    opt.textContent = user.username;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    const addTaskForm = document.getElementById('addTaskForm');
+    if (addTaskForm) {
+        addTaskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('taskTitleInput').value;
+            const description = document.getElementById('taskDescInput').value;
+            const assigned_to = document.getElementById('taskAssigneeSelect').value;
+            const due_date = document.getElementById('taskDueDateInput').value;
+            const brand = document.getElementById('brandSelect').value || 'global';
+            
+            try {
+                const res = await fetch('/api/tasks/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ brand, title, description, assigned_to, due_date })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Görev başarıyla eklendi! 📝");
+                    addTaskForm.reset();
+                    addTaskPanel.classList.add('hidden');
+                    loadTasks();
+                } else {
+                    showToast("Hata: " + (data.error || "Görev eklenemedi."));
+                }
+            } catch (err) {
+                showToast("Görev eklenirken hata oluştu.");
+            }
+        });
+    }
+
+    async function loadTasks() {
+        const brand = document.getElementById('brandSelect').value || 'global';
+        try {
+            const res = await fetch(`/api/tasks/list?brand=${brand}`);
+            const data = await res.json();
+            if (data.success) {
+                const containerPending = document.getElementById('container-pending');
+                const containerProgress = document.getElementById('container-progress');
+                const containerDone = document.getElementById('container-done');
+                
+                if (!containerPending || !containerProgress || !containerDone) return;
+                
+                containerPending.innerHTML = '';
+                containerProgress.innerHTML = '';
+                containerDone.innerHTML = '';
+                
+                let countPending = 0;
+                let countProgress = 0;
+                let countDone = 0;
+                
+                data.tasks.forEach(task => {
+                    const card = document.createElement('div');
+                    card.className = 'card task-card animate-slide-up';
+                    card.style.background = 'white';
+                    card.style.border = '1px solid var(--card-border)';
+                    card.style.padding = '14px';
+                    card.style.borderRadius = '8px';
+                    card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.01)';
+                    card.style.display = 'flex';
+                    card.style.flexDirection = 'column';
+                    card.style.gap = '8px';
+                    
+                    const descText = task.description ? task.description : '';
+                    
+                    let dueDateHtml = '';
+                    if (task.due_date) {
+                        const today = new Date().toISOString().split('T')[0];
+                        const isOverdue = task.due_date < today && task.status !== 'Done';
+                        dueDateHtml = `<span style="color: ${isOverdue ? '#ef4444' : '#475569'}; font-weight: bold; background: ${isOverdue ? '#fee2e2' : '#f1f5f9'}; padding: 2px 6px; border-radius: 4px;"><i class="fa-regular fa-calendar"></i> ${task.due_date}</span>`;
+                    }
+                    
+                    let leftBtn = '';
+                    let rightBtn = '';
+                    if (task.status === 'In Progress') {
+                         leftBtn = `<button onclick="updateTaskStatus(${task.id}, 'Pending')" class="btn" style="padding: 4px 8px; font-size: 10px; border: 1px solid var(--card-border); background: white; cursor: pointer; border-radius: 4px;" title="Yapılacak sütununa taşı"><i class="fa-solid fa-arrow-left"></i></button>`;
+                         rightBtn = `<button onclick="updateTaskStatus(${task.id}, 'Done')" class="btn" style="padding: 4px 8px; font-size: 10px; border: 1px solid var(--card-border); background: white; cursor: pointer; border-radius: 4px;" title="Tamamlandı sütununa taşı"><i class="fa-solid fa-arrow-right"></i></button>`;
+                    } else if (task.status === 'Pending') {
+                         rightBtn = `<button onclick="updateTaskStatus(${task.id}, 'In Progress')" class="btn" style="padding: 4px 8px; font-size: 10px; border: 1px solid var(--card-border); background: white; cursor: pointer; border-radius: 4px;" title="Yapılıyor sütununa taşı"><i class="fa-solid fa-arrow-right"></i></button>`;
+                    } else if (task.status === 'Done') {
+                         leftBtn = `<button onclick="updateTaskStatus(${task.id}, 'In Progress')" class="btn" style="padding: 4px 8px; font-size: 10px; border: 1px solid var(--card-border); background: white; cursor: pointer; border-radius: 4px;" title="Yapılıyor sütununa geri taşı"><i class="fa-solid fa-arrow-left"></i></button>`;
+                    }
+                    
+                    card.innerHTML = `
+                        <h4 style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.4;">${task.title}</h4>
+                         ${descText ? `<p style="font-size: 11.5px; color: var(--text-secondary); margin: 0; line-height: 1.4; white-space: pre-wrap;">${descText}</p>` : ''}
+                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; margin-top: 8px; border-top: 1px dashed var(--card-border); padding-top: 8px;">
+                             <span style="color: var(--text-muted); font-weight: bold;"><i class="fa-regular fa-user"></i> ${task.assigned_to || 'Atanmamış'}</span>
+                             ${dueDateHtml}
+                         </div>
+                         <div style="display: flex; gap: 4px; justify-content: flex-end; margin-top: 8px; border-top: 1px solid rgba(0,0,0,0.02); padding-top: 6px;">
+                             ${leftBtn}
+                             ${rightBtn}
+                             <button onclick="deleteTask(${task.id})" class="btn" style="padding: 4px 8px; font-size: 10px; border: 1px solid #fee2e2; background: #fff5f5; color: #ef4444; cursor: pointer; border-radius: 4px;" title="Görevi Sil"><i class="fa-regular fa-trash-can"></i></button>
+                         </div>
+                    `;
+                    
+                    if (task.status === 'In Progress') {
+                         containerProgress.appendChild(card);
+                         countProgress++;
+                    } else if (task.status === 'Done') {
+                         containerDone.appendChild(card);
+                         countDone++;
+                    } else {
+                         containerPending.appendChild(card);
+                         countPending++;
+                    }
+                });
+                
+                document.getElementById('count-pending').textContent = countPending;
+                document.getElementById('count-progress').textContent = countProgress;
+                document.getElementById('count-done').textContent = countDone;
+            }
+        } catch (err) {
+            console.error("loadTasks failed", err);
+        }
+    }
+    
+    window.updateTaskStatus = async function(taskId, newStatus) {
+        try {
+            const res = await fetch('/api/tasks/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_id: taskId, status: newStatus })
+            });
+            const data = await res.json();
+            if (data.success) {
+                loadTasks();
+            } else {
+                showToast("Hata: " + (data.error || "Durum güncellenemedi."));
+            }
+        } catch (err) {
+            showToast("Durum güncellenirken hata oluştu.");
+        }
+    };
+    
+    window.deleteTask = async function(taskId) {
+        if (!confirm("Bu görevi silmek istediğinize emin misiniz?")) return;
+        try {
+            const res = await fetch('/api/tasks/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_id: taskId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast("Görev silindi. 🗑️");
+                loadTasks();
+            } else {
+                showToast("Hata: " + (data.error || "Görev silinemedi."));
+            }
+        } catch (err) {
+            showToast("Görev silinirken hata oluştu.");
+        }
+    };
+
+    const brandSelectForTasks = document.getElementById('brandSelect');
+    if (brandSelectForTasks) {
+        brandSelectForTasks.addEventListener('change', () => {
+            const myTasksSection = document.getElementById('myTasksSection');
+            if (myTasksSection && !myTasksSection.classList.contains('hidden')) {
+                loadTasks();
+            }
+        });
+    }
+
+    // 6. Connection Guide Tab Switching & Copy Link Actions
+    const guideTabBtns = document.querySelectorAll('.guide-tab-btn');
+    const guideContentPanels = document.querySelectorAll('.guide-content-panel');
+    
+    guideTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active classes
+            guideTabBtns.forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'transparent';
+                b.style.color = 'var(--text-secondary)';
+                b.style.fontWeight = '600';
+            });
+            // Add active class to clicked button
+            btn.classList.add('active');
+            btn.style.background = 'var(--primary-glow)';
+            btn.style.color = 'var(--primary)';
+            btn.style.fontWeight = '700';
+            
+            // Toggle panel content
+            const targetPlatform = btn.getAttribute('data-guide-platform');
+            guideContentPanels.forEach(panel => {
+                if (panel.id === `guide-content-${targetPlatform}`) {
+                    panel.style.display = 'block';
+                } else {
+                    panel.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    const copyButtons = document.querySelectorAll('.btn-copy-uri');
+    copyButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-target-id');
+            const targetSpan = document.getElementById(targetId);
+            if (targetSpan) {
+                navigator.clipboard.writeText(targetSpan.textContent.trim()).then(() => {
+                    showToast("Callback URL başarıyla panoya kopyalandı! 📋");
+                }).catch(err => {
+                    console.error("Copy error:", err);
+                    showToast("Kopyalama başarısız oldu.", true);
+                });
+            }
+        });
+    });
 
 });
 

@@ -59,6 +59,29 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     and routing API requests including OAuth flows.
     """
 
+    def _get_session_id(self):
+        cookie_header = self.headers.get("Cookie", "")
+        cookies = {}
+        if cookie_header:
+            for cookie in cookie_header.split(";"):
+                parts = cookie.strip().split("=", 1)
+                if len(parts) == 2:
+                    cookies[parts[0]] = parts[1]
+        return cookies.get("session_id")
+
+    def _get_session(self):
+        session_id = self._get_session_id()
+        if not session_id:
+            return None
+        from core.db_manager import get_session, delete_session
+        session = get_session(session_id)
+        if session:
+            if session["expires"] > time.time():
+                return session
+            else:
+                delete_session(session_id)
+        return None
+
     # ──────────────────────────────────────────────────────────────────────────
     # GET
     # ──────────────────────────────────────────────────────────────────────────
@@ -67,6 +90,12 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         qs = urllib.parse.parse_qs(parsed_url.query)
+
+        # Enforce authentication for dashboard.html
+        if path == "/dashboard.html":
+            if not self._get_session():
+                self._redirect("/login.html")
+                return
 
         # ── OAuth start: /auth/<platform>/start ──────────────────────────────
         if path.startswith("/auth/") and path.endswith("/start"):
@@ -99,8 +128,48 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self._handle_smartlinks_load(brand_slug)
             return
 
+        # ── Session check: /api/auth/session ──────────────────────────────────
+        if path == "/api/auth/session":
+            session = self._get_session()
+            if session:
+                self.send_json_response({
+                    "authenticated": True,
+                    "user": {
+                        "username": session["username"],
+                        "role": session["role"],
+                        "email": session["email"]
+                    }
+                })
+            else:
+                self.send_json_response({"authenticated": False})
+            return
+
+        # ── User List: /api/users/list ────────────────────────────────────────
+        if path == "/api/users/list":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            from core.db_manager import list_users
+            users = list_users()
+            self.send_json_response({"success": True, "users": users})
+            return
+
+        # ── Task List: /api/tasks/list ────────────────────────────────────────
+        if path == "/api/tasks/list":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            brand_id = qs.get("brand", ["global"])[0]
+            from core.db_manager import list_tasks
+            tasks = list_tasks(brand_id)
+            self.send_json_response({"success": True, "tasks": tasks})
+            return
+
         # ── Connections status: /api/connections/status ───────────────────────
         if path == "/api/connections/status":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
             brand_id = qs.get("brand", ["global"])[0]
             status = get_all_connection_status(brand_id)
             self.send_json_response({"status": "ok", "connections": status})
@@ -150,6 +219,155 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         except Exception:
             body = {}
 
+        # Enforce authentication for all /api/ POST requests except login
+        if path.startswith("/api/") and path != "/api/auth/login":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized", "message": "Lütfen giriş yapın."}, 401)
+                return
+
+        # ── Login: /api/auth/login ──────────────────────────────────────────
+        if path == "/api/auth/login":
+            username = body.get("username", "").strip()
+            password = body.get("password", "").strip()
+            if not username or not password:
+                self.send_json_response({"success": False, "error": "Kullanıcı adı ve şifre zorunludur."}, 400)
+                return
+
+            from core.db_manager import get_user_by_username, verify_password, create_session
+            user = get_user_by_username(username)
+            if user and verify_password(user["password_hash"], password):
+                import uuid
+                session_id = uuid.uuid4().hex
+                # Expires in 24 hours
+                expires = time.time() + 24 * 3600
+                create_session(session_id, user["username"], user["role"], user["email"], expires)
+                
+                # Set HttpOnly cookie
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Set-Cookie", f"session_id={session_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age={24*3600}")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                
+                resp = {"success": True, "user": {"username": user["username"], "role": user["role"], "email": user["email"]}}
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+            else:
+                self.send_json_response({"success": False, "error": "Geçersiz kullanıcı adı veya şifre."}, 400)
+            return
+
+        # ── Logout: /api/auth/logout ─────────────────────────────────────────
+        if path == "/api/auth/logout":
+            session_id = self._get_session_id()
+            if session_id:
+                from core.db_manager import delete_session
+                delete_session(session_id)
+            
+            # Clear cookie
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Set-Cookie", "session_id=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            
+            self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+            return
+
+        # ── Add User: /api/users/add ──────────────────────────────────────────
+        if path == "/api/users/add":
+            session = self._get_session()
+            if session["role"] != "admin":
+                self.send_json_response({"success": False, "error": "Yetkiniz yok. Sadece yönetici kullanıcı ekleyebilir."}, 403)
+                return
+
+            new_username = body.get("username", "").strip()
+            new_email = body.get("email", "").strip()
+            new_password = body.get("password", "").strip()
+            new_role = body.get("role", "member").strip()
+
+            if not new_username or not new_email or not new_password or not new_role:
+                self.send_json_response({"success": False, "error": "Tüm alanlar zorunludur."}, 400)
+                return
+
+            from core.db_manager import add_user
+            success = add_user(new_username, new_email, new_password, new_role)
+            if success:
+                self.send_json_response({"success": True})
+            else:
+                self.send_json_response({"success": False, "error": "Kullanıcı oluşturulamadı veya bu isim zaten kullanımda."}, 400)
+            return
+
+        # ── Delete User: /api/users/delete ────────────────────────────────────
+        if path == "/api/users/delete":
+            session = self._get_session()
+            if session["role"] != "admin":
+                self.send_json_response({"success": False, "error": "Yetkiniz yok. Sadece yönetici kullanıcı silebilir."}, 403)
+                return
+
+            user_id = body.get("user_id")
+            if not user_id:
+                self.send_json_response({"success": False, "error": "Kullanıcı ID gereklidir."}, 400)
+                return
+
+            from core.db_manager import delete_user
+            success = delete_user(int(user_id))
+            if success:
+                self.send_json_response({"success": True})
+            else:
+                self.send_json_response({"success": False, "error": "Kullanıcı silinemedi."}, 400)
+            return
+
+        # ── Add Task: /api/tasks/add ──────────────────────────────────────────
+        if path == "/api/tasks/add":
+            brand_id = body.get("brand", "global").strip()
+            title = body.get("title", "").strip()
+            description = body.get("description", "").strip()
+            assigned_to = body.get("assigned_to", "").strip() or None
+            due_date = body.get("due_date", "").strip() or None
+
+            if not title:
+                self.send_json_response({"success": False, "error": "Görev başlığı zorunludur."}, 400)
+                return
+
+            from core.db_manager import add_task
+            success = add_task(brand_id, title, description, assigned_to, due_date)
+            if success:
+                self.send_json_response({"success": True})
+            else:
+                self.send_json_response({"success": False, "error": "Görev oluşturulamadı."}, 400)
+            return
+
+        # ── Update Task Status: /api/tasks/update ─────────────────────────────
+        if path == "/api/tasks/update":
+            task_id = body.get("task_id")
+            status = body.get("status", "").strip()
+
+            if not task_id or not status:
+                self.send_json_response({"success": False, "error": "Görev ID ve durum zorunludur."}, 400)
+                return
+
+            from core.db_manager import update_task_status
+            success = update_task_status(int(task_id), status)
+            if success:
+                self.send_json_response({"success": True})
+            else:
+                self.send_json_response({"success": False, "error": "Görev güncellenemedi."}, 400)
+            return
+
+        # ── Delete Task: /api/tasks/delete ────────────────────────────────────
+        if path == "/api/tasks/delete":
+            task_id = body.get("task_id")
+            if not task_id:
+                self.send_json_response({"success": False, "error": "Görev ID gereklidir."}, 400)
+                return
+
+            from core.db_manager import delete_task
+            success = delete_task(int(task_id))
+            if success:
+                self.send_json_response({"success": True})
+            else:
+                self.send_json_response({"success": False, "error": "Görev silinemedi."}, 400)
+            return
+
         # ── Save SmartLinks API: /api/smartlinks/save ────────────────────────
         if path == "/api/smartlinks/save":
             self._handle_smartlinks_save(body)
@@ -158,6 +376,11 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         # ── Content generation ─────────────────────────────────────────────
         if path == "/api/generate":
             self._handle_generate(body)
+            return
+
+        # ── Inbox AI reply assistant ─────────────────────────────────────────
+        if path == "/api/inbox/ai-assist":
+            self._handle_inbox_ai_assist(body)
             return
 
         # ── Bluesky bağlantısı (POST — kullanıcı adı + şifre) ─────────────
@@ -345,6 +568,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         ai_provider = request_json.get("ai_provider", "default").strip().lower()
         ai_api_key = request_json.get("ai_api_key", "").strip()
         ai_model = request_json.get("ai_model", "").strip()
+        ai_instructions = request_json.get("ai_instructions")
 
         openai_keys_present = bool(Config.OPENAI_API_KEY) and "your_openai_api_key_here" not in Config.OPENAI_API_KEY
 
@@ -361,7 +585,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         if ai_provider != "default" and ai_api_key:
             print(f"\n[CUSTOM AI ACTIVE] Provider: {ai_provider}, Model: {ai_model} for prompt: {user_prompt}")
             social_content = AIEngines.generate_social_content_custom(
-                user_prompt, ai_provider, ai_api_key, ai_model
+                user_prompt, ai_provider, ai_api_key, ai_model, ai_instructions=ai_instructions
             )
 
             if not social_content:
@@ -399,7 +623,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json_response(response_data)
         else:
             print(f"\n[LIVE MODE ACTIVE] Querying Gemini 1.5 Pro and Image Generator for: '{user_prompt}'")
-            social_content = AIEngines.generate_social_content(user_prompt)
+            social_content = AIEngines.generate_social_content(user_prompt, ai_instructions=ai_instructions)
 
             if not social_content:
                 self.send_json_response({
@@ -427,6 +651,43 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 "image_prompt": image_prompt,
                 "image_url": image_url,
             })
+
+    def _handle_inbox_ai_assist(self, request_json: dict):
+        messages = request_json.get("messages", [])
+        platform = request_json.get("platform", "general").strip()
+        brand_name = request_json.get("brand", "biAjans").strip()
+        writing_style = request_json.get("writing_style", "").strip()
+
+        ai_provider = request_json.get("ai_provider", "default").strip().lower()
+        ai_api_key = request_json.get("ai_api_key", "").strip()
+        ai_model = request_json.get("ai_model", "").strip()
+
+        context_lines = []
+        for m in messages:
+            sender = "Destek/Biz" if m.get("isSender") else "Müşteri"
+            text = m.get("text", "").strip()
+            if text:
+                context_lines.append(f"{sender}: {text}")
+        chat_context = "\n".join(context_lines)
+
+        if not chat_context:
+            self.send_json_response({"success": False, "error": "Boş sohbet geçmişi!"}, 400)
+            return
+
+        reply_text = AIEngines.generate_reply_assist(
+            chat_context=chat_context,
+            platform=platform,
+            brand_name=brand_name,
+            writing_style=writing_style,
+            provider=ai_provider,
+            api_key=ai_api_key,
+            model=ai_model
+        )
+
+        if reply_text:
+            self.send_json_response({"success": True, "reply": reply_text})
+        else:
+            self.send_json_response({"success": False, "error": "Yapay zeka yanıt oluşturamadı."}, 500)
 
     # ──────────────────────────────────────────────────────────────────────────
     # Helpers
