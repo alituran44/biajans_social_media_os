@@ -1116,8 +1116,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 const h4 = c.querySelector('h4');
                 if (h4) h4.textContent = originalTitle;
             });
-            showToast(`⚠️ Sunucu çevrimdışı, demo modunda ${network} simüle bağlantısı kuruluyor...`);
-            await connectMockPlatform(slug, network);
+
+            // Check if we are on Vercel or other static demo host
+            const isVercel = window.location.hostname.endsWith('vercel.app') || 
+                             window.location.hostname.includes('github.io') || 
+                             window.location.hostname.includes('vercel.dev');
+            
+            let msg = "";
+            if (isVercel) {
+                msg = `⚠️ Demo Modu (Statik Sunucu / Vercel)\n\n` +
+                      `Şu anda projenin statik demo sürümündesiniz. Bu ortamda gerçek Instagram/Facebook sayfasına yönlendirme yapılamamaktadır.\n\n` +
+                      `Bunun yerine, test amacıyla simüle (demo) bağlantı kurmak ve yeşil ışık yakmak ister misiniz?`;
+            } else {
+                msg = `⚠️ Sunucu Bağlantı Hatası\n\n` +
+                      `Gerçek ${network} bağlantısı başlatılamadı. Olası nedenler:\n` +
+                      `1. Python backend sunucunuzun (app.py) VPS veya yerel makinenizde çalışmıyor olması.\n` +
+                      `2. .env dosyanızda API ve OAuth credentials alanlarının tanımlı olmaması.\n` +
+                      `3. Sunucunuzda /auth/ yönlendirmesinin reverse proxy (Nginx) tarafından engellenmesi.\n\n` +
+                      `Buna rağmen test amaçlı simüle (demo) bağlantı kurup yeşil ışık yakmak ister misiniz?`;
+            }
+
+            if (confirm(msg)) {
+                await connectMockPlatform(slug, network);
+            }
         }
     }
 
