@@ -1062,14 +1062,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 5. Connect platform cards — Gerçek OAuth akışı
-    // Platform adını normalize eder (conn-card'daki data-network değerinden URL-slug'a çevirir)
     const _platformSlug = (name) => name.toLowerCase()
         .replace(/\s+/g, '_')
         .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
         .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c');
 
     async function connectPlatform(card, network) {
-        // Zaten bağlıysa — bilgi ver
         if (card.classList.contains('active-connection')) {
             showToast(`${network} zaten bağlı durumda. Bağlantıyı kesmek için sağ tıklayın.`, true);
             return;
@@ -1079,7 +1077,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const cardTitle = card.querySelector('h4');
         const originalTitle = cardTitle ? cardTitle.textContent : network;
 
-        // Yükleniyor durumu
         const allSameCards = document.querySelectorAll(`.conn-card[data-network="${network}"]`);
         allSameCards.forEach(c => {
             c.style.pointerEvents = 'none';
@@ -1092,9 +1089,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const brandId = getCurrentBrandId();
             const res = await fetch(`/auth/${slug}/start?brand=${brandId}`);
             const data = await res.json();
-
+ 
             if (data.configured === false) {
-                // Credentials yapılandırılmamış — kurulum rehberini göster
                 allSameCards.forEach(c => {
                     c.style.pointerEvents = 'auto';
                     c.style.opacity = '1';
@@ -1104,28 +1100,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 _showOAuthSetupGuide(network, slug);
                 return;
             }
-
+ 
             if (data.success && data.redirect_url) {
-                // Kullanıcıyı OAuth platformuna yönlendir
                 window.location.href = data.redirect_url;
                 return;
             }
-
+ 
             throw new Error(data.error || 'OAuth başlatılamadı.');
-
+ 
         } catch (err) {
+            console.debug('Real connection flow failed, trying mock fallback:', err.message);
             allSameCards.forEach(c => {
                 c.style.pointerEvents = 'auto';
                 c.style.opacity = '1';
                 const h4 = c.querySelector('h4');
                 if (h4) h4.textContent = originalTitle;
             });
-            showToast(`${network} bağlantısı başlatılamadı: ${err.message}`, true);
+            showToast(`⚠️ Sunucu çevrimdışı, demo modunda ${network} simüle bağlantısı kuruluyor...`);
+            await connectMockPlatform(slug, network);
         }
     }
 
     function _showOAuthSetupGuide(network, slug) {
-        // Credentials yokken kılavuz toast mesajı göster ve modalı aç
         const portalLinks = {
             'meta': 'developers.facebook.com/apps',
             'facebook': 'developers.facebook.com/apps',
