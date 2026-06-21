@@ -101,7 +101,7 @@ class Config:
     # ─── Helper: Check if a platform has credentials configured ──────────────
     @classmethod
     def platform_configured(cls, platform: str) -> bool:
-        """Returns True if OAuth credentials are set for the given platform."""
+        """Returns True if OAuth credentials are set and not placeholder values."""
         mapping = {
             "meta":        (cls.META_APP_ID,          cls.META_APP_SECRET),
             "facebook":    (cls.META_APP_ID,          cls.META_APP_SECRET),
@@ -121,4 +121,11 @@ class Config:
         pair = mapping.get(platform.lower())
         if not pair:
             return False
-        return all(bool(v) for v in pair)
+            
+        def is_valid(val: str) -> bool:
+            if not val:
+                return False
+            vl = val.lower()
+            return not ("your_" in vl or "change_in_production" in vl or "xxxx" in vl or "dummy" in vl)
+
+        return all(is_valid(v) for v in pair)
