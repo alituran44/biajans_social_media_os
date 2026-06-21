@@ -1,0 +1,51 @@
+# robots.txt for biAjans AI OS
+# Optimized for Search Engines (SEO) & AI Search Engines (GEO / AIO)
+
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /help.html
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /api/
+
+# Explicitly allow major AI Search Crawlers for Generative Engine Optimization (GEO)
+User-agent: GPTBot
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /api/
+
+# Host and Sitemap
+Host: https://biajans.com
+Sitemap: https://biajans.com/sitemap.xml
