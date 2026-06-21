@@ -55,7 +55,7 @@ def save_token(platform: str, token_data: dict, profile: Optional[dict] = None, 
     token_data: { access_token, refresh_token (opsiyonel), expires_at, token_type }
     profile:    { name, id, avatar_url } gibi ek profil bilgisi
     """
-    key = _resolve_platform(platform)
+    key = platform.lower()
     encrypted_token_data = _encrypt_data(token_data)
     profile_json = json.dumps(profile or {})
     connected_at = int(time.time())
@@ -77,8 +77,10 @@ def save_token(platform: str, token_data: dict, profile: Optional[dict] = None, 
 def get_token(platform: str, brand_id: str = "global") -> Optional[dict]:
     """
     Verilen platform için çözülmüş token kaydını döner.
+    Geriye dönük uyumluluk için önce spesifik adı (örn: instagram) dener,
+    bulamazsa parent platformu (örn: meta) dener.
     """
-    key = _resolve_platform(platform)
+    key = platform.lower()
     conn = get_connection()
     cursor = conn.cursor()
     token = None
@@ -101,7 +103,15 @@ def get_token(platform: str, brand_id: str = "global") -> Optional[dict]:
         print(f"[TokenStore] ❌ Token okunurken veya çözülürken hata oluştu: {e}")
     finally:
         conn.close()
-    return token
+
+    if token:
+        return token
+
+    # Fallback to parent platform (örn: meta, google)
+    parent = _resolve_platform(platform)
+    if parent != key:
+        return get_token(parent, brand_id)
+    return None
 
 def is_connected(platform: str, brand_id: str = "global") -> bool:
     """Platforma ait geçerli bir token var mı?"""
@@ -127,14 +137,24 @@ def is_expired(platform: str, brand_id: str = "global") -> bool:
 
 def revoke_token(platform: str, brand_id: str = "global") -> None:
     """Platformun token kaydını sil (bağlantıyı kes)."""
-    key = _resolve_platform(platform)
+    key = platform.lower()
     conn = get_connection()
     cursor = conn.cursor()
     try:
+        # Silinecek platform
         cursor.execute("""
             DELETE FROM tokens 
             WHERE brand_id = ? AND platform = ?
         """, (brand_id, key))
+        
+        # Eğer bu bir alt-platform ise ve parent platform da varsa, parent'ı da sil
+        parent = _resolve_platform(platform)
+        if parent != key:
+            cursor.execute("""
+                DELETE FROM tokens 
+                WHERE brand_id = ? AND platform = ?
+            """, (brand_id, parent))
+            
         conn.commit()
         print(f"[TokenStore] 🔌 '{key}' bağlantısı veritabanından kesildi (Marka: {brand_id}).")
     except Exception as e:
@@ -147,7 +167,8 @@ def get_all_connection_status(brand_id: str = "global") -> dict:
     Tüm platformların bağlantı durumunu döner.
     """
     platforms = [
-        "meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky"
+        "meta", "google", "linkedin", "x", "tiktok", "pinterest", "bluesky",
+        "facebook", "instagram", "threads", "whatsapp", "meta_ads", "youtube", "google_ads", "tiktok_ads"
     ]
     status = {}
     
@@ -192,9 +213,12 @@ def get_all_connection_status(brand_id: str = "global") -> dict:
     finally:
         conn.close()
 
-    # Alt-platformlar üst platformun durumunu miras alır
+    # Alt-platformlar üst platformun durumunu miras alır SADECE kendileri bağlı değilse ve parent bağlıysa!
     for sub, parent in _PLATFORM_GROUP.items():
-        status[sub] = status.get(parent, {"connected": False, "profile": {}, "expires_at": 0})
+        if not status[sub]["connected"]:
+            parent_status = status.get(parent, {"connected": False, "profile": {}, "expires_at": 0})
+            if parent_status["connected"]:
+                status[sub] = parent_status
 
     return status
 

@@ -527,6 +527,19 @@ document.addEventListener('DOMContentLoaded', () => {
             btnConnectAllNetworks.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Bağlanıyor...';
             
             setTimeout(() => {
+                const brand = getCurrentBrand();
+                if (brand) {
+                    if (!brand.connections) brand.connections = {};
+                    document.querySelectorAll('.conn-card').forEach(card => {
+                        const network = card.getAttribute('data-network');
+                        if (network) {
+                            const slug = _platformSlug(network);
+                            brand.connections[slug] = { connected: true };
+                        }
+                    });
+                    saveBrandsToStorage(brandsData);
+                }
+
                 document.querySelectorAll('.conn-card').forEach(card => {
                     const network = card.getAttribute('data-network');
                     if (!card.classList.contains('active-connection')) {
@@ -1219,11 +1232,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const confirmed = confirm(`${network} bağlantısını kesmek istiyor musunuz?`);
             if (!confirmed) return;
             try {
-                await fetch('/api/disconnect', {
+                const res = await fetch('/api/disconnect', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ platform: slug, brand: getCurrentBrandId() }),
                 });
+                if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+                
                 document.querySelectorAll(`.conn-card[data-network="${network}"]`).forEach(c => {
                     c.classList.remove('active-connection');
                     const badge = c.querySelector('.conn-active-badge');
@@ -1233,7 +1248,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateConnectedBrandStatsCount();
                 showToast(`${network} bağlantısı kesildi.`);
             } catch (err) {
-                showToast(`Bağlantı kesilemedi: ${err.message}`, true);
+                console.debug('Disconnect backend request failed, trying local fallback:', err.message);
+                const brand = getCurrentBrand();
+                if (brand && brand.connections) {
+                    delete brand.connections[slug];
+                    saveBrandsToStorage(brandsData);
+                    document.querySelectorAll(`.conn-card[data-network="${network}"]`).forEach(c => {
+                        c.classList.remove('active-connection');
+                        const badge = c.querySelector('.conn-active-badge');
+                        if (badge) badge.remove();
+                    });
+                    updateSidebarPlatformStatus(network, false);
+                    updateConnectedBrandStatsCount();
+                    showToast(`${network} bağlantısı kesildi.`);
+                } else {
+                    showToast(`Bağlantı kesilemedi: ${err.message}`, true);
+                }
             }
         });
     });
@@ -2105,6 +2135,17 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 updateSidebarPlatformStatus(networkName);
                 updateSidebarPlatformStatus(networkName === 'Meta Ads' ? 'Facebook' : (networkName === 'Google Ads' ? 'Google Ads' : 'TikTok Kişisel'));
                 updateConnectedBrandStatsCount();
+
+                // Save to local storage for persistence in demo mode
+                const brand = getCurrentBrand();
+                if (brand) {
+                    if (!brand.connections) brand.connections = {};
+                    const mainSlug = _platformSlug(networkName);
+                    brand.connections[mainSlug] = { connected: true };
+                    const aliasSlug = _platformSlug(networkName === 'Meta Ads' ? 'Facebook' : (networkName === 'Google Ads' ? 'Google Ads' : 'TikTok Kişisel'));
+                    brand.connections[aliasSlug] = { connected: true };
+                    saveBrandsToStorage(brandsData);
+                }
 
                 showToast(`${networkName} reklam hesabınız başarıyla bağlandı ve aktif kampanyalar panele aktarıldı!`);
                 activateSocialInbox(); // Connect active social inbox!
@@ -3272,14 +3313,34 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     // STARTUP: Gerçek bağlantı durumlarını sunucudan çek
     // ==========================================
     async function syncConnectionStatus() {
-        try {
-            const brandId = getCurrentBrandId();
-            const res  = await fetch(`/api/connections/status?brand=${brandId}`);
-            const data = await res.json();
-            if (!data || !data.connections) return;
+        const slugToNetworkNames = {
+            meta:       ['Facebook', 'Instagram', 'Threads', 'WhatsApp', 'Meta Reklamlar'],
+            facebook:   ['Facebook'],
+            instagram:  ['Instagram'],
+            threads:    ['Threads'],
+            whatsapp:   ['WhatsApp'],
+            meta_ads:   ['Meta Ads', 'Meta Reklamlar'],
+            google:     ['YouTube', 'Google Ads', 'Looker Stüdyosu', 'Google İşletme Profili'],
+            youtube:    ['YouTube'],
+            google_ads: ['Google Ads'],
+            linkedin:   ['LinkedIn'],
+            x:          ['X'],
+            tiktok:     ['TikTok', 'TikTok Kişisel', 'TikTok İşletmesi', 'TikTok Reklamları', 'TikTok Ads'],
+            pinterest:  ['Pinterest'],
+            bluesky:    ['Bluesky'],
+        };
 
-            const connections = data.connections;
+        // Clear all connection states first (safe reset)
+        document.querySelectorAll('.conn-card').forEach(card => {
+            card.classList.remove('active-connection');
+            const badge = card.querySelector('.conn-active-badge');
+            if (badge) badge.remove();
+        });
+        Object.values(slugToNetworkNames).flat().forEach(name => {
+            updateSidebarPlatformStatus(name, false);
+        });
 
+        function renderConnections(connections) {
             // Update Hashtag Tracker status indicators if they exist
             const hashtagConnXStatus = document.getElementById('hashtagConnXStatus');
             const hashtagConnIGStatus = document.getElementById('hashtagConnIGStatus');
@@ -3295,7 +3356,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             }
 
             if (hashtagConnIGStatus) {
-                if (connections.meta && connections.meta.connected) {
+                const igConnected = (connections.meta && connections.meta.connected) || (connections.instagram && connections.instagram.connected);
+                if (igConnected) {
                     hashtagConnIGStatus.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 8px; color: #10b981;"></i> Aktif';
                     hashtagConnIGStatus.style.color = '#10b981';
                 } else {
@@ -3306,7 +3368,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
             const hashtagConnGoogleStatus = document.getElementById('hashtagConnGoogleStatus');
             if (hashtagConnGoogleStatus) {
-                if (connections.google && connections.google.connected) {
+                const gConnected = (connections.google && connections.google.connected) || (connections.google_ads && connections.google_ads.connected);
+                if (gConnected) {
                     hashtagConnGoogleStatus.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 8px; color: #10b981;"></i> Aktif';
                     hashtagConnGoogleStatus.style.color = '#10b981';
                 } else {
@@ -3314,27 +3377,6 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                     hashtagConnGoogleStatus.style.color = '#ef4444';
                 }
             }
-
-            // Platform slug → data-network değerleri eşleştirmesi
-            const slugToNetworkNames = {
-                meta:       ['Facebook', 'Instagram', 'Threads', 'WhatsApp', 'Meta Reklamlar'],
-                google:     ['YouTube', 'Google Ads', 'Looker Stüdyosu', 'Google İşletme Profili'],
-                linkedin:   ['LinkedIn'],
-                x:          ['X'],
-                tiktok:     ['TikTok Kişisel', 'TikTok İşletmesi', 'TikTok Reklamları', 'TikTok Ads'],
-                pinterest:  ['Pinterest'],
-                bluesky:    ['Bluesky'],
-            };
-
-            // Clear all connection states first
-            document.querySelectorAll('.conn-card').forEach(card => {
-                card.classList.remove('active-connection');
-                const badge = card.querySelector('.conn-active-badge');
-                if (badge) badge.remove();
-            });
-            Object.values(slugToNetworkNames).flat().forEach(name => {
-                updateSidebarPlatformStatus(name, false);
-            });
 
             Object.entries(connections).forEach(([slug, info]) => {
                 if (!info.connected) return;
@@ -3364,10 +3406,44 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 const currentBrand = getCurrentBrand();
                 if (currentBrand) updateDashboardStats(currentBrand);
             }
+        }
 
+        try {
+            const brandId = getCurrentBrandId();
+            const res  = await fetch(`/api/connections/status?brand=${brandId}`);
+            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+            
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new Error("Response is not JSON");
+            }
+
+            const data = await res.json();
+            if (data && data.connections) {
+                renderConnections(data.connections);
+                return;
+            }
+            throw new Error("Invalid connections response");
         } catch (err) {
-            // Sessizce geç — sunucu henüz OAuth endpoint'lerini desteklemeyebilir
-            console.debug('[biAjans] Bağlantı durumu çekilemedi:', err.message);
+            console.debug('[biAjans] Sunucudan gerçek bağlantı durumları alınamadı (Demo mod fallback):', err.message);
+            
+            // Local fallback (Demo mode)
+            const brand = getCurrentBrand();
+            if (brand) {
+                if (!brand.connections) {
+                    // Set default mock statuses for pre-defined brands
+                    if (brand.id === 'coffee') {
+                        brand.connections = { instagram: { connected: true }, facebook: { connected: true }, linkedin: { connected: true } };
+                    } else if (brand.id === 'fitness') {
+                        brand.connections = { instagram: { connected: true }, tiktok: { connected: true }, youtube: { connected: true }, linkedin: { connected: true } };
+                    } else {
+                        // LinkedIn is connected out-of-the-box for demo
+                        brand.connections = { linkedin: { connected: true } };
+                    }
+                    saveBrandsToStorage(brandsData);
+                }
+                renderConnections(brand.connections);
+            }
         }
     }
 
@@ -3476,10 +3552,21 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 showToast(`✅ ${platformLabel} simüle bağlantısı kuruldu!`);
                 await syncConnectionStatus();
             } else {
-                showToast(`❌ Bağlantı hatası: ${data.error}`, true);
+                throw new Error(data.error || "Bilinmeyen hata");
             }
         } catch (err) {
-            showToast(`❌ Bağlantı hatası: ${err.message}`, true);
+            console.debug('Mock connection request failed, trying local fallback:', err.message);
+            // Local fallback (Demo mode)
+            const brand = getCurrentBrand();
+            if (brand) {
+                if (!brand.connections) brand.connections = {};
+                brand.connections[platform] = { connected: true };
+                saveBrandsToStorage(brandsData);
+                showToast(`✅ ${platformLabel} simüle bağlantısı kuruldu!`);
+                syncConnectionStatus();
+            } else {
+                showToast(`❌ Bağlantı hatası: ${err.message}`, true);
+            }
         }
     }
 
@@ -4898,13 +4985,25 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         let connectionsData = null;
         try {
             const res = await fetch(`/api/connections/status?brand=${brand.id}`);
-            const data = await res.json();
-            if (data && data.connections) {
-                connectionsData = data.connections;
-                connectedCount = Object.values(connectionsData).filter(c => c.connected).length;
+            if (res.ok) {
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    const data = await res.json();
+                    if (data && data.connections) {
+                        connectionsData = data.connections;
+                        connectedCount = Object.values(connectionsData).filter(c => c.connected).length;
+                    }
+                }
+            }
+            if (!connectionsData) {
+                throw new Error("No connections data");
             }
         } catch (e) {
-            console.debug('Dashboard health fetch connection error:', e);
+            console.debug('Dashboard health fetch connection error, trying local fallback:', e);
+            if (brand && brand.connections) {
+                connectionsData = brand.connections;
+                connectedCount = Object.values(connectionsData).filter(c => c.connected).length;
+            }
         }
 
         let healthPercent = 75;
@@ -4946,11 +5045,13 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
             // Merge with actual server connection status
             if (connectionsData) {
-                if (connectionsData.meta && connectionsData.meta.connected) {
+                if ((connectionsData.instagram && connectionsData.instagram.connected) || (connectionsData.meta && connectionsData.meta.connected)) {
                     netStatus[0].connected = true;
+                }
+                if ((connectionsData.facebook && connectionsData.facebook.connected) || (connectionsData.meta && connectionsData.meta.connected)) {
                     netStatus[1].connected = true;
                 }
-                if (connectionsData.google && connectionsData.google.connected) {
+                if ((connectionsData.youtube && connectionsData.youtube.connected) || (connectionsData.google && connectionsData.google.connected)) {
                     netStatus[2].connected = true;
                 }
                 if (connectionsData.x && connectionsData.x.connected) {

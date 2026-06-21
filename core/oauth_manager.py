@@ -423,6 +423,7 @@ def handle_oauth_callback(platform: str, code: str, state: str) -> dict:
         return {"success": False, "error": "Geçersiz veya süresi dolmuş state parametresi."}
 
     brand_id = state_data.get("brand_id", "global")
+    original_platform = state_data.get("platform", platform)
     token_data: dict = {}
 
     try:
@@ -500,7 +501,7 @@ def handle_oauth_callback(platform: str, code: str, state: str) -> dict:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-    return {"success": True, "platform": platform, "token_data": token_data, "brand_id": brand_id}
+    return {"success": True, "platform": original_platform, "token_data": token_data, "brand_id": brand_id}
 
 
 def connect_bluesky(identifier: str, app_password: str) -> dict:
