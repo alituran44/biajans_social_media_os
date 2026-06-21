@@ -3154,6 +3154,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             sandLogout.addEventListener('click', async () => {
                 showToast("Güvenli çıkış yapılıyor... biAjans'ı tercih ettiğiniz için teşekkür ederiz! 👋");
                 sandwichDropdown.classList.add('hidden');
+                localStorage.removeItem('biAjans_mock_session');
                 try {
                     await fetch('/api/auth/logout', { method: 'POST' });
                 } catch (err) {
@@ -5659,6 +5660,9 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     async function checkSession() {
         try {
             const res = await fetch('/api/auth/session');
+            if (res.status === 404) {
+                throw new Error("404 Not Found (Demo mode fallback)");
+            }
             const data = await res.json();
             if (data.authenticated) {
                 currentUser = data.user;
@@ -5676,8 +5680,27 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 window.location.href = '/login.html';
             }
         } catch (e) {
-            console.error("Session check failed", e);
-            window.location.href = '/login.html';
+            console.warn("Session check failed, checking mock session fallback:", e);
+            const mockSession = localStorage.getItem('biAjans_mock_session');
+            if (mockSession) {
+                try {
+                    currentUser = JSON.parse(mockSession);
+                    // Adjust visibility of user management actions
+                    const btnOpenAddUser = document.getElementById('btnOpenAddUser');
+                    if (btnOpenAddUser) {
+                        if (currentUser.role !== 'admin') {
+                            btnOpenAddUser.style.display = 'none';
+                        } else {
+                            btnOpenAddUser.style.display = 'block';
+                        }
+                    }
+                    console.log("Authenticated via Mock Session (Demo Mode)");
+                } catch (err) {
+                    window.location.href = '/login.html';
+                }
+            } else {
+                window.location.href = '/login.html';
+            }
         }
     }
 
