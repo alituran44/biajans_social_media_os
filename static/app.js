@@ -1097,7 +1097,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const h4 = c.querySelector('h4');
                     if (h4) h4.textContent = originalTitle;
                 });
-                _showOAuthSetupGuide(network, slug);
+                
+                const useMock = confirm(
+                    `⚠️ ${network} API Anahtarları Tanımlanmamış\n\n` +
+                    `Yerel sunucunuzdaki (.env) dosyasında ${network} için CLIENT_ID ve CLIENT_SECRET tanımlanmamış. Bu yüzden gerçek sayfaya yönlendirme yapılamıyor.\n\n` +
+                    `Gerçek bağlantı kurmak için rehberi takip edebilirsiniz. Test amaçlı simüle (demo) bağlantı kurarak yeşil ışık yakmak ister misiniz?`
+                );
+                if (useMock) {
+                    await connectMockPlatform(slug, network);
+                } else {
+                    _showOAuthSetupGuide(network, slug);
+                }
                 return;
             }
  
