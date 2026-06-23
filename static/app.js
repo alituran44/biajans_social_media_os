@@ -6199,10 +6199,11 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     });
 
     // ============================================================
-    // CUSTOM AI CRM KANBAN & LEAD MANAGEMENT SYSTEM
+    // CUSTOM AI CRM KANBAN & LEAD MANAGEMENT SYSTEM (COMPREHENSIVE)
     // ============================================================
 
     let currentLeadId = null;
+    let cachedLeads = [];
 
     // Escapes HTML tags to prevent XSS
     function escapeHtml(str) {
@@ -6225,7 +6226,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const data = await res.json();
             
             if (data.success) {
-                renderKanban(data.leads || []);
+                cachedLeads = data.leads || [];
+                applyFiltersAndRender();
             } else {
                 showToast("Potansiyel müşteriler yüklenemedi: " + (data.error || ""), true);
             }
@@ -6234,6 +6236,81 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             showToast("CRM verileri yüklenirken hata oluştu.", true);
         }
     };
+
+    // Filters and sorts the cached leads, then renders the board and analytics
+    window.applyFiltersAndRender = function() {
+        const searchQuery = (document.getElementById('crmSearchInput')?.value || '').toLowerCase().trim();
+        const filterSource = document.getElementById('crmFilterSource')?.value || 'ALL';
+        const sortBy = document.getElementById('crmSortSelect')?.value || 'newest';
+
+        // 1. Filter leads
+        let filtered = cachedLeads.filter(lead => {
+            const matchesSearch = !searchQuery || 
+                (lead.name || '').toLowerCase().includes(searchQuery) ||
+                (lead.email || '').toLowerCase().includes(searchQuery) ||
+                (lead.phone || '').toLowerCase().includes(searchQuery);
+
+            const matchesSource = filterSource === 'ALL' || lead.source === filterSource;
+
+            return matchesSearch && matchesSource;
+        });
+
+        // 2. Sort leads
+        filtered.sort((a, b) => {
+            if (sortBy === 'newest') {
+                return (b.created_at || 0) - (a.created_at || 0);
+            } else if (sortBy === 'oldest') {
+                return (a.created_at || 0) - (b.created_at || 0);
+            } else if (sortBy === 'budget_desc') {
+                return (b.budget || 0) - (a.budget || 0);
+            } else if (sortBy === 'budget_asc') {
+                return (a.budget || 0) - (b.budget || 0);
+            } else if (sortBy === 'name_asc') {
+                return (a.name || '').localeCompare(b.name || '');
+            }
+            return 0;
+        });
+
+        // 3. Render Kanban columns
+        renderKanban(filtered);
+
+        // 4. Update Analytics metrics
+        updateCRMAnalytics(filtered);
+    };
+
+    // Computes and updates metrics in the CRM Analytics Panel
+    function updateCRMAnalytics(leads) {
+        const totalValEl = document.getElementById('crmTotalValue');
+        const convRateEl = document.getElementById('crmConversionRate');
+        const activeCountEl = document.getElementById('crmActiveCount');
+        const instaRatioEl = document.getElementById('crmInstagramRatio');
+
+        if (!leads || leads.length === 0) {
+            if (totalValEl) totalValEl.textContent = '₺0';
+            if (convRateEl) convRateEl.textContent = '%0';
+            if (activeCountEl) activeCountEl.textContent = '0';
+            if (instaRatioEl) instaRatioEl.textContent = '%0';
+            return;
+        }
+
+        // Total Value
+        const totalValue = leads.reduce((sum, lead) => sum + Number(lead.budget || 0), 0);
+        if (totalValEl) totalValEl.textContent = `₺${totalValue.toLocaleString('tr-TR')}`;
+
+        // Conversion (Won / Total)
+        const wonLeads = leads.filter(lead => lead.stage === 'won').length;
+        const conversionRate = Math.round((wonLeads / leads.length) * 100);
+        if (convRateEl) convRateEl.textContent = `%${conversionRate}`;
+
+        // Active Leads (New, Contacted, Proposal)
+        const activeLeads = leads.filter(lead => ['new', 'contacted', 'proposal'].includes(lead.stage)).length;
+        if (activeCountEl) activeCountEl.textContent = activeLeads;
+
+        // Instagram Leads Ratio
+        const instaLeads = leads.filter(lead => lead.source === 'Instagram').length;
+        const instaRatio = Math.round((instaLeads / leads.length) * 100);
+        if (instaRatioEl) instaRatioEl.textContent = `%${instaRatio}`;
+    }
 
     // Renders leads into the 5 Kanban columns with budgets and counts
     function renderKanban(leads) {
@@ -6289,12 +6366,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                     card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
                 });
                 
-                // Open details on click
-                card.addEventListener('click', () => {
-                    openLeadDetails(lead.id);
-                });
-                
-                // Drag start & end events
+                // Drag events
                 card.addEventListener('dragstart', (e) => {
                     e.dataTransfer.setData('text/plain', lead.id);
                     card.style.opacity = '0.5';
@@ -6332,9 +6404,19 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 }
                 
                 card.innerHTML = `
-                    <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">${escapeHtml(lead.name)}</div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
-                        <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 12px; background: ${sourceBg}; color: ${sourceColor}; display: inline-flex; align-items: center;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                        <div style="font-size: 13px; font-weight: 700; color: #1e293b; line-height: 1.3; flex: 1;">${escapeHtml(lead.name)}</div>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
+                            <button class="btn-lead-details" style="background: none; border: none; padding: 2px; cursor: pointer; color: #6366f1;" title="Detayları İncele">
+                                <i class="fa-regular fa-folder-open" style="font-size: 12.5px;"></i>
+                            </button>
+                            <button class="btn-lead-delete" style="background: none; border: none; padding: 2px; cursor: pointer; color: #ef4444;" title="Adayı Sil">
+                                <i class="fa-regular fa-trash-can" style="font-size: 12px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+                        <span style="font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 12px; background: ${sourceBg}; color: ${sourceColor}; display: inline-flex; align-items: center;">
                             ${sourceIcon}${lead.source || 'Diğer'}
                         </span>
                         <span style="font-size: 11.5px; font-weight: 800; color: #475569;">
@@ -6342,6 +6424,24 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                         </span>
                     </div>
                 `;
+                
+                // Details button handler
+                const btnDetails = card.querySelector('.btn-lead-details');
+                if (btnDetails) {
+                    btnDetails.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openLeadDetails(lead.id);
+                    });
+                }
+                
+                // Delete button handler
+                const btnDelete = card.querySelector('.btn-lead-delete');
+                if (btnDelete) {
+                    btnDelete.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteLead(lead.id, lead.name);
+                    });
+                }
                 
                 container.appendChild(card);
             }
@@ -6413,6 +6513,35 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             }
         });
     });
+
+    // Delete lead action helper
+    window.deleteLead = async function(leadId, leadName) {
+        if (!confirm(`'${leadName}' isimli adayı tamamen silmek istediğinize emin misiniz?`)) return;
+        
+        try {
+            const res = await fetch('/api/crm/leads/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lead_id: leadId })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                showToast("Aday silindi. 🗑️");
+                const modal = document.getElementById('crmLeadDetailsModal');
+                if (modal && currentLeadId === leadId) {
+                    modal.classList.add('hidden');
+                    currentLeadId = null;
+                }
+                loadCRMLeads();
+            } else {
+                showToast("Hata: " + (data.error || "Aday silinemedi."), true);
+            }
+        } catch (err) {
+            console.error("deleteLead error:", err);
+            showToast("Aday silinirken hata oluştu.", true);
+        }
+    };
 
     // Opens lead details modal
     window.openLeadDetails = async function(leadId) {
@@ -6787,6 +6916,81 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const modal = document.getElementById('crmLeadDetailsModal');
             if (modal) modal.classList.add('hidden');
             currentLeadId = null;
+        });
+    }
+
+    // Predefined Template Select change listener
+    const crmMessageTemplateSelect = document.getElementById('crmMessageTemplateSelect');
+    if (crmMessageTemplateSelect) {
+        crmMessageTemplateSelect.addEventListener('change', () => {
+            const val = crmMessageTemplateSelect.value;
+            if (val) {
+                const input = document.getElementById('crmMessageInput');
+                if (input) {
+                    input.value = val;
+                }
+                // Reset select value to placeholder
+                crmMessageTemplateSelect.selectedIndex = 0;
+            }
+        });
+    }
+
+    // Modal delete button listener
+    const btnCRMDeleteLead = document.getElementById('btnCRMDeleteLead');
+    if (btnCRMDeleteLead) {
+        btnCRMDeleteLead.addEventListener('click', () => {
+            if (currentLeadId) {
+                const leadName = document.getElementById('crmEditLeadName')?.value || 'Aday';
+                deleteLead(currentLeadId, leadName);
+            }
+        });
+    }
+
+    // Filters, Search and Sort event listeners
+    const crmSearchInput = document.getElementById('crmSearchInput');
+    const crmFilterSource = document.getElementById('crmFilterSource');
+    const crmSortSelect = document.getElementById('crmSortSelect');
+    
+    if (crmSearchInput) crmSearchInput.addEventListener('input', applyFiltersAndRender);
+    if (crmFilterSource) crmFilterSource.addEventListener('change', applyFiltersAndRender);
+    if (crmSortSelect) crmSortSelect.addEventListener('change', applyFiltersAndRender);
+
+    // CSV Exporter click listener
+    const btnCRMExport = document.getElementById('btnCRMExport');
+    if (btnCRMExport) {
+        btnCRMExport.addEventListener('click', () => {
+            if (cachedLeads.length === 0) {
+                showToast("Dışa aktarılacak aday bulunmamaktadır.", true);
+                return;
+            }
+            
+            let csvContent = "\ufeff"; // BOM for UTF-8 compatibility
+            csvContent += "İsim,E-posta,Telefon,Bütçe,Kaynak,Aşama,Kayıt Tarihi\n";
+            
+            cachedLeads.forEach(lead => {
+                const dateStr = lead.created_at ? new Date(lead.created_at * 1000).toLocaleString('tr-TR') : '';
+                const row = [
+                    `"${(lead.name || '').replace(/"/g, '""')}"`,
+                    `"${(lead.email || '').replace(/"/g, '""')}"`,
+                    `"${(lead.phone || '').replace(/"/g, '""')}"`,
+                    lead.budget || 0,
+                    `"${(lead.source || '').replace(/"/g, '""')}"`,
+                    `"${(lead.stage || '').replace(/"/g, '""')}"`,
+                    `"${dateStr}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `biAjans_CRM_Adaylar_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Aday listesi CSV olarak indirildi. 📊");
         });
     }
 

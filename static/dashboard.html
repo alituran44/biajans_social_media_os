@@ -3682,6 +3682,64 @@
                             </button>
                         </div>
 
+                        <!-- CRM Analytics Summary Dashboard -->
+                        <div id="crmAnalyticsPanel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; background: #f8fafc; border: 1px solid var(--card-border); padding: 14px; border-radius: 8px;">
+                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Toplam Fırsat</span>
+                                    <h4 id="crmTotalValue" style="font-size: 18px; font-weight: 800; color: #1e293b; margin: 4px 0 0 0;">₺0</h4>
+                                </div>
+                                <i class="fa-solid fa-sack-dollar" style="font-size: 20px; color: #10b981;"></i>
+                            </div>
+                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Kazanma Oranı</span>
+                                    <h4 id="crmConversionRate" style="font-size: 18px; font-weight: 800; color: #1e293b; margin: 4px 0 0 0;">%0</h4>
+                                </div>
+                                <i class="fa-solid fa-chart-line" style="font-size: 20px; color: #6366f1;"></i>
+                            </div>
+                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Aktif Adaylar</span>
+                                    <h4 id="crmActiveCount" style="font-size: 18px; font-weight: 800; color: #1e293b; margin: 4px 0 0 0;">0</h4>
+                                </div>
+                                <i class="fa-solid fa-users" style="font-size: 20px; color: #f59e0b;"></i>
+                            </div>
+                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Instagram Oranı</span>
+                                    <h4 id="crmInstagramRatio" style="font-size: 18px; font-weight: 800; color: #1e293b; margin: 4px 0 0 0;">%0</h4>
+                                </div>
+                                <i class="fa-brands fa-instagram" style="font-size: 20px; color: #c13584;"></i>
+                            </div>
+                        </div>
+
+                        <!-- CRM Search, Filter, Sort Controls -->
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px dashed #eff1f6; padding-bottom: 16px;">
+                            <div style="display: flex; gap: 10px; flex: 1; min-width: 300px; flex-wrap: wrap;">
+                                <input type="text" id="crmSearchInput" placeholder="Aday ismi, e-posta veya telefon ara..." style="flex: 1; min-width: 200px; padding: 8px 12px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: var(--font-body); outline: none;">
+                                <select id="crmFilterSource" style="padding: 8px 12px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer; outline: none; font-weight: bold; color: #475569;">
+                                    <option value="ALL">Tüm Kaynaklar</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="WhatsApp">WhatsApp</option>
+                                    <option value="Web Form">Web Formu</option>
+                                    <option value="Google Ads">Google Reklamları</option>
+                                    <option value="LinkedIn">LinkedIn</option>
+                                    <option value="Tavsiye">Tavsiye / Doğrudan</option>
+                                </select>
+                                <select id="crmSortSelect" style="padding: 8px 12px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer; outline: none; font-weight: bold; color: #475569;">
+                                    <option value="newest">En Yeni Adaylar</option>
+                                    <option value="oldest">En Eski Adaylar</option>
+                                    <option value="budget_desc">Bütçe (Yüksekten Düşüğe)</option>
+                                    <option value="budget_asc">Bütçe (Düşükten Yükseğe)</option>
+                                    <option value="name_asc">A-Z İsim</option>
+                                </select>
+                            </div>
+                            <button id="btnCRMExport" class="btn" style="background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px 14px; font-size: 11.5px; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;" title="Verileri CSV olarak indir">
+                                <i class="fa-solid fa-file-csv" style="font-size: 14px;"></i> CSV Aktar
+                            </button>
+                        </div>
+
                         <!-- Add Lead Form Panel (Hidden by default) -->
                         <div id="crmAddLeadPanel" class="hidden animate-slide-up" style="background: #f8fafc; border: 1px solid var(--card-border); padding: 20px; border-radius: 8px; margin-bottom: 24px;">
                             <h3 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0 0 16px 0;">Yeni Aday Detayları</h3>
@@ -4589,8 +4647,13 @@ TWITCH_CLIENT_SECRET=buraya_client_secret_yazın</pre>
             </button>
             
             <div style="border-bottom: 1px solid #eff1f6; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-                <h3 class="modal-title" id="crmModalLeadNameTitle" style="margin: 0; border: none; padding: 0; font-size: 15px; font-weight: 800; color: #1e293b;">Müşteri Kartı Detayları</h3>
-                <span id="crmModalLeadSourceBadge" style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; background-color: #e0e7ff; color: #4338ca;">Instagram</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h3 class="modal-title" id="crmModalLeadNameTitle" style="margin: 0; border: none; padding: 0; font-size: 15px; font-weight: 800; color: #1e293b;">Müşteri Kartı Detayları</h3>
+                    <span id="crmModalLeadSourceBadge" style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; background-color: #e0e7ff; color: #4338ca;">Instagram</span>
+                </div>
+                <button id="btnCRMDeleteLead" class="btn" style="background-color: #fee2e2; color: #ef4444; border: 1px solid #fecaca; font-size: 10.5px; font-weight: 800; padding: 4px 10px; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Bu adayı tamamen sil">
+                    <i class="fa-regular fa-trash-can"></i> Adayı Sil
+                </button>
             </div>
             
             <!-- Three Columns Modal Body -->
@@ -4649,6 +4712,16 @@ TWITCH_CLIENT_SECRET=buraya_client_secret_yazın</pre>
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> AI ile Yanıt Önerisi Al
                             </button>
                             <span id="crmAISpinner" class="hidden" style="font-size: 10px; font-weight: 700; color: #2563eb;"><i class="fa-solid fa-spinner fa-spin"></i> AI düşünüyor...</span>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="crmMessageTemplateSelect" style="flex: 1; font-size: 11px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 20px; background: white; cursor: pointer; outline: none; font-weight: 700; color: #475569;">
+                                <option value="">💬 Hazır Cevap Şablonları...</option>
+                                <option value="Merhaba! Detaylı hizmet listemizi ve fiyat broşürümüzü ekte/profildeki linkte bulabilirsiniz. Herhangi bir sorunuz olursa buradayız!">Hizmet Listesi & Fiyat</option>
+                                <option value="Merhaba, talebiniz için teşekkür ederiz. Konuyu daha detaylı görüşmek ve size özel bir plan sunmak adına uygun bir zamanda 15 dakikalık kısa bir Zoom toplantısı planlayabilir miyiz?">Zoom Toplantı Daveti</option>
+                                <option value="Tebrikler! Lansmana özel %20 indirim kodunuz markanıza tanımlanmıştır. Siparişinizi web sitemiz üzerinden hemen tamamlayabilirsiniz. İndirim Kodunuz: BIAJANS20">Lansman İndirim Kodu</option>
+                                <option value="Teklifimiz hazırlanmış ve e-posta adresinize gönderilmiştir. İnceledikten sonra revize edilmesini istediğiniz kısımlar olursa lütfen bize bildirin. İyi çalışmalar!">Teklif Gönderildi Bilgisi</option>
+                            </select>
                         </div>
                         
                         <div style="display: flex; gap: 8px;">

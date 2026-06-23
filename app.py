@@ -716,6 +716,29 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json_response({"success": True, "suggestion": ai_suggested_response})
             return
 
+        # ── CRM: Delete Lead ───────────────────────────────────────────────
+        if path == "/api/crm/leads/delete":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            lead_id = int(body.get("lead_id", 0))
+            if not lead_id:
+                self.send_json_response({"success": False, "error": "Lead ID is required"}, 400)
+                return
+                
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute("DELETE FROM crm_leads WHERE id = ?", (lead_id,))
+                conn.commit()
+                self.send_json_response({"success": True})
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
         # ── Publish Endpoint ───────────────────────────────────────────────
         if path == "/api/publish":
             platform = body.get("platform", "").strip().lower()
