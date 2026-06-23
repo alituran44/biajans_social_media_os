@@ -2,6 +2,7 @@ import sqlite3
 import os
 import hashlib
 import logging
+import time
 
 logger = logging.getLogger("DatabaseManager")
 
@@ -84,6 +85,42 @@ def init_db():
         expires REAL NOT NULL
     )
     """)
+
+    # --- CRM Tables ---
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS crm_leads (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        brand_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        email TEXT,
+        phone TEXT,
+        stage TEXT NOT NULL DEFAULT 'new', -- 'new', 'contacted', 'proposal', 'won', 'lost'
+        budget REAL DEFAULT 0.0,
+        source TEXT DEFAULT 'Direct',      -- 'Instagram', 'WhatsApp', 'Web Form', etc.
+        created_at INTEGER NOT NULL
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS crm_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lead_id INTEGER NOT NULL,
+        sender TEXT NOT NULL,              -- 'lead', 'user', 'ai'
+        message TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY(lead_id) REFERENCES crm_leads(id) ON DELETE CASCADE
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS crm_notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lead_id INTEGER NOT NULL,
+        note_text TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY(lead_id) REFERENCES crm_leads(id) ON DELETE CASCADE
+    )
+    """)
     
     # 4. Seed Default Admin User
     cursor.execute("SELECT id FROM users WHERE username = 'admin'")
@@ -107,6 +144,81 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?)
         """, ("global", "Google Ads Kampanyası Oluştur", "Arama ağı kampanyasını başlat ve günlük bütçeyi 150 TL yap.", "In Progress", "admin", "2026-06-22"))
         logger.info("Mock tasks seeded successfully.")
+
+    # 6. Seed Default CRM Leads if empty
+    cursor.execute("SELECT count(*) FROM crm_leads")
+    if cursor.fetchone()[0] == 0:
+        now = int(time.time())
+        # Leads
+        cursor.execute("""
+            INSERT INTO crm_leads (brand_id, name, email, phone, stage, budget, source, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, ("global", "Ahmet Yılmaz", "ahmet.yilmaz@gmail.com", "0555 111 22 33", "new", 2500.0, "Instagram", now - 86400 * 2))
+        ahmet_id = cursor.lastrowid
+
+        cursor.execute("""
+            INSERT INTO crm_leads (brand_id, name, email, phone, stage, budget, source, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, ("global", "Ayşe Demir", "ayse.demir@outlook.com", "0555 222 33 44", "contacted", 4200.0, "WhatsApp", now - 86400 * 5))
+        ayse_id = cursor.lastrowid
+
+        cursor.execute("""
+            INSERT INTO crm_leads (brand_id, name, email, phone, stage, budget, source, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, ("global", "Mehmet Kaya", "mehmet.kaya@gmail.com", "0555 333 44 55", "proposal", 7500.0, "Web Form", now - 86400 * 10))
+        mehmet_id = cursor.lastrowid
+
+        cursor.execute("""
+            INSERT INTO crm_leads (brand_id, name, email, phone, stage, budget, source, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, ("global", "Canan Şahin", "canan.sahin@sahin.com", "0555 444 55 66", "won", 12000.0, "Google Ads", now - 86400 * 15))
+        canan_id = cursor.lastrowid
+
+        # Messages for Ahmet Yılmaz
+        cursor.execute("""
+            INSERT INTO crm_messages (lead_id, sender, message, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (ahmet_id, "lead", "Merhaba, yer fıstığı ezmesi lansman ürünleriniz stokta var mı?", now - 86400 * 2))
+
+        # Messages for Ayşe Demir
+        cursor.execute("""
+            INSERT INTO crm_messages (lead_id, sender, message, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (ayse_id, "lead", "Merhaba, fıstık ezmesi fiyatlarınız hakkında bilgi alabilir miyim?", now - 86400 * 5))
+        cursor.execute("""
+            INSERT INTO crm_messages (lead_id, sender, message, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (ayse_id, "user", "Merhaba Ayşe Hanım! Organik fıstık ezmemiz 250gr kavanozlarda 120 TL'dir. Toplu alımlarda indirim yapıyoruz.", now - 86400 * 4))
+        cursor.execute("""
+            INSERT INTO crm_messages (lead_id, sender, message, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (ayse_id, "lead", "Harika, 10 adet almak istesem ne kadar indirim olur?", now - 86400 * 4))
+
+        # Messages for Mehmet Kaya
+        cursor.execute("""
+            INSERT INTO crm_messages (lead_id, sender, message, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (mehmet_id, "lead", "Yeni kahve çekirdekleri lansmanınız için kurumsal teklif almak istiyoruz.", now - 86400 * 10))
+        cursor.execute("""
+            INSERT INTO crm_messages (lead_id, sender, message, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (mehmet_id, "user", "Mehmet Bey merhaba, kurumsal lansman paketlerimizi hazırlayıp teklif PDF'ini iletiyorum.", now - 86400 * 9))
+        cursor.execute("""
+            INSERT INTO crm_messages (lead_id, sender, message, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (mehmet_id, "lead", "Teşekkürler, teklifi inceleyip geri döneceğim.", now - 86400 * 9))
+
+        # Notes for Mehmet Kaya
+        cursor.execute("""
+            INSERT INTO crm_notes (lead_id, note_text, created_at)
+            VALUES (?, ?, ?)
+        """, (mehmet_id, "Müşteri kahve lansmanı için 50 paket kurumsal hediye seti teklifi istedi.", now - 86400 * 10))
+        cursor.execute("""
+            INSERT INTO crm_notes (lead_id, note_text, created_at)
+            VALUES (?, ?, ?)
+        """, (mehmet_id, "Teklif PDF formatında gönderildi. Pazartesi günü takip araması yapılacak.", now - 86400 * 9))
+
+        logger.info("Mock CRM data seeded successfully.")
         
     conn.commit()
     conn.close()

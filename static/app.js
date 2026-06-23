@@ -580,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { btnId: 'navAkilliBaglantilar', secId: 'akilliBaglantilarSection' },
         { btnId: 'navReklamlar', secId: 'reklamlarSection' },
         { btnId: 'sideHashtag', secId: 'hashtagTakipSection' },
+        { btnId: 'sideCRM', secId: 'crmSection' },
         { btnId: 'markaAyarlariBtn', secId: 'settingsSection' },
         { btnId: 'hesapAyarlariSideBtn', secId: 'settingsSection' },
         { btnId: 'markaAyarlariSideBtn', secId: 'brandSettingsSection' },
@@ -646,6 +647,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeBrand = brandsData.find(b => b.id === activeId);
             if (activeBrand && typeof updateCompetitorsDashboard === 'function') {
                 updateCompetitorsDashboard(activeBrand);
+            }
+        }
+        if (targetSecId === 'crmSection') {
+            if (typeof loadCRMLeads === 'function') {
+                loadCRMLeads();
             }
         }
         if (targetSecId === 'settingsSection' || targetSecId === 'brandSettingsSection') {
@@ -6191,6 +6197,609 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             }
         });
     });
+
+    // ============================================================
+    // CUSTOM AI CRM KANBAN & LEAD MANAGEMENT SYSTEM
+    // ============================================================
+
+    let currentLeadId = null;
+
+    // Escapes HTML tags to prevent XSS
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // Fetches leads for the active brand and updates Kanban
+    window.loadCRMLeads = async function() {
+        const brandSelect = document.getElementById('brandSelect');
+        const activeBrandId = brandSelect ? brandSelect.value : 'global';
+        
+        try {
+            const res = await fetch(`/api/crm/leads?brand=${encodeURIComponent(activeBrandId)}`);
+            const data = await res.json();
+            
+            if (data.success) {
+                renderKanban(data.leads || []);
+            } else {
+                showToast("Potansiyel müşteriler yüklenemedi: " + (data.error || ""), true);
+            }
+        } catch (err) {
+            console.error("loadCRMLeads error:", err);
+            showToast("CRM verileri yüklenirken hata oluştu.", true);
+        }
+    };
+
+    // Renders leads into the 5 Kanban columns with budgets and counts
+    function renderKanban(leads) {
+        const stages = ['new', 'contacted', 'proposal', 'won', 'lost'];
+        const stats = {
+            new: { count: 0, budget: 0 },
+            contacted: { count: 0, budget: 0 },
+            proposal: { count: 0, budget: 0 },
+            won: { count: 0, budget: 0 },
+            lost: { count: 0, budget: 0 }
+        };
+        
+        const containers = {};
+        stages.forEach(stage => {
+            const container = document.querySelector(`.crm-col-cards[data-stage="${stage}"]`);
+            if (container) {
+                container.innerHTML = '';
+                containers[stage] = container;
+            }
+        });
+        
+        leads.forEach(lead => {
+            const stage = lead.stage || 'new';
+            if (stats[stage]) {
+                stats[stage].count++;
+                stats[stage].budget += Number(lead.budget || 0);
+            }
+            
+            const container = containers[stage];
+            if (container) {
+                const card = document.createElement('div');
+                card.className = 'crm-card';
+                card.draggable = true;
+                card.setAttribute('data-id', lead.id);
+                card.style.cssText = `
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 12px;
+                    cursor: grab;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                    transition: all 0.2s ease;
+                    user-select: none;
+                `;
+                
+                // Card hover effects
+                card.addEventListener('mouseenter', () => {
+                    card.style.borderColor = '#cbd5e1';
+                    card.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04)';
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.borderColor = '#e2e8f0';
+                    card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                });
+                
+                // Open details on click
+                card.addEventListener('click', () => {
+                    openLeadDetails(lead.id);
+                });
+                
+                // Drag start & end events
+                card.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', lead.id);
+                    card.style.opacity = '0.5';
+                    card.style.cursor = 'grabbing';
+                });
+                card.addEventListener('dragend', () => {
+                    card.style.opacity = '1';
+                    card.style.cursor = 'grab';
+                });
+                
+                let sourceIcon = '<i class="fa-solid fa-users" style="color: #64748b; margin-right: 4px;"></i>';
+                let sourceBg = '#f1f5f9';
+                let sourceColor = '#475569';
+                
+                if (lead.source === 'Instagram') {
+                    sourceIcon = '<i class="fa-brands fa-instagram" style="color: #c13584; margin-right: 4px;"></i>';
+                    sourceBg = '#fdf2f8';
+                    sourceColor = '#9d174d';
+                } else if (lead.source === 'WhatsApp') {
+                    sourceIcon = '<i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 4px;"></i>';
+                    sourceBg = '#f0fdf4';
+                    sourceColor = '#166534';
+                } else if (lead.source === 'Web Form') {
+                    sourceIcon = '<i class="fa-solid fa-globe" style="color: #0284c7; margin-right: 4px;"></i>';
+                    sourceBg = '#f0f9ff';
+                    sourceColor = '#075985';
+                } else if (lead.source === 'LinkedIn') {
+                    sourceIcon = '<i class="fa-brands fa-linkedin" style="color: #0077b5; margin-right: 4px;"></i>';
+                    sourceBg = '#eff6ff';
+                    sourceColor = '#1e40af';
+                } else if (lead.source === 'Google Ads') {
+                    sourceIcon = '<i class="fa-solid fa-magnifying-glass" style="color: #ea4335; margin-right: 4px;"></i>';
+                    sourceBg = '#fff5f5';
+                    sourceColor = '#c53030';
+                }
+                
+                card.innerHTML = `
+                    <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">${escapeHtml(lead.name)}</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+                        <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 12px; background: ${sourceBg}; color: ${sourceColor}; display: inline-flex; align-items: center;">
+                            ${sourceIcon}${lead.source || 'Diğer'}
+                        </span>
+                        <span style="font-size: 11.5px; font-weight: 800; color: #475569;">
+                            ₺${Number(lead.budget || 0).toLocaleString('tr-TR')}
+                        </span>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            }
+        });
+        
+        const badgeMap = {
+            new: 'crmBadgeNew',
+            contacted: 'crmBadgeContacted',
+            proposal: 'crmBadgeProposal',
+            won: 'crmBadgeWon',
+            lost: 'crmBadgeLost'
+        };
+        
+        const budgetMap = {
+            new: 'crmBudgetNew',
+            contacted: 'crmBudgetContacted',
+            proposal: 'crmBudgetProposal',
+            won: 'crmBudgetWon',
+            lost: 'crmBudgetLost'
+        };
+        
+        stages.forEach(stage => {
+            const badgeEl = document.getElementById(badgeMap[stage]);
+            if (badgeEl) badgeEl.textContent = stats[stage].count;
+            
+            const budgetEl = document.getElementById(budgetMap[stage]);
+            if (budgetEl) budgetEl.textContent = `Toplam: ₺${stats[stage].budget.toLocaleString('tr-TR')}`;
+        });
+    }
+
+    // Drag over and Drop events for columns
+    const droppables = document.querySelectorAll('.crm-droppable');
+    droppables.forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            zone.style.backgroundColor = '#edf2f7';
+        });
+        
+        zone.addEventListener('dragleave', () => {
+            zone.style.backgroundColor = '';
+        });
+        
+        zone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            zone.style.backgroundColor = '';
+            
+            const leadId = e.dataTransfer.getData('text/plain');
+            const newStage = zone.getAttribute('data-stage');
+            
+            if (!leadId || !newStage) return;
+            
+            try {
+                const res = await fetch('/api/crm/leads/update-stage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lead_id: Number(leadId), stage: newStage })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast("Müşteri aşaması güncellendi. 📈");
+                    loadCRMLeads();
+                } else {
+                    showToast("Hata: " + (data.error || "Aşama güncellenemedi."), true);
+                }
+            } catch (err) {
+                console.error("update-stage error:", err);
+                showToast("Aşama güncellenirken hata oluştu.", true);
+            }
+        });
+    });
+
+    // Opens lead details modal
+    window.openLeadDetails = async function(leadId) {
+        currentLeadId = leadId;
+        
+        try {
+            const res = await fetch(`/api/crm/leads/details?id=${leadId}`);
+            const data = await res.json();
+            
+            if (data.success) {
+                const lead = data.lead;
+                const messages = data.messages || [];
+                const notes = data.notes || [];
+                
+                document.getElementById('crmEditLeadId').value = lead.id;
+                document.getElementById('crmEditLeadName').value = lead.name || '';
+                document.getElementById('crmEditLeadEmail').value = lead.email || '';
+                document.getElementById('crmEditLeadPhone').value = lead.phone || '';
+                document.getElementById('crmEditLeadBudget').value = lead.budget || 0;
+                document.getElementById('crmEditLeadSource').value = lead.source || 'Instagram';
+                
+                const titleEl = document.getElementById('crmModalLeadNameTitle');
+                if (titleEl) titleEl.textContent = `${lead.name} - Müşteri Kartı Detayları`;
+                
+                const badgeEl = document.getElementById('crmModalLeadSourceBadge');
+                if (badgeEl) badgeEl.textContent = lead.source || 'Instagram';
+                
+                renderChatFeed(messages);
+                renderNotesFeed(notes);
+                
+                const modal = document.getElementById('crmLeadDetailsModal');
+                if (modal) modal.classList.remove('hidden');
+            } else {
+                showToast("Müşteri detayları yüklenemedi: " + (data.error || ""), true);
+            }
+        } catch (err) {
+            console.error("openLeadDetails error:", err);
+            showToast("Müşteri detayları yüklenirken hata oluştu.", true);
+        }
+    };
+
+    // Renders Chat History
+    function renderChatFeed(messages) {
+        const feed = document.getElementById('crmChatFeed');
+        if (!feed) return;
+        
+        if (messages.length === 0) {
+            feed.innerHTML = `
+                <div style="margin: auto; text-align: center; color: #94a3b8; padding: 20px;">
+                    <i class="fa-solid fa-message" style="font-size: 24px; opacity: 0.3; margin-bottom: 8px;"></i>
+                    <p style="font-size: 11px; font-weight: 600; margin: 0;">Henüz mesaj geçmişi yok.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        feed.innerHTML = messages.map(msg => {
+            const isIncoming = msg.sender === 'lead';
+            const align = isIncoming ? 'flex-start' : 'flex-end';
+            let bg = '#ffffff';
+            let color = '#1e293b';
+            let border = '1px solid #cbd5e1';
+            
+            if (!isIncoming) {
+                if (msg.sender === 'ai') {
+                    bg = '#eff6ff';
+                    color = '#1e40af';
+                    border = '1px solid #bfdbfe';
+                } else {
+                    bg = '#10b981';
+                    color = '#ffffff';
+                    border = '1px solid #10b981';
+                }
+            }
+            
+            const timeStr = msg.created_at ? new Date(msg.created_at * 1000).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
+            const senderName = msg.sender === 'lead' ? 'Müşteri' : (msg.sender === 'ai' ? 'AI Satış Asistanı' : 'Temsilci');
+            
+            return `
+                <div style="display: flex; flex-direction: column; align-items: ${align}; max-width: 85%; align-self: ${align};">
+                    <span style="font-size: 9px; font-weight: 700; color: #94a3b8; margin-bottom: 2px; padding: 0 4px;">${senderName}</span>
+                    <div style="
+                        background: ${bg};
+                        color: ${color};
+                        border: ${border};
+                        border-radius: 12px;
+                        padding: 8px 12px;
+                        font-size: 12px;
+                        line-height: 1.4;
+                        word-break: break-word;
+                        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+                    ">${escapeHtml(msg.message)}</div>
+                    <span style="font-size: 9px; color: #cbd5e1; font-weight: 600; margin-top: 2px; padding: 0 4px;">${timeStr}</span>
+                </div>
+            `;
+        }).join('');
+        
+        setTimeout(() => { feed.scrollTop = feed.scrollHeight; }, 50);
+    }
+
+    // Renders Lead notes
+    function renderNotesFeed(notes) {
+        const feed = document.getElementById('crmNotesFeed');
+        if (!feed) return;
+        
+        if (notes.length === 0) {
+            feed.innerHTML = `
+                <div style="margin: auto; text-align: center; color: #94a3b8; padding: 20px;">
+                    <i class="fa-solid fa-pen-to-square" style="font-size: 20px; opacity: 0.3; margin-bottom: 8px;"></i>
+                    <p style="font-size: 11px; font-weight: 600; margin: 0;">Henüz not girilmemiş.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        feed.innerHTML = notes.map(note => {
+            const dateStr = note.created_at ? new Date(note.created_at * 1000).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+            return `
+                <div style="
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 6px;
+                    padding: 8px 10px;
+                    font-size: 11.5px;
+                ">
+                    <div style="color: #334155; font-weight: 600; line-height: 1.4; word-break: break-word;">${escapeHtml(note.note_text)}</div>
+                    <div style="font-size: 9px; color: #94a3b8; font-weight: 700; margin-top: 6px;">
+                        <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        setTimeout(() => { feed.scrollTop = feed.scrollHeight; }, 50);
+    }
+
+    // Add Lead Form toggling
+    const btnCRMOpenAddLead = document.getElementById('btnCRMOpenAddLead');
+    const btnCRMCancelAddLead = document.getElementById('btnCRMCancelAddLead');
+    const crmAddLeadPanel = document.getElementById('crmAddLeadPanel');
+    const crmAddLeadForm = document.getElementById('crmAddLeadForm');
+    
+    if (btnCRMOpenAddLead && crmAddLeadPanel) {
+        btnCRMOpenAddLead.addEventListener('click', () => {
+            crmAddLeadPanel.classList.remove('hidden');
+        });
+    }
+    
+    if (btnCRMCancelAddLead && crmAddLeadPanel) {
+        btnCRMCancelAddLead.addEventListener('click', () => {
+            crmAddLeadPanel.classList.add('hidden');
+            if (crmAddLeadForm) crmAddLeadForm.reset();
+        });
+    }
+    
+    // Add Lead Submission
+    if (crmAddLeadForm) {
+        crmAddLeadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const brandSelect = document.getElementById('brandSelect');
+            const activeBrandId = brandSelect ? brandSelect.value : 'global';
+            
+            const payload = {
+                brand_id: activeBrandId,
+                name: document.getElementById('crmLeadName').value.trim(),
+                email: document.getElementById('crmLeadEmail').value.trim(),
+                phone: document.getElementById('crmLeadPhone').value.trim(),
+                budget: Number(document.getElementById('crmLeadBudget').value || 0),
+                source: document.getElementById('crmLeadSource').value,
+                stage: document.getElementById('crmLeadStage').value
+            };
+            
+            try {
+                const res = await fetch('/api/crm/leads/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast("Yeni potansiyel müşteri eklendi! 👥");
+                    crmAddLeadPanel.classList.add('hidden');
+                    crmAddLeadForm.reset();
+                    loadCRMLeads();
+                } else {
+                    showToast("Hata: " + (data.error || "Aday eklenemedi."), true);
+                }
+            } catch (err) {
+                console.error("add lead error:", err);
+                showToast("Aday eklenirken hata oluştu.", true);
+            }
+        });
+    }
+
+    // Edit Lead Details Submission
+    const crmEditLeadForm = document.getElementById('crmEditLeadForm');
+    if (crmEditLeadForm) {
+        crmEditLeadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentLeadId) return;
+            
+            const payload = {
+                lead_id: currentLeadId,
+                name: document.getElementById('crmEditLeadName').value.trim(),
+                email: document.getElementById('crmEditLeadEmail').value.trim(),
+                phone: document.getElementById('crmEditLeadPhone').value.trim(),
+                budget: Number(document.getElementById('crmEditLeadBudget').value || 0),
+                source: document.getElementById('crmEditLeadSource').value
+            };
+            
+            try {
+                const res = await fetch('/api/crm/leads/update-details', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast("Müşteri bilgileri güncellendi. 💾");
+                    loadCRMLeads();
+                    
+                    const titleEl = document.getElementById('crmModalLeadNameTitle');
+                    if (titleEl) titleEl.textContent = `${payload.name} - Müşteri Kartı Detayları`;
+                    
+                    const badgeEl = document.getElementById('crmModalLeadSourceBadge');
+                    if (badgeEl) badgeEl.textContent = payload.source;
+                } else {
+                    showToast("Hata: " + (data.error || "Bilgiler güncellenemedi."), true);
+                }
+            } catch (err) {
+                console.error("update details error:", err);
+                showToast("Bilgiler güncellenirken hata oluştu.", true);
+            }
+        });
+    }
+
+    // Messaging client action
+    const btnCRMSendMessage = document.getElementById('btnCRMSendMessage');
+    const crmMessageInput = document.getElementById('crmMessageInput');
+    
+    const sendCRMMessage = async () => {
+        if (!currentLeadId) return;
+        const msg = crmMessageInput.value.trim();
+        if (!msg) return;
+        
+        try {
+            const res = await fetch('/api/crm/leads/add-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lead_id: currentLeadId, sender: 'user', message: msg })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                crmMessageInput.value = '';
+                const detailRes = await fetch(`/api/crm/leads/details?id=${currentLeadId}`);
+                const detailData = await detailRes.json();
+                if (detailData.success) {
+                    renderChatFeed(detailData.messages || []);
+                }
+            } else {
+                showToast("Mesaj gönderilemedi: " + (data.error || ""), true);
+            }
+        } catch (err) {
+            console.error("send message error:", err);
+            showToast("Mesaj gönderilirken hata oluştu.", true);
+        }
+    };
+    
+    if (btnCRMSendMessage) {
+        btnCRMSendMessage.addEventListener('click', sendCRMMessage);
+    }
+    if (crmMessageInput) {
+        crmMessageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendCRMMessage();
+            }
+        });
+    }
+
+    // Add Note client action
+    const btnCRMAddNote = document.getElementById('btnCRMAddNote');
+    const crmNoteInput = document.getElementById('crmNoteInput');
+    
+    const addCRMNote = async () => {
+        if (!currentLeadId) return;
+        const noteText = crmNoteInput.value.trim();
+        if (!noteText) return;
+        
+        try {
+            const res = await fetch('/api/crm/leads/add-note', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lead_id: currentLeadId, note_text: noteText })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                crmNoteInput.value = '';
+                const detailRes = await fetch(`/api/crm/leads/details?id=${currentLeadId}`);
+                const detailData = await detailRes.json();
+                if (detailData.success) {
+                    renderNotesFeed(detailData.notes || []);
+                }
+                showToast("Not eklendi. 📝");
+            } else {
+                showToast("Not eklenemedi: " + (data.error || ""), true);
+            }
+        } catch (err) {
+            console.error("add note error:", err);
+            showToast("Not eklenirken hata oluştu.", true);
+        }
+    };
+    
+    if (btnCRMAddNote) {
+        btnCRMAddNote.addEventListener('click', addCRMNote);
+    }
+    if (crmNoteInput) {
+        crmNoteInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                addCRMNote();
+            }
+        });
+    }
+
+    // AI suggestion handler
+    const btnCRMAISuggest = document.getElementById('btnCRMAISuggest');
+    const crmAISpinner = document.getElementById('crmAISpinner');
+    
+    if (btnCRMAISuggest) {
+        btnCRMAISuggest.addEventListener('click', async () => {
+            if (!currentLeadId) return;
+            
+            if (crmAISpinner) crmAISpinner.classList.remove('hidden');
+            btnCRMAISuggest.disabled = true;
+            
+            try {
+                const res = await fetch('/api/crm/leads/ai-suggest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lead_id: currentLeadId })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    if (crmMessageInput) {
+                        crmMessageInput.value = data.suggestion || '';
+                    }
+                    showToast("AI Yanıt önerisi taslağa eklendi! ✨");
+                } else {
+                    showToast("AI önerisi alınamadı: " + (data.error || ""), true);
+                }
+            } catch (err) {
+                console.error("ai suggest error:", err);
+                showToast("AI önerisi alınırken hata oluştu.", true);
+            } finally {
+                if (crmAISpinner) crmAISpinner.classList.add('hidden');
+                btnCRMAISuggest.disabled = false;
+            }
+        });
+    }
+
+    // Modal Close
+    const crmModalCloseBtn = document.getElementById('crmModalCloseBtn');
+    if (crmModalCloseBtn) {
+        crmModalCloseBtn.addEventListener('click', () => {
+            const modal = document.getElementById('crmLeadDetailsModal');
+            if (modal) modal.classList.add('hidden');
+            currentLeadId = null;
+        });
+    }
+
+    // Brand select change listener to reload CRM Leads
+    const brandSelectForCRM = document.getElementById('brandSelect');
+    if (brandSelectForCRM) {
+        brandSelectForCRM.addEventListener('change', () => {
+            const crmSection = document.getElementById('crmSection');
+            if (crmSection && !crmSection.classList.contains('hidden')) {
+                loadCRMLeads();
+            }
+        });
+    }
 
 });
 

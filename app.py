@@ -175,6 +175,65 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json_response({"status": "ok", "connections": status})
             return
 
+        # ── CRM Leads List: /api/crm/leads ────────────────────────────────────
+        if path == "/api/crm/leads":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            brand_id = qs.get("brand", ["global"])[0]
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute("""
+                    SELECT id, name, email, phone, stage, budget, source, created_at
+                    FROM crm_leads
+                    WHERE brand_id = ?
+                    ORDER BY created_at DESC
+                """, (brand_id,))
+                leads = [dict(row) for row in cursor.fetchall()]
+                self.send_json_response({"success": True, "leads": leads})
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
+        # ── CRM Lead Details: /api/crm/leads/details ──────────────────────────
+        if path == "/api/crm/leads/details":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            lead_id = int(qs.get("id", [0])[0])
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute("SELECT id, name, email, phone, stage, budget, source, created_at FROM crm_leads WHERE id = ?", (lead_id,))
+                row = cursor.fetchone()
+                if not row:
+                    self.send_json_response({"success": False, "error": "Lead not found"}, 404)
+                    return
+                lead_info = dict(row)
+
+                cursor.execute("SELECT id, sender, message, created_at FROM crm_messages WHERE lead_id = ? ORDER BY created_at ASC", (lead_id,))
+                messages = [dict(r) for r in cursor.fetchall()]
+
+                cursor.execute("SELECT id, note_text, created_at FROM crm_notes WHERE lead_id = ? ORDER BY created_at DESC", (lead_id,))
+                notes = [dict(r) for r in cursor.fetchall()]
+
+                self.send_json_response({
+                    "success": True,
+                    "lead": lead_info,
+                    "messages": messages,
+                    "notes": notes
+                })
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
         # ── Static file serving ───────────────────────────────────────────────
         if path == "/":
             path = "/index.html"
@@ -429,6 +488,232 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 return
             revoke_token(platform, brand_id=brand_id)
             self.send_json_response({"success": True, "platform": platform})
+            return
+
+        # ── CRM: Add Lead ──────────────────────────────────────────────────
+        if path == "/api/crm/leads/add":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            brand_id = body.get("brand", "global").strip()
+            name = body.get("name", "").strip()
+            email = body.get("email", "").strip() or None
+            phone = body.get("phone", "").strip() or None
+            budget = float(body.get("budget", 0.0) or 0.0)
+            source = body.get("source", "Direct").strip()
+            stage = body.get("stage", "new").strip()
+            
+            if not name:
+                self.send_json_response({"success": False, "error": "Name is required"}, 400)
+                return
+                
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute("""
+                    INSERT INTO crm_leads (brand_id, name, email, phone, stage, budget, source, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (brand_id, name, email, phone, stage, budget, source, int(time.time())))
+                lead_id = cursor.lastrowid
+                conn.commit()
+                self.send_json_response({"success": True, "lead_id": lead_id})
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
+        # ── CRM: Update Lead Stage ─────────────────────────────────────────
+        if path == "/api/crm/leads/update-stage":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            lead_id = int(body.get("id", 0))
+            new_stage = body.get("stage", "").strip()
+            
+            if not lead_id or not new_stage:
+                self.send_json_response({"success": False, "error": "Lead ID and stage are required"}, 400)
+                return
+                
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute("UPDATE crm_leads SET stage = ? WHERE id = ?", (new_stage, lead_id))
+                conn.commit()
+                self.send_json_response({"success": True})
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
+        # ── CRM: Update Lead Details ───────────────────────────────────────
+        if path == "/api/crm/leads/update-details":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            lead_id = int(body.get("id", 0))
+            name = body.get("name", "").strip()
+            email = body.get("email", "").strip() or None
+            phone = body.get("phone", "").strip() or None
+            budget = float(body.get("budget", 0.0) or 0.0)
+            source = body.get("source", "Direct").strip()
+            
+            if not lead_id or not name:
+                self.send_json_response({"success": False, "error": "Lead ID and name are required"}, 400)
+                return
+                
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute("""
+                    UPDATE crm_leads 
+                    SET name = ?, email = ?, phone = ?, budget = ?, source = ?
+                    WHERE id = ?
+                """, (name, email, phone, budget, source, lead_id))
+                conn.commit()
+                self.send_json_response({"success": True})
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
+        # ── CRM: Add Message ───────────────────────────────────────────────
+        if path == "/api/crm/leads/add-message":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            lead_id = int(body.get("lead_id", 0))
+            sender = body.get("sender", "user").strip()
+            message = body.get("message", "").strip()
+            
+            if not lead_id or not message:
+                self.send_json_response({"success": False, "error": "Lead ID and message are required"}, 400)
+                return
+                
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute("""
+                    INSERT INTO crm_messages (lead_id, sender, message, created_at)
+                    VALUES (?, ?, ?, ?)
+                """, (lead_id, sender, message, int(time.time())))
+                conn.commit()
+                self.send_json_response({"success": True})
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
+        # ── CRM: Add Note ──────────────────────────────────────────────────
+        if path == "/api/crm/leads/add-note":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            lead_id = int(body.get("lead_id", 0))
+            note_text = body.get("note_text", "").strip()
+            
+            if not lead_id or not note_text:
+                self.send_json_response({"success": False, "error": "Lead ID and note text are required"}, 400)
+                return
+                
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute("""
+                    INSERT INTO crm_notes (lead_id, note_text, created_at)
+                    VALUES (?, ?, ?)
+                """, (lead_id, note_text, int(time.time())))
+                conn.commit()
+                self.send_json_response({"success": True})
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
+        # ── CRM: AI Suggest Reply ──────────────────────────────────────────
+        if path == "/api/crm/leads/ai-suggest":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            lead_id = int(body.get("lead_id", 0))
+            
+            if not lead_id:
+                self.send_json_response({"success": False, "error": "Lead ID is required"}, 400)
+                return
+                
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            messages = []
+            lead_name = "Müşteri"
+            try:
+                cursor.execute("SELECT name FROM crm_leads WHERE id = ?", (lead_id,))
+                row = cursor.fetchone()
+                if row:
+                    lead_name = row["name"]
+                    
+                cursor.execute("SELECT sender, message FROM crm_messages WHERE lead_id = ? ORDER BY created_at ASC", (lead_id,))
+                messages = [dict(r) for r in cursor.fetchall()]
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+                conn.close()
+                return
+            finally:
+                conn.close()
+                
+            convo_str = ""
+            for m in messages:
+                role = "Müşteri" if m["sender"] == "lead" else "Satış Temsilcimiz"
+                convo_str += f"{role}: {m['message']}\n"
+                
+            prompt = (
+                f"Aşağıda bir potansiyel müşterimiz ({lead_name}) ile aramızdaki mesajlaşma geçmişi yer almaktadır.\n\n"
+                f"{convo_str}\n"
+                f"Lütfen son mesaja karşılık olarak, müşteriyi ikna etmeye yönelik, kibar, profesyonel, samimi ve Türkçe "
+                f"bir satış yanıtı önerisi yaz. Başka hiçbir açıklama yazma, doğrudan mesaj taslağını ver."
+            )
+            
+            from core.ai_engines import AIEngines
+            openai_keys_present = bool(Config.OPENAI_API_KEY) and "your_openai_api_key_here" not in Config.OPENAI_API_KEY
+            gemini_keys_present = bool(Config.GEMINI_API_KEY) and "your_gemini_api_key_here" not in Config.GEMINI_API_KEY
+            
+            ai_suggested_response = ""
+            if gemini_keys_present or openai_keys_present:
+                try:
+                    if gemini_keys_present:
+                        import google.generativeai as genai
+                        genai.configure(api_key=Config.GEMINI_API_KEY)
+                        model = genai.GenerativeModel('gemini-2.0-flash')
+                        response = model.generate_content(prompt)
+                        ai_suggested_response = response.text.strip()
+                    elif openai_keys_present:
+                        from openai import OpenAI
+                        client = OpenAI(api_key=Config.OPENAI_API_KEY)
+                        response = client.chat.completions.create(
+                            model="gpt-4o",
+                            messages=[{"role": "user", "content": prompt}]
+                        )
+                        ai_suggested_response = response.choices[0].message.content.strip()
+                except Exception as e:
+                    print(f"AI response suggestion error: {e}")
+                    
+            if not ai_suggested_response:
+                ai_suggested_response = (
+                    f"Merhaba {lead_name} Hanım/Bey, talebinizi aldık. "
+                    f"Size en uygun teklifi ve lansman indirimlerimizi iletmek için sabırsızlanıyoruz. "
+                    f"Detaylı bilgi ve randevu için telefon numaramızdan da ulaşabilirsiniz."
+                )
+                
+            self.send_json_response({"success": True, "suggestion": ai_suggested_response})
             return
 
         # ── Publish Endpoint ───────────────────────────────────────────────
