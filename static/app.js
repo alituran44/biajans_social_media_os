@@ -3815,6 +3815,24 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 slSubtitleInput.value = data.subtitle || '';
                 slThemeSelect.value = data.theme || 'clean-light';
                 
+                // Form settings loading
+                const slFormEnabled = document.getElementById('slFormEnabled');
+                const slFormTitle = document.getElementById('slFormTitle');
+                const slFormBtnText = document.getElementById('slFormBtnText');
+                const slFormConfigArea = document.getElementById('slFormConfigArea');
+
+                if (slFormEnabled) {
+                    slFormEnabled.checked = !!data.form_enabled;
+                    if (slFormTitle) slFormTitle.value = data.form_title || 'Bize Ulaşın';
+                    if (slFormBtnText) slFormBtnText.value = data.form_button_text || 'Gönder';
+                    
+                    if (data.form_enabled) {
+                        if (slFormConfigArea) slFormConfigArea.classList.remove('hidden');
+                    } else {
+                        if (slFormConfigArea) slFormConfigArea.classList.add('hidden');
+                    }
+                }
+                
                 // Clear and rebuild rows
                 slLinksContainer.innerHTML = '';
                 if (Array.isArray(data.links) && data.links.length > 0) {
@@ -3919,6 +3937,29 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 slSimLinks.appendChild(btn);
             }
         });
+
+        // Form settings preview
+        const slFormEnabled = document.getElementById('slFormEnabled');
+        const slFormTitle = document.getElementById('slFormTitle');
+        const slFormBtnText = document.getElementById('slFormBtnText');
+        const slSimForm = document.getElementById('slSimForm');
+        const slSimFormTitle = document.getElementById('slSimFormTitle');
+        const slSimFormBtn = document.getElementById('slSimFormBtn');
+        const slFormConfigArea = document.getElementById('slFormConfigArea');
+
+        if (slFormEnabled && slFormEnabled.checked) {
+            if (slSimForm) slSimForm.classList.remove('hidden');
+            if (slFormConfigArea) slFormConfigArea.classList.remove('hidden');
+            if (slSimFormTitle && slFormTitle) {
+                slSimFormTitle.textContent = slFormTitle.value.trim() || 'Bize Ulaşın';
+            }
+            if (slSimFormBtn && slFormBtnText) {
+                slSimFormBtn.textContent = slFormBtnText.value.trim() || 'Gönder';
+            }
+        } else {
+            if (slSimForm) slSimForm.classList.add('hidden');
+            if (slFormConfigArea) slFormConfigArea.classList.add('hidden');
+        }
     }
 
     // Event listeners for basic settings inputs
@@ -3926,6 +3967,24 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     if (slTitleInput) slTitleInput.addEventListener('input', updateSmartLinksPreview);
     if (slSubtitleInput) slSubtitleInput.addEventListener('input', updateSmartLinksPreview);
     if (slThemeSelect) slThemeSelect.addEventListener('change', updateSmartLinksPreview);
+
+    const slFormEnabled = document.getElementById('slFormEnabled');
+    const slFormTitle = document.getElementById('slFormTitle');
+    const slFormBtnText = document.getElementById('slFormBtnText');
+
+    if (slFormEnabled) {
+        slFormEnabled.addEventListener('change', () => {
+            const slFormConfigArea = document.getElementById('slFormConfigArea');
+            if (slFormEnabled.checked) {
+                if (slFormConfigArea) slFormConfigArea.classList.remove('hidden');
+            } else {
+                if (slFormConfigArea) slFormConfigArea.classList.add('hidden');
+            }
+            updateSmartLinksPreview();
+        });
+    }
+    if (slFormTitle) slFormTitle.addEventListener('input', updateSmartLinksPreview);
+    if (slFormBtnText) slFormBtnText.addEventListener('input', updateSmartLinksPreview);
 
     // Add link row trigger
     if (slAddLinkBtn) {
@@ -3964,7 +4023,10 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 subtitle: slSubtitleInput.value.trim(),
                 avatar: slAvatarUrlInput.value.trim(),
                 theme: slThemeSelect.value,
-                links: links
+                links: links,
+                form_enabled: slFormEnabled ? slFormEnabled.checked : false,
+                form_title: slFormTitle ? slFormTitle.value.trim() : 'Bize Ulaşın',
+                form_button_text: slFormBtnText ? slFormBtnText.value.trim() : 'Gönder'
             };
 
             const origHtml = slSaveBtn.innerHTML;
@@ -6368,7 +6430,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 
                 // Drag events
                 card.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', lead.id);
+                    e.dataTransfer.setData('text/plain', String(lead.id));
                     card.style.opacity = '0.5';
                     card.style.cursor = 'grabbing';
                 });

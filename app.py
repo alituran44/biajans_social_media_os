@@ -278,8 +278,8 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         except Exception:
             body = {}
 
-        # Enforce authentication for all /api/ POST requests except login
-        if path.startswith("/api/") and path != "/api/auth/login":
+        # Enforce authentication for all /api/ POST requests except login and public lead submit
+        if path.startswith("/api/") and path not in ["/api/auth/login", "/api/crm/leads/public-submit"]:
             if not self._get_session():
                 self.send_json_response({"error": "Unauthorized", "message": "Lütfen giriş yapın."}, 401)
                 return
@@ -490,6 +490,44 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json_response({"success": True, "platform": platform})
             return
 
+        # ── CRM: Public Submit Lead ──────────────────────────────────────────
+        if path == "/api/crm/leads/public-submit":
+            brand_id = body.get("brand", "global").strip()
+            name = body.get("name", "").strip()
+            email = body.get("email", "").strip() or None
+            phone = body.get("phone", "").strip() or None
+            message = body.get("message", "").strip()
+            
+            if not name:
+                self.send_json_response({"success": False, "error": "İsim alanı zorunludur."}, 400)
+                return
+                
+            from core.db_manager import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                # Insert lead
+                cursor.execute("""
+                    INSERT INTO crm_leads (brand_id, name, email, phone, stage, budget, source, created_at)
+                    VALUES (?, ?, ?, ?, 'new', 0.0, 'Web Form', ?)
+                """, (brand_id, name, email, phone, int(time.time())))
+                lead_id = cursor.lastrowid
+                
+                # Insert message if provided
+                if message:
+                    cursor.execute("""
+                        INSERT INTO crm_messages (lead_id, sender, message, created_at)
+                        VALUES (?, 'lead', ?, ?)
+                    """, (lead_id, message, int(time.time())))
+                
+                conn.commit()
+                self.send_json_response({"success": True, "lead_id": lead_id})
+            except Exception as e:
+                self.send_json_response({"success": False, "error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
         # ── CRM: Add Lead ──────────────────────────────────────────────────
         if path == "/api/crm/leads/add":
             if not self._get_session():
@@ -529,7 +567,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             if not self._get_session():
                 self.send_json_response({"error": "Unauthorized"}, 401)
                 return
-            lead_id = int(body.get("id", 0))
+            lead_id = int(body.get("id") or body.get("lead_id") or 0)
             new_stage = body.get("stage", "").strip()
             
             if not lead_id or not new_stage:
@@ -1100,6 +1138,88 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             icon_class = link.get("icon", "fa-solid fa-link")
             links_html += f'<a href="{link.get("url", "#")}" target="_blank" class="link-btn"><i class="{icon_class}"></i> {link.get("title", "")}</a>\n'
 
+        # Build form HTML if enabled
+        form_html = ""
+        if data.get("form_enabled"):
+            form_title = data.get("form_title", "Bize Ulaşın").strip() or "Bize Ulaşın"
+            form_btn_text = data.get("form_button_text", "Gönder").strip() or "Gönder"
+            form_html = f"""
+        <div class="contact-form-card">
+            <h3>{form_title}</h3>
+            <form id="contactForm">
+                <input type="hidden" name="brand" value="{brand_slug}">
+                <div class="form-group-custom">
+                    <label>Adınız Soyadınız *</label>
+                    <input type="text" name="name" required placeholder="Örn. Ahmet Yılmaz" class="form-control-custom-field">
+                </div>
+                <div class="form-group-custom">
+                    <label>Telefon Numaranız</label>
+                    <input type="tel" name="phone" placeholder="Örn. 0555 123 45 67" class="form-control-custom-field">
+                </div>
+                <div class="form-group-custom">
+                    <label>E-posta Adresiniz</label>
+                    <input type="email" name="email" placeholder="Örn. ahmet@example.com" class="form-control-custom-field">
+                </div>
+                <div class="form-group-custom">
+                    <label>Mesajınız</label>
+                    <textarea name="message" rows="3" placeholder="Mesajınızı buraya yazın..." class="form-control-custom-field"></textarea>
+                </div>
+                <button type="submit" class="form-submit-btn">{form_btn_text}</button>
+                <div id="formStatus" class="form-status-alert"></div>
+            </form>
+            <script>
+                document.getElementById('contactForm').addEventListener('submit', async function(e) {{
+                    e.preventDefault();
+                    const form = e.target;
+                    const btn = form.querySelector('button[type="submit"]');
+                    const status = document.getElementById('formStatus');
+                    
+                    const origBtnText = btn.textContent;
+                    btn.disabled = true;
+                    btn.textContent = 'Gönderiliyor...';
+                    status.style.display = 'none';
+                    
+                    const payload = {{
+                        brand: form.brand.value,
+                        name: form.name.value,
+                        phone: form.phone.value,
+                        email: form.email.value,
+                        message: form.message.value
+                    }};
+                    
+                    try {{
+                        const res = await fetch('/api/crm/leads/public-submit', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify(payload)
+                        }});
+                        const data = await res.json();
+                        if (data.success) {{
+                            status.style.display = 'block';
+                            status.style.backgroundColor = '#d1fae5';
+                            status.style.color = '#065f46';
+                            status.textContent = 'Talebiniz başarıyla alındı! Teşekkür ederiz. 😊';
+                            form.reset();
+                        }} else {{
+                            status.style.display = 'block';
+                            status.style.backgroundColor = '#fee2e2';
+                            status.style.color = '#991b1b';
+                            status.textContent = 'Hata: ' + (data.error || 'Form gönderilemedi.');
+                        }}
+                    }} catch (err) {{
+                        status.style.display = 'block';
+                        status.style.backgroundColor = '#fee2e2';
+                        status.style.color = '#991b1b';
+                        status.textContent = 'Bir ağ hatası oluştu. Lütfen tekrar deneyin.';
+                    }} finally {{
+                        btn.disabled = false;
+                        btn.textContent = origBtnText;
+                    }}
+                }});
+            </script>
+        </div>
+            """
+
         html_template = """<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -1241,6 +1361,90 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             background: var(--btn-hover-bg);
             transform: scale(1.015);
         }}
+        .contact-form-card {{
+            width: 100%;
+            box-sizing: border-box;
+            background: var(--btn-bg);
+            color: var(--text-color);
+            border: var(--btn-border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 36px;
+            box-shadow: var(--btn-shadow);
+            text-align: left;
+            backdrop-filter: blur(10px);
+        }}
+        .contact-form-card h3 {{
+            font-size: 15.5px;
+            font-weight: 800;
+            margin: 0 0 16px 0;
+            text-align: center;
+        }}
+        .form-group-custom {{
+            margin-bottom: 12px;
+        }}
+        .form-group-custom label {{
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            opacity: 0.85;
+            margin-bottom: 4px;
+        }}
+        .form-control-custom-field {{
+            width: 100%;
+            box-sizing: border-box;
+            padding: 11px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(128, 128, 128, 0.25);
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+        }}
+        body.theme-clean-light .form-control-custom-field {{ background: #f8fafc; color: #0f172a; }}
+        body.theme-dark-night .form-control-custom-field {{ background: #1e293b; color: #ffffff; }}
+        body.theme-soft-lavender .form-control-custom-field {{ background: #f5f3ff; color: #4c1d95; }}
+        body.theme-ocean-breeze .form-control-custom-field {{ background: rgba(255, 255, 255, 0.15); color: #ffffff; }}
+        body.theme-sunset-glow .form-control-custom-field {{ background: rgba(255, 255, 255, 0.15); color: #ffffff; }}
+
+        .form-control-custom-field:focus {{
+            border-color: var(--text-color);
+            box-shadow: 0 0 0 2px rgba(128, 128, 128, 0.15);
+        }}
+        .form-control-custom-field::placeholder {{
+            color: var(--text-color);
+            opacity: 0.4;
+        }}
+        .form-submit-btn {{
+            width: 100%;
+            box-sizing: border-box;
+            padding: 13px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 8px;
+        }}
+        body.theme-clean-light .form-submit-btn {{ background: #0f172a; color: #ffffff; }}
+        body.theme-dark-night .form-submit-btn {{ background: #ffffff; color: #0f172a; }}
+        body.theme-soft-lavender .form-submit-btn {{ background: #4c1d95; color: #ffffff; }}
+        body.theme-ocean-breeze .form-submit-btn {{ background: #ffffff; color: #0284c7; }}
+        body.theme-sunset-glow .form-submit-btn {{ background: #ffffff; color: #db2777; }}
+
+        .form-submit-btn:hover {{
+            opacity: 0.95;
+        }}
+        .form-status-alert {{
+            display: none;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+        }}
         .footer {{
             margin-top: auto;
             font-size: 11px;
@@ -1265,6 +1469,8 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             {links_html}
         </div>
         
+        {form_html}
+        
         <div class="footer">
             <i class="fa-solid fa-wand-magic-sparkles"></i> biAjans SmartLinks
         </div>
@@ -1277,7 +1483,8 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             avatar=data.get("avatar", ""),
             subtitle=data.get("subtitle", ""),
             theme=data.get("theme", "ocean-breeze"),
-            links_html=links_html
+            links_html=links_html,
+            form_html=form_html
         )
 
         self.send_response(200)
