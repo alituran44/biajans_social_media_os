@@ -1,0 +1,35 @@
+name: Auto Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - master  # GitHub'daki ana dalımız 'master' olduğu için burayı master yaptık
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Executing remote ssh commands to deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          port: 22
+          script: |
+            # Proje klasörüne giriş yap
+            cd ~/biajans_social_media_os
+            
+            # GitHub'daki en güncel kodları sunucuya çek
+            git pull origin master
+            
+            # Sanal ortamı aktif et ve bağımlılıkları güncelle (opsiyonel)
+            source venv/bin/activate
+            pip install -r requirements.txt
+            
+            # PM2 üzerindeki uygulamayı yeni kodlarla sıfırlamadan yeniden başlat
+            pm2 restart biajans-os
