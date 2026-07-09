@@ -3,6 +3,10 @@
   "rewrites": [
     { "source": "/robots.txt", "destination": "/static/robots.txt" },
     { "source": "/sitemap.xml", "destination": "/static/sitemap.xml" },
+    { "source": "/dashboard.html", "destination": "/api/index.py" },
+    { "source": "/api/(.*)", "destination": "/api/index.py" },
+    { "source": "/sl/(.*)", "destination": "/api/index.py" },
+    { "source": "/auth/(.*)", "destination": "/api/index.py" },
     { "source": "/(.*)", "destination": "/static/$1" }
   ]
 }

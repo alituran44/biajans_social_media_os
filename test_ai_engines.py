@@ -42,12 +42,9 @@ def run_mock_tests():
     }
     """
 
-    with patch('google.generativeai.GenerativeModel') as MockModel, \
-         patch('google.generativeai.configure') as mock_configure:
-        
-        # Setup mock instance return values
-        mock_instance = MockModel.return_value
-        mock_instance.generate_content.return_value = mock_gemini_response
+    with patch('google.genai.Client') as MockClient:
+        mock_client_instance = MockClient.return_value
+        mock_client_instance.models.generate_content.return_value = mock_gemini_response
         
         # Override config API key temporarily for test
         with patch.object(Config, 'GEMINI_API_KEY', 'mock_gemini_key'):
@@ -91,11 +88,9 @@ def run_mock_tests():
     mock_gemini_reply = MagicMock()
     mock_gemini_reply.text = "Selam! Siparişiniz yola çıktı, afiyet olsun!"
 
-    with patch('google.generativeai.GenerativeModel') as MockModel, \
-         patch('google.generativeai.configure') as mock_configure:
-        
-        mock_instance = MockModel.return_value
-        mock_instance.generate_content.return_value = mock_gemini_reply
+    with patch('google.genai.Client') as MockClient:
+        mock_client_instance = MockClient.return_value
+        mock_client_instance.models.generate_content.return_value = mock_gemini_reply
         
         with patch.object(Config, 'GEMINI_API_KEY', 'mock_gemini_key'):
             chat_context = "Müşteri: Merhaba, siparişim ne zaman kargoya verilir?\nDestek/Biz: Merhaba, siparişiniz hazırlanıyor."

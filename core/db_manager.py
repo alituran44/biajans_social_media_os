@@ -7,6 +7,16 @@ import time
 logger = logging.getLogger("DatabaseManager")
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "database.db")
+if "VERCEL" in os.environ or os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/database.db"
+    if not os.path.exists(DB_PATH):
+        try:
+            original_db = os.path.join(os.path.dirname(__file__), "database.db")
+            if os.path.exists(original_db):
+                import shutil
+                shutil.copy(original_db, DB_PATH)
+        except Exception:
+            pass
 
 def get_connection():
     """Returns a connection to the SQLite database."""

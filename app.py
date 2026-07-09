@@ -53,6 +53,21 @@ _PLATFORM_ALIASES = {
 }
 
 
+def get_smartlinks_path():
+    path = os.path.join(os.path.dirname(__file__), "core", "smartlinks.json")
+    if "VERCEL" in os.environ or os.environ.get("VERCEL"):
+        tmp_path = "/tmp/smartlinks.json"
+        if not os.path.exists(tmp_path):
+            try:
+                if os.path.exists(path):
+                    import shutil
+                    shutil.copy(path, tmp_path)
+            except Exception:
+                pass
+        return tmp_path
+    return path
+
+
 class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     """
     Zero-dependency request handler serving index.html, CSS, JS
@@ -728,10 +743,12 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             if gemini_keys_present or openai_keys_present:
                 try:
                     if gemini_keys_present:
-                        import google.generativeai as genai
-                        genai.configure(api_key=Config.GEMINI_API_KEY)
-                        model = genai.GenerativeModel('gemini-2.0-flash')
-                        response = model.generate_content(prompt)
+                        from google import genai
+                        client = genai.Client(api_key=Config.GEMINI_API_KEY)
+                        response = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=prompt
+                        )
                         ai_suggested_response = response.text.strip()
                     elif openai_keys_present:
                         from openai import OpenAI
@@ -1107,7 +1124,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def _handle_smartlink(self, brand_slug):
         # Read from core/smartlinks.json
-        smartlinks_path = os.path.join(os.path.dirname(__file__), "core", "smartlinks.json")
+        smartlinks_path = get_smartlinks_path()
         data = {}
         if os.path.exists(smartlinks_path):
             try:
@@ -1493,7 +1510,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(html_content.encode("utf-8"))
 
     def _handle_smartlinks_load(self, brand_slug):
-        smartlinks_path = os.path.join(os.path.dirname(__file__), "core", "smartlinks.json")
+        smartlinks_path = get_smartlinks_path()
         data = {}
         if os.path.exists(smartlinks_path):
             try:
@@ -1520,7 +1537,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def _handle_smartlinks_save(self, body):
         brand_slug = body.get("brand", "boş-marka")
-        smartlinks_path = os.path.join(os.path.dirname(__file__), "core", "smartlinks.json")
+        smartlinks_path = get_smartlinks_path()
         
         smartlinks_data = {}
         if os.path.exists(smartlinks_path):

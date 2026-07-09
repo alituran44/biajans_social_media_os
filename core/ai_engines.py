@@ -3,7 +3,8 @@ import sys
 import logging
 import json
 from pydantic import BaseModel, Field
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from config import Config
 
 # Configure logging
@@ -98,7 +99,7 @@ class AIEngines:
             return None
             
         try:
-            genai.configure(api_key=Config.GEMINI_API_KEY)
+            client = genai.Client(api_key=Config.GEMINI_API_KEY)
             
             # System instructions enforcing the professional multi-channel copywriting persona
             base_instruction = (
@@ -118,18 +119,16 @@ class AIEngines:
             
             system_instruction = AIEngines._build_system_instruction(base_instruction, ai_instructions)
             
-            # Setup Gemini 1.5 Pro model with response schema to guarantee structured outputs
-            model = genai.GenerativeModel(
-                model_name="gemini-1.5-pro",
-                generation_config={
-                    "response_mime_type": "application/json",
-                    "response_schema": SocialContentSchema
-                },
-                system_instruction=system_instruction
+            logger.info("Sending prompt to Gemini (gemini-2.5-flash)...")
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=user_prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=SocialContentSchema,
+                    system_instruction=system_instruction
+                )
             )
-            
-            logger.info("Sending prompt to Gemini...")
-            response = model.generate_content(user_prompt)
             
             if not response or not response.text:
                 logger.error("Received empty response text from Gemini API.")
@@ -145,15 +144,15 @@ class AIEngines:
             # Try fallback to gemini-1.5-flash
             try:
                 logger.info("Retrying content generation with gemini-1.5-flash...")
-                model = genai.GenerativeModel(
-                    model_name="gemini-1.5-flash",
-                    generation_config={
-                        "response_mime_type": "application/json",
-                        "response_schema": SocialContentSchema
-                    },
-                    system_instruction=system_instruction
+                response = client.models.generate_content(
+                    model="gemini-1.5-flash",
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=SocialContentSchema,
+                        system_instruction=system_instruction
+                    )
                 )
-                response = model.generate_content(user_prompt)
                 if response and response.text:
                     return json.loads(response.text.strip())
             except Exception as e2:
@@ -588,13 +587,14 @@ class AIEngines:
         # 2. Fall back to Default system Gemini
         if Config.GEMINI_API_KEY and "your_gemini_api_key_here" not in Config.GEMINI_API_KEY:
             try:
-                genai.configure(api_key=Config.GEMINI_API_KEY)
-                model_name = "gemini-1.5-flash"
-                model = genai.GenerativeModel(
-                    model_name=model_name,
-                    system_instruction=system_instruction
+                client = genai.Client(api_key=Config.GEMINI_API_KEY)
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction
+                    )
                 )
-                response = model.generate_content(user_prompt)
                 if response and response.text:
                     return response.text.strip()
             except Exception as e:
