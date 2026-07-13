@@ -28,11 +28,11 @@ def create_meta_ad_campaign(budget_try: int, audience: dict, creative: dict, ad_
     }
     
     try:
-        # Mocking or calling the real API
-        # res_camp = requests.post(f"{base_url}/campaigns", headers=headers, json=campaign_payload)
-        # camp_data = res_camp.json()
-        # campaign_id = camp_data.get("id")
-        campaign_id = "mock_campaign_id_123"
+        res_camp = requests.post(f"{base_url}/campaigns", headers=headers, json=campaign_payload)
+        camp_data = res_camp.json()
+        if "error" in camp_data:
+            return {"success": False, "error": f"Meta Campaign Hatası: {camp_data['error'].get('message')}"}
+        campaign_id = camp_data.get("id")
         
         # 2. Ad Set Oluşturma
         adset_payload = {
@@ -50,10 +50,13 @@ def create_meta_ad_campaign(budget_try: int, audience: dict, creative: dict, ad_
             },
             "status": "PAUSED"
         }
-        # res_adset = requests.post(f"{base_url}/adsets", headers=headers, json=adset_payload)
-        adset_id = "mock_adset_id_456"
+        res_adset = requests.post(f"{base_url}/adsets", headers=headers, json=adset_payload)
+        adset_data = res_adset.json()
+        if "error" in adset_data:
+            return {"success": False, "error": f"Meta AdSet Hatası: {adset_data['error'].get('message')}"}
+        adset_id = adset_data.get("id")
         
-        # 3. Ad Creative & Ad Oluşturma
+        # 3. Ad Creative Oluşturma
         creative_payload = {
             "name": "biAjans Dinamik Kreatif",
             "object_story_spec": {
@@ -65,17 +68,24 @@ def create_meta_ad_campaign(budget_try: int, audience: dict, creative: dict, ad_
                 }
             }
         }
-        # res_creative = requests.post(f"{base_url}/adcreatives", headers=headers, json=creative_payload)
-        ad_creative_id = "mock_creative_id_789"
+        res_creative = requests.post(f"{base_url}/adcreatives", headers=headers, json=creative_payload)
+        creative_data = res_creative.json()
+        if "error" in creative_data:
+            return {"success": False, "error": f"Meta AdCreative Hatası: {creative_data['error'].get('message')}"}
+        ad_creative_id = creative_data.get("id")
         
+        # 4. Ad Oluşturma
         ad_payload = {
             "name": "biAjans AI Reklamı",
             "adset_id": adset_id,
             "creative": {"creative_id": ad_creative_id},
             "status": "PAUSED"
         }
-        # res_ad = requests.post(f"{base_url}/ads", headers=headers, json=ad_payload)
-        ad_id = "mock_ad_id_000"
+        res_ad = requests.post(f"{base_url}/ads", headers=headers, json=ad_payload)
+        ad_data = res_ad.json()
+        if "error" in ad_data:
+            return {"success": False, "error": f"Meta Ad Hatası: {ad_data['error'].get('message')}"}
+        ad_id = ad_data.get("id")
         
         return {
             "success": True, 
@@ -92,42 +102,120 @@ def create_meta_ad_campaign(budget_try: int, audience: dict, creative: dict, ad_
 
 def create_google_ad_campaign(budget_try: int, audience: dict, creative: dict, customer_id: str, brand_id: str = "global") -> dict:
     """
-    Google Ads kampanyası oluşturma. Google Ads API karmaşık olduğu için
-    Rest arayüzüne uyumlu kapsamlı yapılandırma gönderilir.
+    Google Ads kampanyası oluşturma. Google Ads REST API v16 kullanılarak
+    CampaignBudget ve Search Campaign oluşturulur.
     """
     token = get_token("google_ads", brand_id=brand_id) or get_token("google", brand_id=brand_id)
     if not token or not token.get("access_token"):
-        return {"success": False, "error": "Google Ads yetkilendirmesi bulunamadı."}
+        return {"success": False, "error": "Google Ads yetkilendirmesi bulunamadı. Lütfen Ayarlar > Entegrasyonlar kısmından Google Ads'i bağlayın."}
         
-    # Implementation logic for Google Ads API v16
-    return {
-        "success": True,
-        "platform": "google_ads",
-        "data": {
-            "campaign_id": "mock_google_camp_123",
-            "budget": budget_try,
-            "keywords": audience.get("keywords", []),
-            "status": "Taslak"
-        }
+    access_token = token["access_token"]
+    developer_token = "YOUR_DEVELOPER_TOKEN"
+    
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "developer-token": developer_token,
+        "login-customer-id": customer_id,
+        "Content-Type": "application/json"
     }
+    
+    # 1. CampaignBudget Oluşturma
+    budget_url = f"https://googleads.googleapis.com/v16/customers/{customer_id}/campaignBudgets:mutate"
+    budget_payload = {
+        "operations": [{
+            "create": {
+                "name": f"biAjans Bütçe - {datetime.now().strftime('%Y%m%d_%H%M')}",
+                "amountMicros": budget_try * 1000000,
+                "deliveryMethod": "STANDARD"
+            }
+        }]
+    }
+    
+    try:
+        res_budget = requests.post(budget_url, headers=headers, json=budget_payload)
+        budget_data = res_budget.json()
+        if "error" in budget_data:
+            return {"success": False, "error": f"Google Ads Bütçe Hatası: {budget_data['error'].get('message')}"}
+        
+        budget_resource = budget_data.get("results", [{}])[0].get("resourceName")
+        if not budget_resource:
+            return {"success": False, "error": "Google Ads Bütçe Kaynağı oluşturulamadı."}
+            
+        # 2. Campaign Oluşturma
+        url = f"https://googleads.googleapis.com/v16/customers/{customer_id}/campaigns:mutate"
+        campaign_payload = {
+            "operations": [{
+                "create": {
+                    "name": f"biAjans AI Arama Ağı Kampanyası - {datetime.now().strftime('%Y%m%d_%H%M')}",
+                    "advertisingChannelType": "SEARCH",
+                    "status": "PAUSED",
+                    "campaignBudget": budget_resource,
+                    "manualCpc": {}
+                }
+            }]
+        }
+        res_camp = requests.post(url, headers=headers, json=campaign_payload)
+        camp_data = res_camp.json()
+        if "error" in camp_data:
+            return {"success": False, "error": f"Google Ads Kampanya Hatası: {camp_data['error'].get('message')}"}
+            
+        campaign_resource = camp_data.get("results", [{}])[0].get("resourceName")
+        
+        return {
+            "success": True,
+            "platform": "google_ads",
+            "data": {
+                "campaign_id": campaign_resource,
+                "budget": budget_try,
+                "keywords": audience.get("keywords", []),
+                "status": "Google Ads'e taslak kampanya olarak başarıyla gönderildi."
+            }
+        }
+    except Exception as e:
+        return {"success": False, "platform": "google_ads", "error": str(e)}
 
 def create_tiktok_ad_campaign(budget_try: int, audience: dict, creative: dict, advertiser_id: str, brand_id: str = "global") -> dict:
     """
-    TikTok for Business API üzerinden reklam çıkışı.
+    TikTok for Business API v1.3 üzerinden reklam kampanyası oluşturulur.
     """
     token = get_token("tiktok_ads", brand_id=brand_id) or get_token("tiktok", brand_id=brand_id)
     if not token or not token.get("access_token"):
-        return {"success": False, "error": "TikTok Ads yetkilendirmesi bulunamadı."}
+        return {"success": False, "error": "TikTok Ads yetkilendirmesi bulunamadı. Lütfen Ayarlar > Entegrasyonlar kısmından TikTok Ads'i bağlayın."}
         
-    return {
-        "success": True,
-        "platform": "tiktok_ads",
-        "data": {
-            "campaign_id": "mock_tiktok_camp_123",
-            "budget": budget_try,
-            "status": "Taslak"
-        }
+    access_token = token["access_token"]
+    url = "https://business-api.tiktok.com/open_api/v1.3/campaign/create/"
+    headers = {
+        "Access-Token": access_token,
+        "Content-Type": "application/json"
     }
+    
+    payload = {
+        "advertiser_id": advertiser_id,
+        "campaign_name": f"biAjans AI Kampanya - {datetime.now().strftime('%Y%m%d_%H%M')}",
+        "objective_type": "TRAFFIC",
+        "budget_mode": "BUDGET_MODE_DAY",
+        "budget": float(budget_try),
+        "operation_status": "DISABLE" # Pasif (Taslak)
+    }
+    
+    try:
+        res = requests.post(url, headers=headers, json=payload)
+        res_data = res.json()
+        if res_data.get("code") != 0:
+            return {"success": False, "error": f"TikTok Ads API Hatası: {res_data.get('message')}"}
+            
+        campaign_id = res_data.get("data", {}).get("campaign_id")
+        return {
+            "success": True,
+            "platform": "tiktok_ads",
+            "data": {
+                "campaign_id": campaign_id,
+                "budget": budget_try,
+                "status": "TikTok Business Manager'a taslak olarak aktarıldı."
+            }
+        }
+    except Exception as e:
+        return {"success": False, "platform": "tiktok_ads", "error": str(e)}
 
 def launch_ads(platform: str, config: dict, brand_id: str = "global") -> dict:
     """Ads yönlendiricisi"""

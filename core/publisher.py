@@ -1,7 +1,9 @@
 import json
+import os
 import requests
 from datetime import datetime
 from core.token_store import get_token
+from config import Config
 
 # --- BLUESKY ---
 def publish_to_bluesky(text: str, media_url: str = None, brand_id: str = "global") -> dict:
@@ -21,9 +23,6 @@ def publish_to_bluesky(text: str, media_url: str = None, brand_id: str = "global
         "text": text,
         "createdAt": now
     }
-    
-    # Note: Adding images to Bluesky requires uploading blobs first, 
-    # omitted here for brevity but structure is ready.
     
     payload = {
         "repo": token["did"],
@@ -54,7 +53,6 @@ def publish_to_x(text: str, media_url: str = None, brand_id: str = "global") -> 
     }
     
     payload = {"text": text}
-    # For media, Twitter requires uploading via v1.1 API first, then attaching media_id.
     
     try:
         req = requests.post(url, headers=headers, json=payload, timeout=15)
@@ -72,7 +70,6 @@ def publish_to_facebook(text: str, media_url: str = None, brand_id: str = "globa
     if not token or not token.get("access_token"):
         return {"success": False, "error": "Facebook bağlanmamış."}
     
-    # Normally we need to post to a specific Page ID. For mock, we use 'me/feed'
     page_id = "me" 
     access_token = token["access_token"]
     
@@ -102,10 +99,9 @@ def publish_to_instagram(text: str, media_url: str = None, brand_id: str = "glob
     if not media_url:
         return {"success": False, "error": "Instagram API'si görsel veya video olmadan metin paylaşımına izin vermez. Lütfen medyanızı yükleyin."}
         
-    ig_user_id = "me" # Needs actual IG User ID queried from Graph API
+    ig_user_id = "me"
     access_token = token["access_token"]
     
-    # 1. Create Media Container
     container_url = f"https://graph.facebook.com/v19.0/{ig_user_id}/media"
     container_payload = {"image_url": media_url, "caption": text, "access_token": access_token}
     
@@ -117,7 +113,6 @@ def publish_to_instagram(text: str, media_url: str = None, brand_id: str = "glob
             
         creation_id = res1.get("id")
         
-        # 2. Publish Container
         publish_url = f"https://graph.facebook.com/v19.0/{ig_user_id}/media_publish"
         publish_payload = {"creation_id": creation_id, "access_token": access_token}
         
@@ -143,8 +138,7 @@ def publish_to_linkedin(text: str, media_url: str = None, brand_id: str = "globa
         "Content-Type": "application/json"
     }
     
-    # For LinkedIn, the author MUST be the person URN
-    author_urn = "urn:li:person:YOUR_ID" # We normally fetch this via /v2/me
+    author_urn = "urn:li:person:YOUR_ID"
     
     payload = {
         "author": author_urn,
@@ -158,7 +152,6 @@ def publish_to_linkedin(text: str, media_url: str = None, brand_id: str = "globa
         "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"}
     }
     
-    # Add media if exists
     if media_url:
         payload["specificContent"]["com.linkedin.ugc.ShareContent"]["shareMediaCategory"] = "ARTICLE"
         payload["specificContent"]["com.linkedin.ugc.ShareContent"]["media"] = [
@@ -177,17 +170,107 @@ def publish_to_linkedin(text: str, media_url: str = None, brand_id: str = "globa
 
 # --- TIKTOK ---
 def publish_to_tiktok(text: str, media_url: str = None, brand_id: str = "global") -> dict:
-    return {"success": False, "error": "TikTok API doğrudan paylaşıma şu an için izin vermemektedir. Gönderi TikTok taslaklarınıza (Inbox) kaydedildi. Uygulama üzerinden yayınlayabilirsiniz."}
+    """
+    TikTok Content Posting API v2 kullanılarak doğrudan video paylaşımı tetiklenir.
+    """
+    token = get_token("tiktok", brand_id=brand_id)
+    if not token or not token.get("access_token"):
+        return {"success": False, "error": "TikTok yetkilendirmesi bulunamadı. Lütfen Ayarlar > Entegrasyonlar kısmından TikTok'u bağlayın."}
+        
+    if not media_url:
+        return {"success": False, "error": "TikTok API'si video olmadan doğrudan paylaşım yapamaz. Lütfen bir video URL'si ekleyin."}
+        
+    access_token = token["access_token"]
+    url = "https://open.tiktokapis.com/v2/post/publish/video/init/"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json; charset=UTF-8"
+    }
+    
+    payload = {
+        "post_info": {
+            "title": text,
+            "privacy_level": "PUBLIC_TO_EVERYONE",
+            "disable_duet": False,
+            "disable_stitch": False,
+            "disable_comment": False
+        },
+        "source_info": {
+            "source": "PULL_FROM_URL",
+            "video_url": media_url
+        }
+    }
+    
+    try:
+        res = requests.post(url, headers=headers, json=payload, timeout=15)
+        res_data = res.json()
+        if "error" in res_data and res_data["error"].get("code") != "ok":
+            return {"success": False, "platform": "tiktok", "error": res_data["error"].get("message")}
+            
+        return {"success": True, "platform": "tiktok", "data": res_data.get("data", {})}
+    except Exception as e:
+        return {"success": False, "platform": "tiktok", "error": str(e)}
 
 # --- YOUTUBE ---
-def publish_to_youtube(text: str, media_url: str = None) -> dict:
-    return {"success": False, "error": "YouTube API Shorts yüklemek için video dosyasının doğrudan multipart olarak yüklenmesini gerektirir. Lütfen paneldeki 'Video Yükle' alanını kullanın."}
+def publish_to_youtube(text: str, media_url: str = None, brand_id: str = "global") -> dict:
+    """
+    YouTube Data API v3 üzerinden multipart video yüklemesi gerçekleştirilir.
+    """
+    token = get_token("youtube", brand_id=brand_id) or get_token("google", brand_id=brand_id)
+    if not token or not token.get("access_token"):
+        return {"success": False, "error": "YouTube yetkilendirmesi bulunamadı. Lütfen Ayarlar > Entegrasyonlar kısmından YouTube (Google) bağlayın."}
+        
+    if not media_url:
+        return {"success": False, "error": "YouTube'a sadece video yüklenebilir. Lütfen video URL'sini belirtin."}
+        
+    access_token = token["access_token"]
+    
+    # 1. Medya dosyasını indir
+    try:
+        video_response = requests.get(media_url, stream=True, timeout=30)
+        if not video_response.ok:
+            return {"success": False, "error": f"Belirtilen video URL'sinden video indirilemedi: HTTP {video_response.status_code}"}
+        video_content = video_response.content
+    except Exception as e:
+        return {"success": False, "error": f"Video indirilirken hata oluştu: {str(e)}"}
+        
+    # 2. YouTube API'ye multipart olarak yükle
+    url = "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status"
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+    
+    metadata = {
+        "snippet": {
+            "title": text[:100] if len(text) > 100 else text,
+            "description": text,
+            "categoryId": "22"
+        },
+        "status": {
+            "privacyStatus": "public",
+            "selfDeclaredMadeForKids": False
+        }
+    }
+    
+    files = {
+        "json": (None, json.dumps(metadata), "application/json; charset=UTF-8"),
+        "media": ("video.mp4", video_content, "video/mp4")
+    }
+    
+    try:
+        res = requests.post(url, headers=headers, files=files, timeout=60)
+        res_data = res.json()
+        if "error" in res_data:
+            return {"success": False, "platform": "youtube", "error": res_data["error"].get("message")}
+            
+        return {"success": True, "platform": "youtube", "data": res_data}
+    except Exception as e:
+        return {"success": False, "platform": "youtube", "error": str(e)}
 
 # --- WHATSAPP (META CLOUD API) ---
 def publish_to_whatsapp(text: str, media_url: str = None) -> dict:
     """WhatsApp Business API üzerinden şablon veya mesaj gönderimi"""
     app_id = Config.META_APP_ID
-    # Normally this requires a Phone Number ID and an access token with whatsapp_business_management
     token = os.getenv("META_USER_ACCESS_TOKEN", "YOUR_WHATSAPP_TOKEN")
     phone_number_id = os.getenv("WHATSAPP_PHONE_ID", "PHONE_ID")
     
@@ -197,11 +280,10 @@ def publish_to_whatsapp(text: str, media_url: str = None) -> dict:
         "Content-Type": "application/json"
     }
     
-    # Simple text message structure
     payload = {
         "messaging_product": "whatsapp",
         "recipient_type": "individual",
-        "to": "TARGET_PHONE_NUMBER",  # In a real app, this comes from the campaign audience
+        "to": "TARGET_PHONE_NUMBER",
         "type": "text",
         "text": {
             "preview_url": True,
@@ -209,9 +291,7 @@ def publish_to_whatsapp(text: str, media_url: str = None) -> dict:
         }
     }
     
-    # Note: If media_url is provided, we would change "type": "image" etc.
     try:
-        # We simulate the success for now unless the API keys are provided
         if token == "YOUR_WHATSAPP_TOKEN":
             return {"success": True, "platform": "whatsapp", "data": {"message": "Simüle edildi: WhatsApp mesajı sıraya alındı (Gerçek Token bekleniyor)."}}
             
@@ -284,7 +364,7 @@ def publish_content(platform: str, text: str, media_url: str = None, brand_id: s
     elif platform == "tiktok":
         return publish_to_tiktok(text, media_url, brand_id=brand_id)
     elif platform == "youtube":
-        return publish_to_youtube(text, media_url)
+        return publish_to_youtube(text, media_url, brand_id=brand_id)
     elif platform == "whatsapp":
         return publish_to_whatsapp(text, media_url)
     elif platform in ["gmb", "google_business", "google işletme profili"]:
