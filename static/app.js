@@ -4116,7 +4116,15 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     function loadBrandsFromStorage() {
         try {
             const stored = localStorage.getItem(BRANDS_KEY);
-            return stored ? JSON.parse(stored) : defaultBrands;
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed.some(b => b.id === 'coffee' || b.id === 'fitness')) {
+                    localStorage.removeItem(BRANDS_KEY);
+                    return defaultBrands;
+                }
+                return parsed;
+            }
+            return defaultBrands;
         } catch (e) {
             return defaultBrands;
         }
