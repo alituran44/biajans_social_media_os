@@ -4100,8 +4100,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     const defaultBrands = [
         {
             id: 'global',
-            name: 'Boş marka',
-            logo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80',
+            name: 'Yeni Marka',
+            logo: '',
             industry: '',
             payment: '',
             currency: 'TL',
@@ -4109,30 +4109,6 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             meetingDate: '',
             zoomLink: '',
             onboarding: { step1: false, step2: false, step3: false, step4: false }
-        },
-        {
-            id: 'coffee',
-            name: 'Local Coffee Shop',
-            logo: 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=150&q=80',
-            industry: 'Gıda & İçecek',
-            payment: '12000',
-            currency: 'TL',
-            requirements: 'Haftalık en az 5 gönderi. Instagram reels öncelikli. Kahve sezonu kampanyaları yapılacak.',
-            meetingDate: '',
-            zoomLink: '',
-            onboarding: { step1: true, step2: true, step3: false, step4: false }
-        },
-        {
-            id: 'fitness',
-            name: 'Health & Fitness',
-            logo: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=150&q=80',
-            industry: 'Sağlık & Spor',
-            payment: '18000',
-            currency: 'TL',
-            requirements: 'Motivasyon odaklı içerik. TikTok ve Instagram eş zamanlı paylaşım. Sporcu hikayeleri ve dönüşüm videoları.',
-            meetingDate: '',
-            zoomLink: '',
-            onboarding: { step1: true, step2: false, step3: false, step4: false }
         }
     ];
 
