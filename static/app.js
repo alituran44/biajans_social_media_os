@@ -2238,50 +2238,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     const editPostTime = document.getElementById('editPostTime');
     const editPostPlatformBadge = document.getElementById('editPostPlatformBadge');
 
-    let calendarPostsData = [
-        {
-            id: 'mock1',
-            date: '2026-05-12',
-            time: '18:00',
-            platform: 'instagram',
-            text: 'Taptaze yer fıstığı ezmesi lansmanımıza özel sürpriz indirim fırsatı Instagram hikayelerinde! 🥜🔥'
-        },
-        {
-            id: 'mock2',
-            date: '2026-05-13',
-            time: '13:00',
-            platform: 'facebook',
-            text: 'İlk 100 siparişe özel tanımladığımız sepette geçerli %15 indirim kuponlarını kaçırmayın!'
-        },
-        {
-            id: 'mock3',
-            date: '2026-05-13',
-            time: '15:00',
-            platform: 'tiktok',
-            text: 'Gurme baristamızın elinden Etiyopya taze demleme kahve sanatı videosu! ☕️✨ #aesthetic #coffee'
-        },
-        {
-            id: 'mock4',
-            date: '2026-05-14',
-            time: '09:00',
-            platform: 'youtube',
-            text: 'Evde profesyonel kahve demleme teknikleri ve taze kavrum çekirdek seçimi rehberimiz YouTube kanalımızda yayında.'
-        },
-        {
-            id: 'mock5',
-            date: '2026-05-20',
-            time: '12:00',
-            platform: 'instagram',
-            text: 'VIP kulübümüze özel gurme filtre kahve tadım setleri ön satışta. Detaylar link in bio\'da!'
-        },
-        {
-            id: 'mock6',
-            date: '2026-05-26', // Bugün
-            time: '10:00',
-            platform: 'linkedin',
-            text: 'Sosyal medya yönetim paneli biAjans AI Entegrasyonu ile artık yayında! Markaların kurumsal gücünü katlıyoruz. 🚀'
-        }
-    ];
+    let calendarPostsData = [];
 
     function activatePlanlama() {
         if (planlamaPromoState && planlamaActiveState) {
@@ -5022,10 +4979,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             } else if (brand.id === 'fitness') {
                 statEngagement.textContent = '198.5K';
             } else {
-                // Generate a stable pseudorandom metric based on brand name
-                const hash = brand.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                const num = ((hash * 7) % 85) + 5.2;
-                statEngagement.textContent = `${num.toFixed(1)}K`;
+                statEngagement.textContent = '0';
             }
         }
 
@@ -5037,9 +4991,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             } else if (brand.id === 'fitness') {
                 statScheduled.textContent = '15';
             } else {
-                const hash = brand.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                const num = (hash % 8) + 1;
-                statScheduled.textContent = String(num);
+                const count = calendarPostsData.filter(p => p.brand === brand.id || !p.brand).length;
+                statScheduled.textContent = String(count);
             }
         }
 
@@ -5091,7 +5044,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         } else if (brand.id === 'fitness') {
             healthPercent = 100;
         } else {
-            healthPercent = 40 + (connectedCount * 15);
+            healthPercent = connectedCount > 0 ? (40 + (connectedCount * 15)) : 0;
             if (healthPercent > 100) healthPercent = 100;
         }
 
