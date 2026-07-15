@@ -5457,7 +5457,10 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         const insightOpp = document.getElementById('competitorInsightOpportunity');
         const insightThreat = document.getElementById('competitorInsightThreat');
         
-        if (brand.industry === 'Gıda & İçecek' || brand.id === 'coffee') {
+        if (brand.competitorInsights) {
+            if (insightOpp) insightOpp.textContent = brand.competitorInsights.opportunity;
+            if (insightThreat) insightThreat.textContent = brand.competitorInsights.threat;
+        } else if (brand.industry === 'Gıda & İçecek' || brand.id === 'coffee') {
             if (insightOpp) insightOpp.textContent = "Rakipleriniz (özellikle Espressolab) reels paylaşımlarında 'Kahve demleme teknikleri' konseptiyle yüksek etkileşim yakalıyor. Benzer video formatlarını AI video editörümüzle başlatarak bu kitleyi çekebilirsiniz.";
             if (insightThreat) insightThreat.textContent = "Starbucks Türkiye, sadakat kartı reklam bütçelerini dijitalde %30 artırdı. Müşteri tutundurma için haftalık kampanya hikayelerine ve lokal indirim reklamlarına ağırlık vermeliyiz.";
         } else if (brand.industry === 'Sağlık & Spor' || brand.id === 'fitness') {
@@ -5584,6 +5587,50 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             addCompetitorPanel.classList.add('hidden');
             addCompetitorForm.reset();
             showToast(`'${name}' rakibi başarıyla eklendi ve analizi tamamlandı! 📈`);
+        });
+    }
+
+    // AI Competitor Analysis button trigger
+    const btnRunCompetitorAI = document.getElementById('btnRunCompetitorAI');
+    if (btnRunCompetitorAI) {
+        btnRunCompetitorAI.addEventListener('click', async () => {
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const brand = brandsData.find(b => b.id === activeId);
+            if (!brand) return;
+
+            const sector = document.getElementById('compFilterSector').value;
+            const city = document.getElementById('compFilterCity').value;
+
+            btnRunCompetitorAI.disabled = true;
+            const originalHTML = btnRunCompetitorAI.innerHTML;
+            btnRunCompetitorAI.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Analiz ediliyor...`;
+
+            try {
+                const res = await fetch(`/api/competitors/analyze?sector=${encodeURIComponent(sector)}&city=${encodeURIComponent(city)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.success) {
+                        brand.competitors = data.competitors;
+                        brand.competitorInsights = data.insights;
+                        brand.industry = sector;
+                        brand.city = city;
+                        
+                        saveBrandsToStorage(brandsData);
+                        updateCompetitorsDashboard(brand);
+                        showToast(`Yapay Zeka ${city} / ${sector} rakip analizi başarıyla tamamlandı! 🤖📈`);
+                    } else {
+                        showToast("Analiz gerçekleştirilemedi: " + (data.error || "Bilinmeyen hata"), "error");
+                    }
+                } else {
+                    showToast("Sunucu hatası. Lütfen daha sonra tekrar deneyin.", "error");
+                }
+            } catch (err) {
+                console.error("AI Competitor analysis error:", err);
+                showToast("Bağlantı hatası.", "error");
+            } finally {
+                btnRunCompetitorAI.disabled = false;
+                btnRunCompetitorAI.innerHTML = originalHTML;
+            }
         });
     }
 

@@ -190,6 +190,19 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json_response({"status": "ok", "connections": status})
             return
 
+        # ── Competitors Analysis: /api/competitors/analyze ────────────────────
+        if path == "/api/competitors/analyze":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            sector = qs.get("sector", ["Gıda & İçecek"])[0]
+            city = qs.get("city", ["İstanbul"])[0]
+            
+            from core.ai_engines import AIEngines
+            result = AIEngines.analyze_competitors_ai(sector, city)
+            self.send_json_response(result)
+            return
+
         # ── CRM Leads List: /api/crm/leads ────────────────────────────────────
         if path == "/api/crm/leads":
             if not self._get_session():

@@ -3858,6 +3858,50 @@
                             </button>
                         </div>
 
+                        <!-- Sector & City AI Analysis Bar -->
+                        <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="background: #10b981; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: white;">
+                                    <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 12px;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="font-size: 12px; font-weight: 800; color: #1e293b; margin: 0;">Yapay Zeka Destekli Analiz</h4>
+                                    <p style="font-size: 10px; color: #64748b; margin: 0;">Sektör ve il bazında rakipleri ve SWOT analizini yapay zeka ile güncelleyin.</p>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-size: 11px; font-weight: 700; color: #475569;">Sektör:</span>
+                                    <select id="compFilterSector" style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: #334155; outline: none; cursor: pointer;">
+                                        <option value="Gıda & İçecek">Gıda & İçecek</option>
+                                        <option value="Sağlık & Spor">Sağlık & Spor</option>
+                                        <option value="Eğitim">Eğitim</option>
+                                        <option value="Teknoloji & Yazılım">Teknoloji & Yazılım</option>
+                                        <option value="E-Ticaret">E-Ticaret</option>
+                                        <option value="Güzellik & Kozmetik">Güzellik & Kozmetik</option>
+                                        <option value="İnşaat & Emlak">İnşaat & Emlak</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-size: 11px; font-weight: 700; color: #475569;">İl:</span>
+                                    <select id="compFilterCity" style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: #334155; outline: none; cursor: pointer;">
+                                        <option value="İstanbul">İstanbul</option>
+                                        <option value="Ankara">Ankara</option>
+                                        <option value="İzmir">İzmir</option>
+                                        <option value="Bursa">Bursa</option>
+                                        <option value="Antalya">Antalya</option>
+                                        <option value="Adana">Adana</option>
+                                        <option value="Trabzon">Trabzon</option>
+                                        <option value="Gaziantep">Gaziantep</option>
+                                    </select>
+                                </div>
+                                <button class="btn" id="btnRunCompetitorAI" style="background: #10b981; color: white; border: none; padding: 7px 14px; font-size: 11.5px; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                                    <i class="fa-solid fa-brain"></i> Analiz Et
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Inline Add Competitor Panel (Hidden by default) -->
                         <div id="addCompetitorPanel" class="hidden animate-slide-up" style="background: #f8fafc; border: 1px solid var(--card-border); padding: 20px; border-radius: 8px; margin-bottom: 24px;">
                             <h3 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0 0 16px 0;">Yeni Rakip Detayları</h3>
