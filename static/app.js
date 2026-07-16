@@ -570,6 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Unified View Navigation Controller (Ozet, Analitik, Raporlama, Gelen Kutusu, Akilli Baglantilar, Reklamlar, Hashtag Takip, Settings)
     const allViews = [
         { btnId: 'ozetBtn', secId: null },
+        { btnId: 'sideSosyalMedya', secId: 'sosyalMedyaSection' },
         { btnId: 'navPlanlama', secId: 'planlamaSection' },
         { btnId: 'navAnalitik', secId: 'analitikSection' },
         { btnId: 'navRakip', secId: 'rakipSection' },
@@ -652,6 +653,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetSecId === 'crmSection') {
             if (typeof loadCRMLeads === 'function') {
                 loadCRMLeads();
+            }
+        }
+        if (targetSecId === 'sosyalMedyaSection') {
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const activeBrand = brandsData.find(b => b.id === activeId);
+            if (activeBrand && typeof updateSosyalMedyaDashboard === 'function') {
+                updateSosyalMedyaDashboard(activeBrand);
             }
         }
         if (targetSecId === 'settingsSection' || targetSecId === 'brandSettingsSection') {
@@ -5631,6 +5639,232 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 btnRunCompetitorAI.disabled = false;
                 btnRunCompetitorAI.innerHTML = originalHTML;
             }
+        });
+    }
+
+    // ============================================================
+    // SOSYAL MEDYA YÖNETİMİ & ÇOK KANALLI GÖNDERİCİ
+    // ============================================================
+    window.updateSosyalMedyaDashboard = function(brand) {
+        if (!brand.smPublishedPosts) {
+            brand.smPublishedPosts = [
+                {
+                    text: "Yeni sezon kahve çekirdeklerimiz geldi! ☕️ Brezilya'nın eşsiz yaylalarından toplanan Single Origin çekirdeklerimiz Espresso severler için şimdi tüm şubelerimizde ve web sitemizde.",
+                    platform: "instagram",
+                    date: "Dün 14:30",
+                    engagement: "1,240 Beğeni, 42 Yorum",
+                    reach: "15,400 Erişim",
+                    status: "Yayınlandı"
+                },
+                {
+                    text: "Hafta sonuna harika bir başlangıç yapın! Cumartesi sabahı taze demlenmiş bir filtre kahve ve leziz kruvasan ikilisini denediniz mi? En yakın şubemize bekliyoruz.",
+                    platform: "facebook",
+                    date: "2 gün önce",
+                    engagement: "340 Beğeni, 12 Paylaşım",
+                    reach: "4,200 Erişim",
+                    status: "Yayınlandı"
+                },
+                {
+                    text: "B2B işbirliklerimiz ve kurumsal ofis çözümlerimizle çalışanlarınızın kahve kalitesini zirveye taşıyoruz. Espresso makinelerimiz ve çekirdek tedarik paketlerimiz hakkında bilgi almak için bizimle iletişime geçin.",
+                    platform: "linkedin",
+                    date: "5 gün önce",
+                    engagement: "88 Beğeni, 4 Yorum",
+                    reach: "2,800 Erişim",
+                    status: "Yayınlandı"
+                }
+            ];
+            saveBrandsToStorage(brandsData);
+        }
+
+        const smConnectedList = document.getElementById('smConnectedList');
+        if (smConnectedList) {
+            smConnectedList.innerHTML = '';
+            const connState = brand.connections || {};
+            const platforms = [
+                { id: 'instagram', name: 'Instagram', icon: 'fa-brands fa-instagram', color: '#e1306c', followers: brand.id === 'coffee' ? '184.2K' : (brand.id === 'fitness' ? '245.5K' : '1.2K') },
+                { id: 'facebook', name: 'Facebook', icon: 'fa-brands fa-facebook', color: '#1877f2', followers: brand.id === 'coffee' ? '42.5K' : (brand.id === 'fitness' ? '56.2K' : '450') },
+                { id: 'x', name: 'X (Twitter)', icon: 'fa-brands fa-x-twitter', color: '#000000', followers: brand.id === 'coffee' ? '12.8K' : (brand.id === 'fitness' ? '15.4K' : '280') },
+                { id: 'linkedin', name: 'LinkedIn', icon: 'fa-brands fa-linkedin', color: '#0077b5', followers: brand.id === 'coffee' ? '8.4K' : (brand.id === 'fitness' ? '12.1K' : '620') },
+                { id: 'tiktok', name: 'TikTok', icon: 'fa-brands fa-tiktok', color: '#000000', followers: brand.id === 'coffee' ? '28.1K' : (brand.id === 'fitness' ? '198.2K' : '1.8K') },
+                { id: 'youtube', name: 'YouTube', icon: 'fa-brands fa-youtube', color: '#ff0000', followers: brand.id === 'coffee' ? '3.2K' : (brand.id === 'fitness' ? '45.0K' : '120') },
+                { id: 'bluesky', name: 'Bluesky', icon: 'fa-solid fa-cloud', color: '#0085ff', followers: brand.id === 'coffee' ? '1.5K' : (brand.id === 'fitness' ? '2.8K' : '55') }
+            ];
+
+            platforms.forEach(p => {
+                const isConnected = connState[p.id]?.connected || (p.id === 'linkedin');
+                const itemDiv = document.createElement('div');
+                itemDiv.style.cssText = "display:flex; align-items:center; justify-content:space-between; padding:12px; border-radius:8px; border:1px solid #e2e8f0; background:#f8fafc;";
+                
+                const leftDiv = document.createElement('div');
+                leftDiv.style.cssText = "display:flex; align-items:center; gap:12px;";
+                
+                const iconWrap = document.createElement('div');
+                iconWrap.style.cssText = `width:36px; height:36px; border-radius:50%; background:white; display:flex; align-items:center; justify-content:center; border:1px solid #e2e8f0; font-size:16px; color:${p.color};`;
+                iconWrap.innerHTML = `<i class="${p.icon}"></i>`;
+                
+                const nameInfo = document.createElement('div');
+                nameInfo.innerHTML = `
+                    <h4 style="margin:0; font-size:12.5px; font-weight:700; color:#1e293b;">${p.name}</h4>
+                    <span style="font-size:10.5px; color:${isConnected ? '#10b981' : '#64748b'}; font-weight:600;">
+                        ${isConnected ? '@' + (brand.name ? brand.name.toLowerCase().replace(/\s+/g, '') : 'boşmarka') : 'Bağlı Değil'}
+                    </span>
+                `;
+                
+                leftDiv.appendChild(iconWrap);
+                leftDiv.appendChild(nameInfo);
+                
+                const rightDiv = document.createElement('div');
+                rightDiv.style.cssText = "text-align:right;";
+                
+                if (isConnected) {
+                    rightDiv.innerHTML = `
+                        <div style="font-size:13px; font-weight:800; color:#0f172a;">${p.followers}</div>
+                        <div style="font-size:9.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Takipçi</div>
+                    `;
+                } else {
+                    const btnConnect = document.createElement('button');
+                    btnConnect.style.cssText = "background:#6366f1; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:10.5px; font-weight:bold; cursor:pointer;";
+                    btnConnect.textContent = "Bağla";
+                    btnConnect.addEventListener('click', () => {
+                        const modal = document.getElementById('connectionsModal');
+                        if (modal) modal.classList.remove('hidden');
+                    });
+                    rightDiv.appendChild(btnConnect);
+                }
+                
+                itemDiv.appendChild(leftDiv);
+                itemDiv.appendChild(rightDiv);
+                smConnectedList.appendChild(itemDiv);
+            });
+        }
+
+        const tableBody = document.getElementById('smRecentPostsTableBody');
+        if (tableBody) {
+            tableBody.innerHTML = '';
+            const posts = brand.smPublishedPosts || [];
+            
+            if (posts.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding:20px; color:#64748b; font-style:italic; font-weight:600;">Henüz gönderi yayınlanmadı.</td>
+                    </tr>
+                `;
+            } else {
+                posts.forEach(post => {
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid #e2e8f0';
+                    
+                    let platformIcon = '<i class="fa-solid fa-share-nodes"></i>';
+                    if (post.platform === 'instagram') platformIcon = '<i class="fa-brands fa-instagram" style="color:#e1306c;"></i>';
+                    else if (post.platform === 'facebook') platformIcon = '<i class="fa-brands fa-facebook" style="color:#1877f2;"></i>';
+                    else if (post.platform === 'x') platformIcon = '<i class="fa-brands fa-x-twitter" style="color:#000;"></i>';
+                    else if (post.platform === 'linkedin') platformIcon = '<i class="fa-brands fa-linkedin" style="color:#0077b5;"></i>';
+                    else if (post.platform === 'tiktok') platformIcon = '<i class="fa-brands fa-tiktok" style="color:#000;"></i>';
+                    else if (post.platform === 'youtube') platformIcon = '<i class="fa-brands fa-youtube" style="color:#ff0000;"></i>';
+                    else if (post.platform === 'bluesky') platformIcon = '<i class="fa-solid fa-cloud" style="color:#0085ff;"></i>';
+
+                    const displayPostText = post.text.length > 80 ? post.text.substring(0, 80) + '...' : post.text;
+
+                    tr.innerHTML = `
+                        <td style="padding:12px; font-weight:600; color:#1e293b; max-width:240px; word-break:break-all;">${displayPostText}</td>
+                        <td style="padding:12px; font-weight:700; text-transform:capitalize; display:flex; align-items:center; gap:6px;">${platformIcon} ${post.platform}</td>
+                        <td style="padding:12px; color:#475569; font-weight:600;">${post.date}</td>
+                        <td style="padding:12px; color:#0f172a; font-weight:700;">${post.engagement}</td>
+                        <td style="padding:12px; color:#64748b; font-weight:600;">${post.reach}</td>
+                        <td style="padding:12px; text-align:right;">
+                            <span style="background:#dcfce7; color:#166534; padding:4px 8px; border-radius:12px; font-size:10px; font-weight:800;">
+                                <i class="fa-solid fa-circle-check"></i> ${post.status}
+                            </span>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+        }
+    };
+
+    const btnPublishSMAll = document.getElementById('btnPublishSMAll');
+    if (btnPublishSMAll) {
+        btnPublishSMAll.addEventListener('click', async () => {
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const brand = brandsData.find(b => b.id === activeId);
+            if (!brand) return;
+
+            const text = document.getElementById('smPostText').value.trim();
+            const mediaUrl = document.getElementById('smPostMedia').value.trim();
+            
+            if (!text) {
+                showToast("Lütfen bir gönderi metni girin!", "error");
+                return;
+            }
+
+            const selectedPlatforms = [];
+            const checkboxes = document.querySelectorAll('#smPostPlatforms input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    selectedPlatforms.push(cb.value);
+                }
+            });
+
+            if (selectedPlatforms.length === 0) {
+                showToast("Lütfen en az bir platform seçin!", "error");
+                return;
+            }
+
+            btnPublishSMAll.disabled = true;
+            const originalHTML = btnPublishSMAll.innerHTML;
+            btnPublishSMAll.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Yayınlanıyor...`;
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const platform of selectedPlatforms) {
+                try {
+                    const response = await fetch('/api/publish', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            platform: platform,
+                            text: text,
+                            media_url: mediaUrl || null,
+                            brand: brand.id
+                        })
+                    });
+                    const resData = await response.json();
+                    if (resData.success) {
+                        successCount++;
+                        if (!brand.smPublishedPosts) brand.smPublishedPosts = [];
+                        brand.smPublishedPosts.unshift({
+                            text: text,
+                            platform: platform,
+                            date: "Şimdi",
+                            engagement: "0 Beğeni, 0 Yorum",
+                            reach: "0 Erişim",
+                            status: "Yayınlandı"
+                        });
+                    } else {
+                        errorCount++;
+                    }
+                } catch (err) {
+                    console.error("SM publishing error:", err);
+                    errorCount++;
+                }
+            }
+
+            saveBrandsToStorage(brandsData);
+            updateSosyalMedyaDashboard(brand);
+
+            if (successCount > 0) {
+                showToast(`${successCount} platformda başarıyla yayınlandı! 🚀`);
+                document.getElementById('smPostText').value = '';
+                document.getElementById('smPostMedia').value = '';
+            }
+            if (errorCount > 0) {
+                showToast(`${errorCount} platformda yayınlanırken hata oluştu.`, "error");
+            }
+
+            btnPublishSMAll.disabled = false;
+            btnPublishSMAll.innerHTML = originalHTML;
         });
     }
 
