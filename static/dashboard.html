@@ -120,11 +120,6 @@
                         <i class="fa-solid fa-list-check"></i>
                         <span>Özet</span>
                     </a>
-                    <a href="#" class="platform-item" id="sideSosyalMedya">
-                        <i class="fa-solid fa-share-nodes" style="color: #6366f1;"></i>
-                        <span>Sosyal Medya Yönetimi</span>
-                        <span class="tag-new" style="background: #e0e7ff; color: #6366f1; font-size: 9px; padding: 2px 6px; border-radius: 12px; margin-left: auto; font-weight: 800; text-transform: uppercase;">Yeni</span>
-                    </a>
                     
                     <span class="platform-section-title">Bağlantılar</span>
                     
@@ -293,7 +288,7 @@
                         <div class="dashboard-welcome-banner animate-slide-up">
                             <div class="welcome-text-container">
                                 <h1 id="dashboardWelcomeHeader">Merhaba! 👋</h1>
-                                <p>Markanızın performansını, sosyal medya takvimini ve planlanan içeriklerini tek bir akıllı panelden yönetin.</p>
+                                <p>Markanızın performansını, sosyal medya yönetimini, yayın takvimini ve planlanan içeriklerini tek bir akıllı panelden yönetin.</p>
                             </div>
                             <div class="brand-quick-badge" id="dashboardBrandBadge">
                                 <img id="dashboardBrandAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&q=80" alt="Brand Logo">
@@ -676,83 +671,7 @@
                     </div> <!-- Close dashboard-workspace-grid -->
                 </main>
 
-                    <!-- Sosyal Medya Yönetimi Section -->
-                    <section class="card settings-section hidden animate-slide-up" id="sosyalMedyaSection" style="padding: 24px; text-align: left; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--card-border); font-family: var(--font-body);">
-                        <div class="card-header" style="justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fa-solid fa-share-nodes" style="font-size: 20px; color: #6366f1;"></i>
-                                <h2 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0;">Çok Kanallı Sosyal Medya Yönetimi</h2>
-                            </div>
-                        </div>
 
-                        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start; margin-bottom: 24px;" class="dashboard-workspace-grid">
-                            <!-- Left: Multi-Channel Direct Publisher -->
-                            <div class="card" style="border: 1px solid var(--card-border); padding: 20px; background: #ffffff;">
-                                <h3 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
-                                    <i class="fa-solid fa-paper-plane" style="color: #6366f1;"></i> Yeni Gönderi Paylaş
-                                </h3>
-                                <div style="display: flex; flex-direction: column; gap: 16px;">
-                                    <div>
-                                        <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">İçerik Metni</label>
-                                        <textarea id="smPostText" rows="5" class="form-control" style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 12px; border-radius: 8px; outline: none; font-weight: 600; font-family: inherit; font-size: 13px;" placeholder="Tüm kanallarınızda aynı anda yayınlanacak gönderi metnini buraya yazın..."></textarea>
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Medya/Görsel URL (İsteğe Bağlı)</label>
-                                        <input type="text" id="smPostMedia" class="form-control" style="width: 100%; box-sizing: border-box; background: white; border: 1px solid #cbd5e1; color: #1e293b; padding: 10px; border-radius: 8px; outline: none; font-weight: 600;" placeholder="Görsel veya video linki girin (Örn: https://resim.com/dosya.jpg)">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase;">Yayınlanacak Platformlar</label>
-                                        <div style="display: flex; flex-wrap: wrap; gap: 10px;" id="smPostPlatforms">
-                                            <label class="channel-check-pill checked" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1.5px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; user-select: none; background: white; transition: all 0.2s;"><input type="checkbox" value="instagram" checked style="margin: 0;"><i class="fa-brands fa-instagram text-ig"></i> Instagram</label>
-                                            <label class="channel-check-pill checked" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1.5px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; user-select: none; background: white; transition: all 0.2s;"><input type="checkbox" value="facebook" checked style="margin: 0;"><i class="fa-brands fa-facebook text-fb"></i> Facebook</label>
-                                            <label class="channel-check-pill checked" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1.5px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; user-select: none; background: white; transition: all 0.2s;"><input type="checkbox" value="x" checked style="margin: 0;"><i class="fa-brands fa-x-twitter text-x" style="color:#000;"></i> X</label>
-                                            <label class="channel-check-pill checked" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1.5px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; user-select: none; background: white; transition: all 0.2s;"><input type="checkbox" value="linkedin" checked style="margin: 0;"><i class="fa-brands fa-linkedin text-li" style="color:#0077b5;"></i> LinkedIn</label>
-                                            <label class="channel-check-pill checked" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1.5px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; user-select: none; background: white; transition: all 0.2s;"><input type="checkbox" value="tiktok" checked style="margin: 0;"><i class="fa-brands fa-tiktok text-tt" style="color:#000;"></i> TikTok</label>
-                                            <label class="channel-check-pill checked" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1.5px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; user-select: none; background: white; transition: all 0.2s;"><input type="checkbox" value="youtube" checked style="margin: 0;"><i class="fa-brands fa-youtube text-yt"></i> YouTube</label>
-                                            <label class="channel-check-pill checked" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1.5px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; user-select: none; background: white; transition: all 0.2s;"><input type="checkbox" value="bluesky" checked style="margin: 0;"><i class="fa-solid fa-cloud text-blu" style="color: #0085ff;"></i> Bluesky</label>
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-primary" id="btnPublishSMAll" style="background: #6366f1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
-                                        <i class="fa-solid fa-paper-plane"></i> Seçili Kanallarda Hemen Yayınla
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Right: Connected Accounts & Follower Counts -->
-                            <div class="card" style="border: 1px solid var(--card-border); padding: 20px; background: #ffffff;">
-                                <h3 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
-                                    <i class="fa-solid fa-circle-nodes" style="color: #6366f1;"></i> Entegre Hesaplar & Takipçiler
-                                </h3>
-                                <div style="display: flex; flex-direction: column; gap: 12px;" id="smConnectedList">
-                                    <!-- Populated dynamically via JS -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Bottom: Recent Posts timeline/feed across channels -->
-                        <div class="card" style="border: 1px solid var(--card-border); padding: 20px; background: #ffffff;">
-                            <h3 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
-                                <i class="fa-solid fa-clock-rotate-left" style="color: #6366f1;"></i> Son Paylaşılan Gönderiler & Etkileşimler
-                            </h3>
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12.5px;">
-                                    <thead>
-                                        <tr style="border-bottom: 2px solid var(--card-border); color: var(--text-secondary); font-weight: bold;">
-                                            <th style="padding: 10px 12px;">Gönderi</th>
-                                            <th style="padding: 10px 12px;">Kanal</th>
-                                            <th style="padding: 10px 12px;">Tarih</th>
-                                            <th style="padding: 10px 12px;">Etkileşim (Beğeni / Yorum)</th>
-                                            <th style="padding: 10px 12px;">Erişim / İzlenme</th>
-                                            <th style="padding: 10px 12px; text-align: right;">Durum</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="smRecentPostsTableBody">
-                                        <!-- Populated dynamically via JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </section>
 
                     <!-- Settings Section (Account, Access, Plans, Integrations, API) -->
                     <section class="card settings-section hidden animate-slide-up" id="settingsSection" style="padding: 30px; background-color: #ffffff; border-radius: 16px; border: 1px solid rgba(226, 232, 240, 0.8); text-align: left; box-shadow: 0 4px 20px rgba(0,0,0,0.02); font-family: var(--font-body);">
