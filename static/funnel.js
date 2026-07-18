@@ -667,6 +667,171 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ============================================================
+    // WEB ÇÖZÜMLERİMİZ & GİT PROJELERİ PORTAL VE SATIŞ SİSTEMİ
+    // ============================================================
+    async function loadGitProjects() {
+        const grid = document.getElementById('gitProjectsGrid');
+        if (!grid) return;
+        
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:12px; color: var(--primary);"></i><br>Projeler GitHub hesabınızdan çekiliyor...</div>`;
+
+        try {
+            const res = await fetch('/api/git/repos');
+            const data = await res.json();
+            if (data && data.success && data.repos) {
+                grid.innerHTML = '';
+                data.repos.forEach(repo => {
+                    const card = document.createElement('div');
+                    card.style.cssText = "background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, border-color 0.2s, background-color 0.2s; cursor: default;";
+                    
+                    card.addEventListener('mouseenter', () => {
+                        card.style.transform = 'translateY(-4px)';
+                        card.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                        card.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                    });
+                    card.addEventListener('mouseleave', () => {
+                        card.style.transform = 'translateY(0)';
+                        card.style.borderColor = 'rgba(255,255,255,0.06)';
+                        card.style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
+                    });
+
+                    let langColor = '#64748b';
+                    if (repo.language.includes('Python')) langColor = '#3572A5';
+                    else if (repo.language.includes('React') || repo.language.includes('JS') || repo.language.includes('Javascript')) langColor = '#b09e1e';
+                    else if (repo.language.includes('Vue')) langColor = '#41b883';
+                    else if (repo.language.includes('PHP')) langColor = '#4f5d95';
+                    
+                    card.innerHTML = `
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                                <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: white; font-family: monospace; letter-spacing: -0.3px;">${repo.name}</h3>
+                                <span style="font-size: 10px; font-weight: 700; background: ${langColor}22; color: ${langColor}; padding: 3px 10px; border-radius: 12px; border: 1px solid ${langColor}44;">${repo.language}</span>
+                            </div>
+                            <p style="font-size: 13px; color: #94a3b8; margin: 0 0 20px 0; line-height: 1.6; font-weight: 500;">${repo.description}</p>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">
+                                <div style="display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: #94a3b8;">
+                                    <i class="fa-solid fa-star" style="color: #fbbf24;"></i> ${repo.stars} Yıldız
+                                </div>
+                                <div style="font-size: 18px; font-weight: 900; color: #10b981;">₺${repo.price.toLocaleString('tr-TR')}</div>
+                            </div>
+                            <button class="btn btn-primary btn-sale-pos" style="width: 100%; justify-content: center; background: #6366f1; border: none; padding: 12px; font-weight: 800; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: white; transition: background 0.2s;" onclick="openWebCozumCheckout('${repo.name}', ${repo.price})">
+                                <i class="fa-solid fa-credit-card"></i> Satın Al (Sanal POS)
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } else {
+                throw new Error("Invalid repos data");
+            }
+        } catch (err) {
+            console.error("Git repos load error:", err);
+            grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#ef4444; font-weight:700;"><i class="fa-solid fa-triangle-exclamation" style="font-size:24px; margin-bottom:12px;"></i><br>Projeler listelenirken hata oldu.</div>`;
+        }
+    }
+
+    loadGitProjects();
+
+    const webCozumPaymentModal = document.getElementById('webCozumPaymentModal');
+    const webCozumPaymentCloseBtn = document.getElementById('webCozumPaymentCloseBtn');
+    const webCozumPaymentForm = document.getElementById('webCozumPaymentForm');
+    const webCozumReceiptBox = document.getElementById('webCozumReceiptBox');
+    const btnPrintReceipt = document.getElementById('btnPrintReceipt');
+
+    let currentCheckoutProject = '';
+    let currentCheckoutPrice = 0;
+
+    window.openWebCozumCheckout = function(name, price) {
+        currentCheckoutProject = name;
+        currentCheckoutPrice = price;
+
+        const nameEl = document.getElementById('paymentProjectName');
+        const priceEl = document.getElementById('paymentProjectPrice');
+        
+        if (nameEl) nameEl.textContent = name;
+        if (priceEl) priceEl.textContent = `₺${price.toLocaleString('tr-TR')}`;
+
+        if (webCozumPaymentForm) webCozumPaymentForm.reset();
+        if (webCozumReceiptBox) webCozumReceiptBox.classList.add('hidden');
+        if (webCozumPaymentModal) webCozumPaymentModal.classList.remove('hidden');
+
+        const cardNoEl = document.getElementById('webCozumCardNo');
+        if (cardNoEl) cardNoEl.value = '4355 8812 3491 5642';
+    };
+
+    if (webCozumPaymentCloseBtn) {
+        webCozumPaymentCloseBtn.addEventListener('click', () => {
+            if (webCozumPaymentModal) webCozumPaymentModal.classList.add('hidden');
+        });
+    }
+
+    if (webCozumPaymentForm) {
+        webCozumPaymentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const customerName = document.getElementById('webCozumCustomerName').value.trim();
+            const customerEmail = document.getElementById('webCozumCustomerEmail').value.trim();
+            const gateway = document.getElementById('webCozumGateway').value;
+            const submitBtn = document.getElementById('btnWebCozumSubmitPayment');
+
+            const originalHTML = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Ödeme Alınıyor...`;
+
+            setTimeout(() => {
+                const faturaNo = 'TAX-' + Math.floor(Math.random() * 90000 + 10000);
+                const bugun = new Date().toLocaleDateString('tr-TR') + ' ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+                document.getElementById('recFaturaNo').textContent = faturaNo;
+                document.getElementById('recTarih').textContent = bugun;
+                document.getElementById('recCustomer').textContent = customerName;
+                document.getElementById('recProject').textContent = currentCheckoutProject;
+                document.getElementById('recTotal').textContent = `₺${currentCheckoutPrice.toLocaleString('tr-TR')}`;
+                document.getElementById('recGateway').textContent = gateway;
+
+                if (webCozumReceiptBox) webCozumReceiptBox.classList.remove('hidden');
+
+                const activeId = localStorage.getItem('biAjans_active_brand_id');
+                const storedBrands = localStorage.getItem('biAjans_brands');
+                if (storedBrands) {
+                    try {
+                        let brands = JSON.parse(storedBrands);
+                        let brand = brands.find(b => b.id === activeId) || brands[0];
+                        if (brand) {
+                            if (!brand.customSales) brand.customSales = [];
+                            brand.customSales.unshift({
+                                date: new Date().toLocaleDateString('tr-TR'),
+                                projectName: currentCheckoutProject,
+                                customerName: customerName,
+                                amount: currentCheckoutPrice,
+                                gateway: gateway
+                            });
+                            localStorage.setItem('biAjans_brands', JSON.stringify(brands));
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHTML;
+            }, 1200);
+        });
+    }
+
+    if (btnPrintReceipt) {
+        btnPrintReceipt.addEventListener('click', () => {
+            const printContent = document.getElementById('webCozumReceiptBox').innerHTML;
+            const originalContent = document.body.innerHTML;
+            document.body.innerHTML = `<div style="padding:40px; font-family:monospace; max-width:500px; margin:auto; background:white; color:black;">${printContent}</div>`;
+            window.print();
+            window.location.reload();
+        });
+    }
+
     // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {

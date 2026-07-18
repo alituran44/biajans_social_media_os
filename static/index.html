@@ -168,6 +168,7 @@
             <div class="nav-links" style="display: flex; gap: 24px; align-items: center;">
                 <a href="#showcase">İşlerimiz</a>
                 <a href="#features">Özellikler</a>
+                <a href="#web-solutions">Web Çözümlerimiz</a>
                 <a href="#pricing">Planlar</a>
                 <a href="#faq">SSS</a>
             </div>
@@ -400,6 +401,18 @@
                 <div class="feature-icon"><i class="fa-solid fa-rectangle-ad"></i></div>
                 <h3>Çok Kanallı Reklamlar</h3>
                 <p>Meta Ads, Google Ads ve TikTok Ads platformlarında bütçe bazlı reklam kampanyalarını saniyeler içinde taslağa dönüştürün.</p>
+            </div>
+    </section>
+
+    <!-- Web Çözümlerimiz Section -->
+    <section class="features-section" id="web-solutions" style="padding-top: 80px; padding-bottom: 80px; background: rgba(5, 6, 10, 0.4); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <h2 class="section-title">Web Çözümlerimiz & Yazılım Hizmetleri</h2>
+        <p class="section-subtitle">GitHub hesabımızdaki aktif, hazır altyapıya sahip web projelerimizi ve hazır yazılım çözümlerimizi anında inceleyin ve satın alın.</p>
+        
+        <div id="gitProjectsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 1200px; margin: 40px auto 0 auto; padding: 0 20px;">
+            <div style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 40px;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 12px; color: var(--primary);"></i>
+                <p style="font-weight: 600;">Projeler GitHub'dan yükleniyor...</p>
             </div>
         </div>
     </section>
@@ -1163,5 +1176,68 @@
             if (b2) b2.style.transform = `translate(${-x * 0.3}px, ${-y * 0.3}px)`;
         }, { passive: true });
     </script>
+    <!-- Web Çözümleri Ödeme Modalı -->
+    <div class="modal-overlay hidden" id="webCozumPaymentModal" style="z-index: 10010; position:fixed; inset:0; background:rgba(5,6,10,0.8); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="modal-container" style="max-width: 500px; width: 100%; padding: 32px; border-radius: 16px; background: #0f111a; border: 1px solid rgba(255,255,255,0.08); position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); color: white; font-family: 'Outfit', sans-serif;">
+            <button class="modal-close" id="webCozumPaymentCloseBtn" title="Kapat" style="position: absolute; right: 20px; top: 20px; background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; transition: color 0.2s;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 900; color: white; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-credit-card" style="color: #6366f1;"></i> Sanal POS ile Satın Al
+            </h3>
+            
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 16px; border-radius: 10px; margin-bottom: 24px;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px;">Satın Alınacak Proje</div>
+                <div id="paymentProjectName" style="font-size: 16px; font-weight: 900; color: white; margin-top: 4px; font-family: monospace;">-</div>
+                <div id="paymentProjectPrice" style="font-size: 20px; font-weight: 900; color: #10b981; margin-top: 6px;">₺0</div>
+            </div>
+
+            <form id="webCozumPaymentForm" style="display: flex; flex-direction: column; gap: 18px;">
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Ad Soyad</label>
+                    <input type="text" id="webCozumCustomerName" required style="width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; font-size: 13px; font-weight: 600; outline: none; background: rgba(255,255,255,0.02); color: white; transition: border-color 0.2s;" placeholder="Örn: Ahmet Yılmaz">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">E-Posta Adresi</label>
+                    <input type="email" id="webCozumCustomerEmail" required style="width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; font-size: 13px; font-weight: 600; outline: none; background: rgba(255,255,255,0.02); color: white; transition: border-color 0.2s;" placeholder="Örn: ahmet@mail.com">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Ödeme Kanalı</label>
+                        <select id="webCozumGateway" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; font-size: 13px; font-weight: 600; background: #0f111a; color: white; outline: none; cursor: pointer;">
+                            <option value="PayTR">PayTR POS</option>
+                            <option value="Iyzico">Iyzico POS</option>
+                            <option value="Stripe">Stripe Gateway</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Test Kart Numarası</label>
+                        <input type="text" id="webCozumCardNo" required style="width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; font-size: 13px; font-weight: 600; outline: none; background: rgba(255,255,255,0.02); color: white;" placeholder="4355 •••• •••• 5642" value="4355 8812 3491 5642">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="btnWebCozumSubmitPayment" style="background: #10b981; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; transition: background 0.2s;">
+                    <i class="fa-solid fa-lock"></i> Güvenli Ödemeyi Yap
+                </button>
+            </form>
+
+            <!-- Printable Receipt (Hidden by default, shown after payment) -->
+            <div id="webCozumReceiptBox" class="hidden" style="margin-top: 24px; border-top: 2px dashed rgba(255,255,255,0.1); padding-top: 24px; font-family: monospace; font-size: 12px; color: #94a3b8;">
+                <div style="text-align: center; font-weight: bold; margin-bottom: 16px; font-size: 15px; color: #10b981;">
+                    <i class="fa-solid fa-circle-check"></i> ÖDEME BAŞARILI
+                </div>
+                <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; color: #e2e8f0;">
+                    <div style="display: flex; justify-content: space-between;"><strong>Fatura No:</strong> <span id="recFaturaNo">TAX-88231</span></div>
+                    <div style="display: flex; justify-content: space-between;"><strong>Tarih:</strong> <span id="recTarih">-</span></div>
+                    <div style="display: flex; justify-content: space-between;"><strong>Müşteri:</strong> <span id="recCustomer">-</span></div>
+                    <div style="display: flex; justify-content: space-between;"><strong>Proje:</strong> <span id="recProject">-</span></div>
+                    <div style="display: flex; justify-content: space-between;"><strong>Tutar:</strong> <span id="recTotal" style="color: #10b981; font-weight: 800;">₺0</span></div>
+                    <div style="display: flex; justify-content: space-between;"><strong>Ağ geçidi:</strong> <span id="recGateway">-</span></div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" id="btnPrintReceipt" style="padding: 8px 16px; font-size: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: background 0.2s;"><i class="fa-solid fa-print"></i> Faturayı Yazdır / İndir</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
