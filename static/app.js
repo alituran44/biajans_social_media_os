@@ -5646,7 +5646,6 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
 
     // Editable copy editors synchronization to phone mockup previews
-    const instagramCaption = document.getElementById('instagramCaption');
     if (instagramCaption) {
         instagramCaption.addEventListener('input', () => {
             if (!activeCampaignData) activeCampaignData = {};
@@ -5656,7 +5655,6 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
-    const facebookCaption = document.getElementById('facebookCaption');
     if (facebookCaption) {
         facebookCaption.addEventListener('input', () => {
             if (!activeCampaignData) activeCampaignData = {};
@@ -5666,7 +5664,6 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
-    const youtubeDescription = document.getElementById('youtubeDescription');
     if (youtubeDescription) {
         youtubeDescription.addEventListener('input', () => {
             if (!activeCampaignData) activeCampaignData = {};
