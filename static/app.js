@@ -4076,6 +4076,9 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const stored = localStorage.getItem(BRANDS_KEY);
             if (stored) {
                 const parsed = JSON.parse(stored);
+                if (!Array.isArray(parsed) || parsed.length === 0) {
+                    return defaultBrands;
+                }
                 if (parsed.some(b => b.id === 'coffee' || b.id === 'fitness')) {
                     localStorage.removeItem(BRANDS_KEY);
                     return defaultBrands;
@@ -5292,6 +5295,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
     // Load or initialize competitors list for brand
     window.getCompetitorsForBrand = function(brand) {
+        if (!brand) return [];
         if (!brand.competitors) {
             if (brand.industry === 'Gıda & İçecek' || brand.id === 'coffee') {
                 brand.competitors = [
@@ -5325,6 +5329,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
     // Update Competitors Dashboard view
     window.updateCompetitorsDashboard = function(brand) {
+        if (!brand) return;
         const competitors = getCompetitorsForBrand(brand);
         
         // Define active brand details dynamically
@@ -5860,6 +5865,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
     // Update POS & Billing settings tab
     window.updatePOSDashboard = function(brand) {
+        if (!brand) return;
         // Initialize default POS if missing
         if (!brand.posSettings) {
             brand.posSettings = {
