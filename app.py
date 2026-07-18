@@ -460,6 +460,21 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
             return
 
+        # ── Campaign Focus Group Simulation: /api/campaign/simulate ───────────
+        if path == "/api/campaign/simulate":
+            post_text = body.get("post_text", "").strip()
+            brand_name = body.get("brand", "BiAjans").strip()
+            sector = body.get("sector", "Genel").strip()
+            
+            if not post_text:
+                self.send_json_response({"success": False, "error": "Gönderi metni boş olamaz."}, 400)
+                return
+                
+            from core.ai_engines import AIEngines
+            res = AIEngines.simulate_focus_group(post_text, brand_name, sector)
+            self.send_json_response(res)
+            return
+
         # ── Add User: /api/users/add ──────────────────────────────────────────
         if path == "/api/users/add":
             session = self._get_session()

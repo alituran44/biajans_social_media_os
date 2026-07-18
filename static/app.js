@@ -5799,6 +5799,97 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
+    // AI Focus Group Simulation triggers
+    const btnRunFocusGroupSimulation = document.getElementById('btnRunFocusGroupSimulation');
+    if (btnRunFocusGroupSimulation) {
+        btnRunFocusGroupSimulation.addEventListener('click', async () => {
+            if (!activeCampaignData) {
+                showToast('Lütfen önce bir kampanya metni üretin.');
+                return;
+            }
+
+            let textToSimulate = '';
+            if (activeTab === 'instagram') {
+                textToSimulate = activeCampaignData.instagram_caption;
+            } else if (activeTab === 'facebook') {
+                textToSimulate = activeCampaignData.facebook_post;
+            } else if (activeTab === 'youtube') {
+                textToSimulate = activeCampaignData.youtube ? (activeCampaignData.youtube.video_title + "\n" + activeCampaignData.youtube.video_description) : '';
+            } else {
+                textToSimulate = activeCampaignData.instagram_caption || activeCampaignData.facebook_post;
+            }
+
+            if (!textToSimulate) {
+                showToast('Simüle edilecek metin bulunamadı.');
+                return;
+            }
+
+            const activeId = document.getElementById('brandSelect')?.value || 'global';
+            const brand = brandsData.find(b => b.id === activeId);
+            const brandName = brand ? brand.name : 'BiAjans';
+            const sector = brand ? (brand.sector || 'Genel') : 'Genel';
+
+            btnRunFocusGroupSimulation.disabled = true;
+            const originalHTML = btnRunFocusGroupSimulation.innerHTML;
+            btnRunFocusGroupSimulation.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Analiz Ediliyor...`;
+
+            for (let i = 1; i <= 3; i++) {
+                const fbEl = document.getElementById(`simFeedbackPersona${i}`);
+                const scEl = document.getElementById(`simScorePersona${i}`);
+                if (fbEl) fbEl.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Alıcı gönderiyi inceliyor...`;
+                if (scEl) scEl.textContent = `- / 10`;
+            }
+
+            try {
+                const res = await fetch('/api/campaign/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        post_text: textToSimulate,
+                        brand: brandName,
+                        sector: sector
+                    })
+                });
+                const data = await res.json();
+                if (data && data.success && Array.isArray(data.personas)) {
+                    data.personas.forEach((p, idx) => {
+                        setTimeout(() => {
+                            const fbEl = document.getElementById(`simFeedbackPersona${idx + 1}`);
+                            const scEl = document.getElementById(`simScorePersona${idx + 1}`);
+                            if (fbEl) {
+                                fbEl.textContent = `"${p.feedback}"`;
+                                fbEl.style.color = '#1e293b';
+                            }
+                            if (scEl) {
+                                scEl.textContent = `${p.score} / 10`;
+                                if (p.score >= 8) scEl.style.color = '#10b981';
+                                else if (p.score >= 5) scEl.style.color = '#eab308';
+                                else scEl.style.color = '#ef4444';
+                            }
+                        }, (idx + 1) * 600);
+                    });
+                    
+                    setTimeout(() => {
+                        showToast('AI Odak Grubu simülasyonu tamamlandı! 🎯');
+                        btnRunFocusGroupSimulation.disabled = false;
+                        btnRunFocusGroupSimulation.innerHTML = originalHTML;
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Simülasyon başarısız.');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Simülasyon başlatılırken hata oluştu.');
+                btnRunFocusGroupSimulation.disabled = false;
+                btnRunFocusGroupSimulation.innerHTML = originalHTML;
+                for (let i = 1; i <= 3; i++) {
+                    const fbEl = document.getElementById(`simFeedbackPersona${i}`);
+                    if (fbEl) fbEl.textContent = `Analiz başarısız oldu.`;
+                }
+            }
+        });
+    }
+
     // ============================================================
     // SANAL POS & RECURRING SUBSCRIPTION BILLING SYSTEM
     // ============================================================

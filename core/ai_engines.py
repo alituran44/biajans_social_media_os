@@ -67,6 +67,15 @@ class CompetitorAnalysisSchema(BaseModel):
     opportunity: str = Field(description="Yapay zeka tarafından üretilmiş, sektöre ve ile özel 2-3 cümlelik somut stratejik pazarlama fırsatı analizi.")
     threat: str = Field(description="Yapay zeka tarafından üretilmiş, sektöre ve ile özel 2-3 cümlelik somut stratejik tehdit veya önlem analizi.")
 
+class PersonaSimulation(BaseModel):
+    name: str = Field(description="Personanın adı soyadı.")
+    type: str = Field(description="Personanın tipi (Detaycı/Şüpheci, Sosyal Medya Meraklısı, Fiyat Avcısı vb.).")
+    feedback: str = Field(description="Bu personanın gönderi metnine verdiği 2-3 cümlelik samimi Türkçe geri bildirim/yorum.")
+    score: int = Field(description="Personanın gönderiye olan ilgisi/puanı (1 ile 10 arasında bir tamsayı).")
+
+class FocusGroupSimulationSchema(BaseModel):
+    personas: list[PersonaSimulation] = Field(description="Gönderiye tepki veren 3 farklı sentetik alıcının detaylı simülasyon çıktısı.")
+
 class AIEngines:
     """
     Core AI engine class providing static methods for content generation using Google Gemini
@@ -741,3 +750,107 @@ class AIEngines:
             threat = f"Sektördeki en yakın rakipleriniz doğrudan mesaj (DM) otomasyonları kullanmaya başladı. Müşteri yanıt hızınızı artırmak için Gelen Kutusu modülünü aktif tutmalısınız."
             
         return {"success": True, "competitors": comps, "insights": {"opportunity": opp, "threat": threat}}
+
+    @staticmethod
+    def simulate_focus_group(post_text: str, brand_name: str = "BiAjans", sector: str = "Genel") -> dict:
+        """
+        Simulates 3 distinct customer personas reacting to the provided post copy.
+        """
+        post_text = post_text.strip()
+        brand_name = brand_name.strip()
+        sector = sector.strip()
+
+        api_key = Config.get_gemini_api_key()
+        if api_key:
+            try:
+                client = genai.Client(api_key=api_key)
+                prompt = (
+                    f"Aşağıdaki sosyal medya gönderisini oku:\n\n"
+                    f"\"\"\"\n{post_text}\n\"\"\"\n\n"
+                    f"Marka Adı: {brand_name}\n"
+                    f"Sektör: {sector}\n\n"
+                    f"Görev: Bu gönderiye tepki verecek 3 farklı sentetik müşteri personası oluştur:\n"
+                    f"1. Mehmet Ümit (42): Detaycı, şüpheci, fiyat/performans arayan alıcı.\n"
+                    f"2. Ece Demir (26): Heyecanlı, sosyal medyayı aktif kullanan, trend meraklısı alıcı.\n"
+                    f"3. Can Soylu (34): Kampanya/bütçe avcısı, indirim veya somut fayda arayan alıcı.\n\n"
+                    f"Her biri için gönderiye karşı dürüst, samimi Türkçe bir yorum yaz ve gönderiye olan ilgi derecesini (1-10 arası) puanla."
+                )
+
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=FocusGroupSimulationSchema,
+                        temperature=0.7,
+                        system_instruction="Sen deneyimli bir tüketici psikolojisi simülatörüsün. Sosyal medya içeriklerini okur, belirlenen personalar adına son derece gerçekçi, samimi ve dürüst tüketici yorumları ile sayısal puanlar üretirsin."
+                    )
+                )
+
+                if response.text:
+                    parsed = json.loads(response.text)
+                    return {"success": True, "personas": parsed.get("personas", [])}
+            except Exception as e:
+                logger.error(f"Error generating AI focus group simulation: {e}")
+
+        return AIEngines._get_offline_focus_group_simulation(post_text, brand_name, sector)
+
+    @staticmethod
+    def _get_offline_focus_group_simulation(post_text: str, brand_name: str, sector: str) -> dict:
+        """
+        Generates realistic simulated feedback offline when Gemini is unavailable.
+        """
+        post_lower = post_text.lower()
+        
+        m_feedback = "Metin genel olarak güzel ama teknik veya somut detaylar (örneğin fiyat, adres veya garanti durumu) eksik görünüyor. Daha fazla bilgi verilseydi güvenilirlik artardı."
+        m_score = 6
+        
+        e_feedback = "Harika bir kanca kullanılmış! Görselle birlikte Instagram akışında görsem kesinlikle durup incelerim, emojiler ve samimi dil çok enerjik olmuş!"
+        e_score = 9
+        
+        c_feedback = "Güzel bir lansman veya duyuru gibi duruyor ancak alıcı olarak beni çekecek net bir kampanya, indirim veya promosyon koduna yer verilmemiş. Eyleme geçmek için bir neden bulamadım."
+        c_score = 5
+
+        if "indirim" in post_lower or "fırsat" in post_lower or "kampanya" in post_lower or "hediye" in post_lower or "ücretsiz" in post_lower:
+            c_feedback = "İndirim ve fırsat detayları harika! Tam aradığım gibi somut bir tasarruf imkanı sunuyor. Bütçeme uygun olduğu için hemen kaydeder veya tıklarım."
+            c_score = 9
+            m_feedback = "Kampanya sunulması iyi fakat şartlar tam açıklanmamış. 'Detaylı bilgi için DM' demek yerine doğrudan koşullar yazılsa daha samimi olurdu."
+            m_score = 7
+        elif "kahve" in post_lower or "cafe" in post_lower or "lezzet" in post_lower or "yemek" in post_lower or "pizza" in post_lower:
+            m_feedback = "Gıda/İçecek paylaşımlarında hijyen, tazelik ve yerellik detayları önemli. Taze kavrulmuş olması güzel detay ama sipariş/teslimat detayları netleşmeli."
+            m_score = 7
+            e_feedback = "Aromasını ve kokusunu hissettiren harika bir betimleme! Hemen gidip denemek veya sipariş vermek istedim, reels formatında hazırlansa çok iyi çalışır."
+            e_score = 9
+            c_feedback = "Kahve/Yemek lansmanlarında ilk siparişe özel küçük bir ikram veya indirim sunulması beni daha çabuk ikna ederdi. Fiyat bilgisi de olmalı."
+            c_score = 6
+        elif "teknoloji" in post_lower or "yazılım" in post_lower or "kod" in post_lower or "ai" in post_lower or "yapay zeka" in post_lower:
+            m_feedback = "Yapay zeka ve teknoloji araçlarında vaatlerin arkasının dolu olması lazım. Hangi altyapıyı veya modeli kullandığı belirtilse daha profesyonel dururdu."
+            m_score = 5
+            e_feedback = "Teknoloji dünyasındaki gelişmeleri bu dille paylaşmanız çok hoş. Trendleri yakalamış, modern bir marka hissi veriyor, paylaşıp kaydederim."
+            e_score = 8
+            c_feedback = "Yapay zeka araçlarının ücretsiz deneme süresi veya başlangıç kredisi verip vermediği belirtilseydi hemen kaydolurdum. Ücretlendirme şeffaf olmalı."
+            c_score = 6
+
+        return {
+            "success": True,
+            "personas": [
+                {
+                    "name": "Mehmet Ümit (42)",
+                    "type": "Detaycı / Şüpheci Alıcı",
+                    "feedback": m_feedback,
+                    "score": m_score
+                },
+                {
+                    "name": "Ece Demir (26)",
+                    "type": "Trend & Sosyal Medya Meraklısı",
+                    "feedback": e_feedback,
+                    "score": e_score
+                },
+                {
+                    "name": "Can Soylu (34)",
+                    "type": "Fiyat & Kampanya Avcısı",
+                    "feedback": c_feedback,
+                    "score": c_score
+                }
+            ]
+        }

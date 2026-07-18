@@ -612,6 +612,86 @@
                                         </a>
                                     </div>
                                 </div>
+
+                                <!-- AI Odak Grubu (Focus Group) Simülatörü -->
+                                <div class="card result-card focus-group-card animate-slide-up" style="animation-delay: 0.2s; margin-top: 20px; grid-column: 1 / -1; background: #ffffff; border: 1px solid var(--card-border); border-radius: 12px; padding: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+                                    <div class="card-title-bar" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 20px;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span class="badge-ai" style="background: #10b981; color: white; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: bold;">AI SIMULATION</span>
+                                            <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #1e293b;"><i class="fa-solid fa-users" style="color: #10b981; margin-right: 4px;"></i> Yayın öncesi AI odak grubu simülasyonu</h3>
+                                        </div>
+                                        <button class="btn btn-primary" id="btnRunFocusGroupSimulation" style="font-size: 12px; padding: 8px 16px; background-color: #10b981; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; gap: 6px;">
+                                            <i class="fa-solid fa-play"></i> Simülasyonu Çalıştır
+                                        </button>
+                                    </div>
+                                    
+                                    <p style="font-size: 12.5px; color: #64748b; line-height: 1.5; margin-bottom: 20px;">
+                                        Oluşturduğunuz içerik metnini, marka ve sektör bağlamında hedef kitlenizi yansıtan 3 farklı yapay zekâ alıcı tipine göstererek ilgi derecelerini ve yorumlarını anlık test edin.
+                                    </p>
+
+                                    <!-- Simülasyon Personaları Grid -->
+                                    <div id="focusGroupPersonasGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                                        <!-- Persona 1: Detaycı & Şüpheci -->
+                                        <div class="persona-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                                            <div>
+                                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">MÜ</div>
+                                                    <div>
+                                                        <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #1e293b;">Mehmet Ümit (42)</h4>
+                                                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">Detaycı / Şüpheci Alıcı</span>
+                                                    </div>
+                                                </div>
+                                                <div style="font-size: 12.5px; color: #475569; line-height: 1.5; font-style: italic; background: white; padding: 12px; border-radius: 6px; border: 1px solid #f1f5f9; min-height: 60px;" id="simFeedbackPersona1">
+                                                    Simülasyon henüz çalıştırılmadı. Metninizi oluşturduktan sonra yukarıdaki butona tıklayın.
+                                                </div>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 10px;">
+                                                <span style="font-size: 11px; font-weight: 700; color: #64748b;">İlgi Skoru:</span>
+                                                <span style="font-size: 14px; font-weight: 900; color: #64748b;" id="simScorePersona1">- / 10</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Persona 2: Heyecanlı / Trend Takipçisi -->
+                                        <div class="persona-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                                            <div>
+                                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #fef2f2; color: #ef4444; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">ED</div>
+                                                    <div>
+                                                        <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #1e293b;">Ece Demir (26)</h4>
+                                                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">Trend & Sosyal Medya</span>
+                                                    </div>
+                                                </div>
+                                                <div style="font-size: 12.5px; color: #475569; line-height: 1.5; font-style: italic; background: white; padding: 12px; border-radius: 6px; border: 1px solid #f1f5f9; min-height: 60px;" id="simFeedbackPersona2">
+                                                    Simülasyon henüz çalıştırılmadı. Metninizi oluşturduktan sonra yukarıdaki butona tıklayın.
+                                                </div>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 10px;">
+                                                <span style="font-size: 11px; font-weight: 700; color: #64748b;">İlgi Skoru:</span>
+                                                <span style="font-size: 14px; font-weight: 900; color: #64748b;" id="simScorePersona2">- / 10</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Persona 3: Kampanya / Bütçe Avcısı -->
+                                        <div class="persona-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                                            <div>
+                                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #f0fdf4; color: #16a34a; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">CS</div>
+                                                    <div>
+                                                        <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #1e293b;">Can Soylu (34)</h4>
+                                                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">Fiyat & Kampanya Avcısı</span>
+                                                    </div>
+                                                </div>
+                                                <div style="font-size: 12.5px; color: #475569; line-height: 1.5; font-style: italic; background: white; padding: 12px; border-radius: 6px; border: 1px solid #f1f5f9; min-height: 60px;" id="simFeedbackPersona3">
+                                                    Simülasyon henüz çalıştırılmadı. Metninizi oluşturduktan sonra yukarıdaki butona tıklayın.
+                                                </div>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 10px;">
+                                                <span style="font-size: 11px; font-weight: 700; color: #64748b;">İlgi Skoru:</span>
+                                                <span style="font-size: 14px; font-weight: 900; color: #64748b;" id="simScorePersona3">- / 10</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </section>
                         
