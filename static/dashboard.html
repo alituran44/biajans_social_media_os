@@ -403,7 +403,13 @@
                                         required></textarea>
                                     <div class="char-count"><span id="charNum">0</span> karakter</div>
                                 </div>
-                                <input type="url" id="mediaUrlInput" class="form-control" placeholder="Görsel veya Video URL'sini girin (Instagram, YouTube ve bağlı ağlar için zorunludur)" style="margin-top: 10px; padding: 12px; background: #26273b; border: 1px solid #363a4f; color: white; border-radius: 8px; width: 100%; box-sizing: border-box;" />
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
+                                    <input type="url" id="mediaUrlInput" class="form-control" placeholder="Görsel veya Video URL'si..." style="padding: 12px; background: #26273b; border: 1px solid #363a4f; color: white; border-radius: 8px; width: 100%; box-sizing: border-box;" />
+                                    <div style="position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px dashed #4f46e5; border-radius: 8px; background: rgba(79, 70, 229, 0.05); cursor: pointer; height: 44px;">
+                                        <span style="font-size: 12px; font-weight: 700; color: #6366f1; font-family: var(--font-body);"><i class="fa-solid fa-cloud-arrow-up"></i> Yerel Medya Yükle</span>
+                                        <input type="file" id="postFileInput" accept="image/*,video/*" style="position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;" />
+                                    </div>
+                                </div>
                                 
                                 <div class="form-row-actions">
                                     <div class="target-channels-checklist">
@@ -457,24 +463,24 @@
                                     
                                     <!-- Instagram platform data -->
                                     <div class="tab-content" id="instagramContent">
-                                        <div class="caption-container" id="instagramCaption"></div>
+                                        <div class="caption-container" id="instagramCaption" contenteditable="true" style="outline: none; border: 1.5px dashed rgba(99, 102, 241, 0.3); border-radius: 6px; padding: 12px; min-height: 120px; font-weight: 500; background: #fafafa;"></div>
                                     </div>
                                     
                                     <!-- Facebook platform data -->
                                     <div class="tab-content hidden" id="facebookContent">
-                                        <div class="caption-container" id="facebookCaption"></div>
+                                        <div class="caption-container" id="facebookCaption" contenteditable="true" style="outline: none; border: 1.5px dashed rgba(99, 102, 241, 0.3); border-radius: 6px; padding: 12px; min-height: 120px; font-weight: 500; background: #fafafa;"></div>
                                     </div>
                                     
                                     <!-- YouTube platform data -->
                                     <div class="tab-content hidden" id="youtubeContent">
                                         <div class="youtube-title-box">
                                             <span class="yt-label">YouTube Video Başlığı</span>
-                                            <h4 id="youtubeTitle"></h4>
+                                            <h4 id="youtubeTitle" contenteditable="true" style="outline: none; border-bottom: 1.5px dashed rgba(99, 102, 241, 0.3); padding-bottom: 4px; font-weight: 800;"></h4>
                                         </div>
-                                        <div class="caption-container" id="youtubeDescription"></div>
+                                        <div class="caption-container" id="youtubeDescription" contenteditable="true" style="outline: none; border: 1.5px dashed rgba(99, 102, 241, 0.3); border-radius: 6px; padding: 12px; min-height: 120px; font-weight: 500; background: #fafafa;"></div>
                                         <div class="youtube-script-box">
                                             <span class="yt-label">Video Akış / Senaryo Taslağı</span>
-                                            <div class="script-outline-container" id="youtubeScript"></div>
+                                            <div class="script-outline-container" id="youtubeScript" contenteditable="true" style="outline: none; border: 1.5px dashed rgba(99, 102, 241, 0.3); border-radius: 6px; padding: 12px; min-height: 120px; font-weight: 500; background: #fafafa;"></div>
                                         </div>
                                     </div>
                                     
@@ -630,65 +636,10 @@
                                     </p>
 
                                     <!-- Simülasyon Personaları Grid -->
-                                    <div id="focusGroupPersonasGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                                        <!-- Persona 1: Detaycı & Şüpheci -->
-                                        <div class="persona-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
-                                            <div>
-                                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">MÜ</div>
-                                                    <div>
-                                                        <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #1e293b;">Mehmet Ümit (42)</h4>
-                                                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">Detaycı / Şüpheci Alıcı</span>
-                                                    </div>
-                                                </div>
-                                                <div style="font-size: 12.5px; color: #475569; line-height: 1.5; font-style: italic; background: white; padding: 12px; border-radius: 6px; border: 1px solid #f1f5f9; min-height: 60px;" id="simFeedbackPersona1">
-                                                    Simülasyon henüz çalıştırılmadı. Metninizi oluşturduktan sonra yukarıdaki butona tıklayın.
-                                                </div>
-                                            </div>
-                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 10px;">
-                                                <span style="font-size: 11px; font-weight: 700; color: #64748b;">İlgi Skoru:</span>
-                                                <span style="font-size: 14px; font-weight: 900; color: #64748b;" id="simScorePersona1">- / 10</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Persona 2: Heyecanlı / Trend Takipçisi -->
-                                        <div class="persona-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
-                                            <div>
-                                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #fef2f2; color: #ef4444; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">ED</div>
-                                                    <div>
-                                                        <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #1e293b;">Ece Demir (26)</h4>
-                                                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">Trend & Sosyal Medya</span>
-                                                    </div>
-                                                </div>
-                                                <div style="font-size: 12.5px; color: #475569; line-height: 1.5; font-style: italic; background: white; padding: 12px; border-radius: 6px; border: 1px solid #f1f5f9; min-height: 60px;" id="simFeedbackPersona2">
-                                                    Simülasyon henüz çalıştırılmadı. Metninizi oluşturduktan sonra yukarıdaki butona tıklayın.
-                                                </div>
-                                            </div>
-                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 10px;">
-                                                <span style="font-size: 11px; font-weight: 700; color: #64748b;">İlgi Skoru:</span>
-                                                <span style="font-size: 14px; font-weight: 900; color: #64748b;" id="simScorePersona2">- / 10</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Persona 3: Kampanya / Bütçe Avcısı -->
-                                        <div class="persona-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
-                                            <div>
-                                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #f0fdf4; color: #16a34a; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">CS</div>
-                                                    <div>
-                                                        <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #1e293b;">Can Soylu (34)</h4>
-                                                        <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">Fiyat & Kampanya Avcısı</span>
-                                                    </div>
-                                                </div>
-                                                <div style="font-size: 12.5px; color: #475569; line-height: 1.5; font-style: italic; background: white; padding: 12px; border-radius: 6px; border: 1px solid #f1f5f9; min-height: 60px;" id="simFeedbackPersona3">
-                                                    Simülasyon henüz çalıştırılmadı. Metninizi oluşturduktan sonra yukarıdaki butona tıklayın.
-                                                </div>
-                                            </div>
-                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 10px;">
-                                                <span style="font-size: 11px; font-weight: 700; color: #64748b;">İlgi Skoru:</span>
-                                                <span style="font-size: 14px; font-weight: 900; color: #64748b;" id="simScorePersona3">- / 10</span>
-                                            </div>
+                                    <div id="focusGroupPersonasGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                                        <div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 30px; font-weight: 600; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; font-family: var(--font-body);">
+                                            <i class="fa-solid fa-users" style="font-size: 24px; margin-bottom: 8px; color: #94a3b8; display: block;"></i>
+                                            Simülasyon henüz çalıştırılmadı. Metninizi hazırladıktan veya görselinizi yükledikten sonra yukarıdaki "Simülasyonu Çalıştır" butonuna tıklayın.
                                         </div>
                                     </div>
                                 </div>

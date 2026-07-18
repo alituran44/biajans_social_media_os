@@ -754,7 +754,7 @@ class AIEngines:
     @staticmethod
     def simulate_focus_group(post_text: str, brand_name: str = "BiAjans", sector: str = "Genel") -> dict:
         """
-        Simulates 3 distinct customer personas reacting to the provided post copy.
+        Simulates 10 distinct customer personas reacting to the provided post copy.
         """
         post_text = post_text.strip()
         brand_name = brand_name.strip()
@@ -769,10 +769,17 @@ class AIEngines:
                     f"\"\"\"\n{post_text}\n\"\"\"\n\n"
                     f"Marka Adı: {brand_name}\n"
                     f"Sektör: {sector}\n\n"
-                    f"Görev: Bu gönderiye tepki verecek 3 farklı sentetik müşteri personası oluştur:\n"
-                    f"1. Mehmet Ümit (42): Detaycı, şüpheci, fiyat/performans arayan alıcı.\n"
-                    f"2. Ece Demir (26): Heyecanlı, sosyal medyayı aktif kullanan, trend meraklısı alıcı.\n"
-                    f"3. Can Soylu (34): Kampanya/bütçe avcısı, indirim veya somut fayda arayan alıcı.\n\n"
+                    f"Görev: Bu gönderiye tepki verecek 10 farklı sentetik müşteri personası oluştur:\n"
+                    f"1. Mehmet Ümit (42) - Detaycı / Şüpheci Alıcı\n"
+                    f"2. Ece Demir (26) - Trend & Sosyal Medya Meraklısı\n"
+                    f"3. Can Soylu (34) - Fiyat & Kampanya Avcısı\n"
+                    f"4. Ayşe Kaya (29) - Tasarım & Estetik Odaklı\n"
+                    f"5. Burak Arslan (48) - Güvenilirlik & Kurumsal Arayan\n"
+                    f"6. Zeynep Yılmaz (31) - Çevre & Organik Odaklı\n"
+                    f"7. Emre Can (22) - Hız & Pratiklik Arayan\n"
+                    f"8. Derya Şen (37) - Aile & Güvenlik Odaklı\n"
+                    f"9. Ömer Çelik (55) - Geleneksel Alıcı (Basitlik Arayan)\n"
+                    f"10. Selin Yıldız (28) - Sosyal Kanıt & Yorum Odaklı\n\n"
                     f"Her biri için gönderiye karşı dürüst, samimi Türkçe bir yorum yaz ve gönderiye olan ilgi derecesini (1-10 arası) puanla."
                 )
 
@@ -783,7 +790,7 @@ class AIEngines:
                         response_mime_type="application/json",
                         response_schema=FocusGroupSimulationSchema,
                         temperature=0.7,
-                        system_instruction="Sen deneyimli bir tüketici psikolojisi simülatörüsün. Sosyal medya içeriklerini okur, belirlenen personalar adına son derece gerçekçi, samimi ve dürüst tüketici yorumları ile sayısal puanlar üretirsin."
+                        system_instruction="Sen deneyimli bir tüketici psikolojisi simülatörüsün. Sosyal medya içeriklerini okur, belirlenen 10 farklı persona adına son derece gerçekçi, samimi ve dürüst tüketici yorumları ile sayısal puanlar üretirsin."
                     )
                 )
 
@@ -811,11 +818,34 @@ class AIEngines:
         c_feedback = "Güzel bir lansman veya duyuru gibi duruyor ancak alıcı olarak beni çekecek net bir kampanya, indirim veya promosyon koduna yer verilmemiş. Eyleme geçmek için bir neden bulamadım."
         c_score = 5
 
+        a_feedback = "Görsel ve metin yerleşimi çok profesyonel duruyor. Renk tonları ve dil seçimi oldukça kaliteli bir imaj çizmiş, beğendim."
+        a_score = 8
+
+        b_feedback = "Güvenilir bir marka gibi duruyor, ancak resmi iletişim kanalları veya web sitesi bağlantısı daha net vurgulanabilirdi."
+        b_score = 7
+
+        z_feedback = "Ürünün sürdürülebilirlik veya çevre dostu bir yanı varsa belirtilmesi güzel olurdu. Yine de doğal bir havası var."
+        z_score = 7
+
+        em_feedback = "Sipariş vermek veya kayıt olmak ne kadar sürüyor? Linke tıkladığımda anında çözebileceğim hızlı bir akış varsa harika."
+        em_score = 8
+
+        d_feedback = "Aile bütçesine veya çocuklu ailelere yönelik bir faydasından bahsedilseydi daha çok ilgimi çekerdi, yine de fena değil."
+        d_score = 6
+
+        o_feedback = "Karmaşık kelimeler yerine daha sade ve doğrudan ne satıldığını anlatan bir dil tercih ederim. Ama genel olarak anlaşılır."
+        o_score = 6
+
+        s_feedback = "Diğer kullananların yorumlarını veya referanslarını da görmek isterim. Sosyal medyada bu gönderinin altındaki yorumlar benim için belirleyici olur."
+        s_score = 7
+
         if "indirim" in post_lower or "fırsat" in post_lower or "kampanya" in post_lower or "hediye" in post_lower or "ücretsiz" in post_lower:
             c_feedback = "İndirim ve fırsat detayları harika! Tam aradığım gibi somut bir tasarruf imkanı sunuyor. Bütçeme uygun olduğu için hemen kaydeder veya tıklarım."
             c_score = 9
             m_feedback = "Kampanya sunulması iyi fakat şartlar tam açıklanmamış. 'Detaylı bilgi için DM' demek yerine doğrudan koşullar yazılsa daha samimi olurdu."
             m_score = 7
+            s_feedback = "İndirim alanların yorumlarını veya memnuniyetini görmek satın alma kararımı hızlandırır."
+            s_score = 8
         elif "kahve" in post_lower or "cafe" in post_lower or "lezzet" in post_lower or "yemek" in post_lower or "pizza" in post_lower:
             m_feedback = "Gıda/İçecek paylaşımlarında hijyen, tazelik ve yerellik detayları önemli. Taze kavrulmuş olması güzel detay ama sipariş/teslimat detayları netleşmeli."
             m_score = 7
@@ -823,6 +853,10 @@ class AIEngines:
             e_score = 9
             c_feedback = "Kahve/Yemek lansmanlarında ilk siparişe özel küçük bir ikram veya indirim sunulması beni daha çabuk ikna ederdi. Fiyat bilgisi de olmalı."
             c_score = 6
+            z_feedback = "Taze ve katkısız çekirdek detayı çok güzel. Doğal içecekleri tercih eden biri olarak ilgimi çekti."
+            z_score = 9
+            a_feedback = "Sunum harika görünüyor! Fotoğraf kalitesi de iyiyse iştah kabartıcı bir görselle birleştiğinde mükemmel olur."
+            a_score = 9
         elif "teknoloji" in post_lower or "yazılım" in post_lower or "kod" in post_lower or "ai" in post_lower or "yapay zeka" in post_lower:
             m_feedback = "Yapay zeka ve teknoloji araçlarında vaatlerin arkasının dolu olması lazım. Hangi altyapıyı veya modeli kullandığı belirtilse daha profesyonel dururdu."
             m_score = 5
@@ -830,27 +864,23 @@ class AIEngines:
             e_score = 8
             c_feedback = "Yapay zeka araçlarının ücretsiz deneme süresi veya başlangıç kredisi verip vermediği belirtilseydi hemen kaydolurdum. Ücretlendirme şeffaf olmalı."
             c_score = 6
+            b_feedback = "Teknololojik yenilikleri takip eden bir firma olması kurumsal imajı güçlendiriyor. Güven verdi."
+            b_score = 8
+            em_feedback = "AI araçları hayatı kolaylaştırıyor, hızlıca kurup deneyebileceğim pratik bir demo varsa hemen tıklarım."
+            em_score = 9
 
         return {
             "success": True,
             "personas": [
-                {
-                    "name": "Mehmet Ümit (42)",
-                    "type": "Detaycı / Şüpheci Alıcı",
-                    "feedback": m_feedback,
-                    "score": m_score
-                },
-                {
-                    "name": "Ece Demir (26)",
-                    "type": "Trend & Sosyal Medya Meraklısı",
-                    "feedback": e_feedback,
-                    "score": e_score
-                },
-                {
-                    "name": "Can Soylu (34)",
-                    "type": "Fiyat & Kampanya Avcısı",
-                    "feedback": c_feedback,
-                    "score": c_score
-                }
+                {"name": "Mehmet Ümit (42)", "type": "Detaycı / Şüpheci Alıcı", "feedback": m_feedback, "score": m_score},
+                {"name": "Ece Demir (26)", "type": "Trend & Sosyal Medya", "feedback": e_feedback, "score": e_score},
+                {"name": "Can Soylu (34)", "type": "Fiyat & Kampanya Avcısı", "feedback": c_feedback, "score": c_score},
+                {"name": "Ayşe Kaya (29)", "type": "Tasarım & Estetik Odaklı", "feedback": a_feedback, "score": a_score},
+                {"name": "Burak Arslan (48)", "type": "Güvenilirlik & Kurumsal", "feedback": b_feedback, "score": b_score},
+                {"name": "Zeynep Yılmaz (31)", "type": "Çevre & Organik Odaklı", "feedback": z_feedback, "score": z_score},
+                {"name": "Emre Can (22)", "type": "Hız & Pratiklik Arayan", "feedback": em_feedback, "score": em_score},
+                {"name": "Derya Şen (37)", "type": "Aile & Güvenlik Odaklı", "feedback": d_feedback, "score": d_score},
+                {"name": "Ömer Çelik (55)", "type": "Geleneksel Alıcı", "feedback": o_feedback, "score": o_score},
+                {"name": "Selin Yıldız (28)", "type": "Sosyal Kanıt & Yorum", "feedback": s_feedback, "score": s_score}
             ]
         }

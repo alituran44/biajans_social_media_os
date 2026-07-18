@@ -5799,28 +5799,115 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
-    // AI Focus Group Simulation triggers
+    // Editable copy editors synchronization to phone mockup previews
+    const instagramCaption = document.getElementById('instagramCaption');
+    if (instagramCaption) {
+        instagramCaption.addEventListener('input', () => {
+            if (!activeCampaignData) activeCampaignData = {};
+            activeCampaignData.instagram_caption = instagramCaption.textContent;
+            const mockupText = document.getElementById('instagramMockupText');
+            if (mockupText) mockupText.textContent = instagramCaption.textContent;
+        });
+    }
+
+    const facebookCaption = document.getElementById('facebookCaption');
+    if (facebookCaption) {
+        facebookCaption.addEventListener('input', () => {
+            if (!activeCampaignData) activeCampaignData = {};
+            activeCampaignData.facebook_post = facebookCaption.textContent;
+            const mockupText = document.getElementById('facebookMockupText');
+            if (mockupText) mockupText.textContent = facebookCaption.textContent;
+        });
+    }
+
+    const youtubeDescription = document.getElementById('youtubeDescription');
+    if (youtubeDescription) {
+        youtubeDescription.addEventListener('input', () => {
+            if (!activeCampaignData) activeCampaignData = {};
+            if (!activeCampaignData.youtube) activeCampaignData.youtube = {};
+            activeCampaignData.youtube.video_description = youtubeDescription.textContent;
+            const mockupText = document.getElementById('youtubeMockupText');
+            if (mockupText) mockupText.textContent = youtubeDescription.textContent;
+        });
+    }
+
+    // Local file uploader preview
+    const postFileInput = document.getElementById('postFileInput');
+    if (postFileInput) {
+        postFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const dataUrl = evt.target.result;
+                
+                // Update live mockup phone frames
+                const simulatedImage = document.getElementById('simulatedImage');
+                if (simulatedImage) simulatedImage.src = dataUrl;
+                
+                const simulatedImageFB = document.querySelector('.simulatedImageFB');
+                if (simulatedImageFB) simulatedImageFB.src = dataUrl;
+                
+                const simulatedImageYT = document.querySelector('.simulatedImageYT');
+                if (simulatedImageYT) simulatedImageYT.src = dataUrl;
+
+                // Ensure we have activeCampaignData initialized
+                if (!activeCampaignData) {
+                    activeCampaignData = {
+                        instagram_caption: instagramCaption ? instagramCaption.textContent : '',
+                        facebook_post: facebookCaption ? facebookCaption.textContent : '',
+                        youtube: {
+                            video_title: document.getElementById('youtubeTitle')?.textContent || '',
+                            video_description: youtubeDescription ? youtubeDescription.textContent : ''
+                        },
+                        hashtags: [],
+                        image_url: dataUrl
+                    };
+                } else {
+                    activeCampaignData.image_url = dataUrl;
+                }
+
+                // Show campaign results workspace if hidden
+                const resultsSection = document.getElementById('resultsSection');
+                if (resultsSection) resultsSection.classList.remove('hidden');
+
+                showToast('Yerel görsel önizleme simülatörüne yüklendi! 📸');
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // AI Focus Group Simulation triggers (10 Personas Panel)
     const btnRunFocusGroupSimulation = document.getElementById('btnRunFocusGroupSimulation');
     if (btnRunFocusGroupSimulation) {
         btnRunFocusGroupSimulation.addEventListener('click', async () => {
             if (!activeCampaignData) {
-                showToast('Lütfen önce bir kampanya metni üretin.');
-                return;
+                activeCampaignData = {
+                    instagram_caption: instagramCaption ? instagramCaption.textContent : '',
+                    facebook_post: facebookCaption ? facebookCaption.textContent : '',
+                    youtube: {
+                        video_title: document.getElementById('youtubeTitle')?.textContent || '',
+                        video_description: youtubeDescription ? youtubeDescription.textContent : ''
+                    },
+                    hashtags: [],
+                    image_url: ''
+                };
             }
 
             let textToSimulate = '';
             if (activeTab === 'instagram') {
-                textToSimulate = activeCampaignData.instagram_caption;
+                textToSimulate = instagramCaption ? instagramCaption.textContent : activeCampaignData.instagram_caption;
             } else if (activeTab === 'facebook') {
-                textToSimulate = activeCampaignData.facebook_post;
+                textToSimulate = facebookCaption ? facebookCaption.textContent : activeCampaignData.facebook_post;
             } else if (activeTab === 'youtube') {
-                textToSimulate = activeCampaignData.youtube ? (activeCampaignData.youtube.video_title + "\n" + activeCampaignData.youtube.video_description) : '';
+                textToSimulate = youtubeDescription ? youtubeDescription.textContent : (activeCampaignData.youtube ? activeCampaignData.youtube.video_description : '');
             } else {
-                textToSimulate = activeCampaignData.instagram_caption || activeCampaignData.facebook_post;
+                textToSimulate = (instagramCaption ? instagramCaption.textContent : '') || activeCampaignData.instagram_caption || (facebookCaption ? facebookCaption.textContent : '');
             }
 
             if (!textToSimulate) {
-                showToast('Simüle edilecek metin bulunamadı.');
+                showToast('Simüle edilecek metin bulunamadı. Lütfen editöre yazın.');
                 return;
             }
 
@@ -5833,11 +5920,47 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const originalHTML = btnRunFocusGroupSimulation.innerHTML;
             btnRunFocusGroupSimulation.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Analiz Ediliyor...`;
 
-            for (let i = 1; i <= 3; i++) {
-                const fbEl = document.getElementById(`simFeedbackPersona${i}`);
-                const scEl = document.getElementById(`simScorePersona${i}`);
-                if (fbEl) fbEl.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Alıcı gönderiyi inceliyor...`;
-                if (scEl) scEl.textContent = `- / 10`;
+            // Prepare 10 personas grid dynamically
+            const grid = document.getElementById('focusGroupPersonasGrid');
+            if (grid) {
+                grid.innerHTML = '';
+                const mockPersonas = [
+                    { name: "Mehmet Ümit (42)", initials: "MÜ", bg: "#e0f2fe", color: "#0284c7", type: "Detaycı / Şüpheci Alıcı" },
+                    { name: "Ece Demir (26)", initials: "ED", bg: "#fef2f2", color: "#ef4444", type: "Trend & Sosyal Medya" },
+                    { name: "Can Soylu (34)", initials: "CS", bg: "#f0fdf4", color: "#16a34a", type: "Fiyat & Kampanya Avcısı" },
+                    { name: "Ayşe Kaya (29)", initials: "AK", bg: "#faf5ff", color: "#a855f7", type: "Tasarım & Estetik Odaklı" },
+                    { name: "Burak Arslan (48)", initials: "BA", bg: "#fef3c7", color: "#d97706", type: "Güvenilirlik & Kurumsal" },
+                    { name: "Zeynep Yılmaz (31)", initials: "ZY", bg: "#ecfdf5", color: "#059669", type: "Çevre & Organik Odaklı" },
+                    { name: "Emre Can (22)", initials: "EC", bg: "#fff1f2", color: "#e11d48", type: "Hız & Pratiklik Arayan" },
+                    { name: "Derya Şen (37)", initials: "DŞ", bg: "#f0fdfa", color: "#0d9488", type: "Aile & Güvenlik Odaklı" },
+                    { name: "Ömer Çelik (55)", initials: "ÖÇ", bg: "#f8fafc", color: "#475569", type: "Geleneksel Alıcı" },
+                    { name: "Selin Yıldız (28)", initials: "SY", bg: "#eff6ff", color: "#2563eb", type: "Sosyal Kanıt & Yorum" }
+                ];
+                
+                mockPersonas.forEach((p, idx) => {
+                    const card = document.createElement('div');
+                    card.className = "persona-card animate-fade-in";
+                    card.style.cssText = "background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s;";
+                    card.innerHTML = `
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: ${p.bg}; color: ${p.color}; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">${p.initials}</div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #1e293b; font-family: var(--font-body);">${p.name}</h4>
+                                    <span style="font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase;">${p.type}</span>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: #64748b; line-height: 1.5; font-style: italic; background: white; padding: 12px; border-radius: 6px; border: 1px solid #f1f5f9; min-height: 60px;" id="simFeedbackPersona${idx+1}">
+                                <i class="fa-solid fa-circle-notch fa-spin"></i> Alıcı inceliyor...
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 10px;">
+                            <span style="font-size: 11px; font-weight: 700; color: #64748b;">İlgi Skoru:</span>
+                            <span style="font-size: 14px; font-weight: 900; color: #64748b;" id="simScorePersona${idx+1}">- / 10</span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
             }
 
             try {
@@ -5866,14 +5989,14 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                                 else if (p.score >= 5) scEl.style.color = '#eab308';
                                 else scEl.style.color = '#ef4444';
                             }
-                        }, (idx + 1) * 600);
+                        }, (idx + 1) * 350);
                     });
                     
                     setTimeout(() => {
-                        showToast('AI Odak Grubu simülasyonu tamamlandı! 🎯');
+                        showToast('10 Kişilik AI Odak Grubu simülasyonu tamamlandı! 🎯');
                         btnRunFocusGroupSimulation.disabled = false;
                         btnRunFocusGroupSimulation.innerHTML = originalHTML;
-                    }, 2000);
+                    }, 4000);
                 } else {
                     throw new Error(data.error || 'Simülasyon başarısız.');
                 }
@@ -5882,7 +6005,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 showToast('Simülasyon başlatılırken hata oluştu.');
                 btnRunFocusGroupSimulation.disabled = false;
                 btnRunFocusGroupSimulation.innerHTML = originalHTML;
-                for (let i = 1; i <= 3; i++) {
+                for (let i = 1; i <= 10; i++) {
                     const fbEl = document.getElementById(`simFeedbackPersona${i}`);
                     if (fbEl) fbEl.textContent = `Analiz başarısız oldu.`;
                 }
