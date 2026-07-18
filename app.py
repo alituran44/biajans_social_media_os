@@ -203,6 +203,107 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json_response(result)
             return
 
+        # ── Git Repositories: /api/git/repos ──────────────────────────────────
+        if path == "/api/git/repos":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            repos = [
+                {
+                    "name": "biajans_social_media_os",
+                    "description": "Yapay Zeka Destekli Sosyal Medya ve Dijital Pazarlama İşletim Sistemi",
+                    "price": 45000,
+                    "stars": 12,
+                    "language": "Python / JS"
+                },
+                {
+                    "name": "yapay-zeka-ile-soru-uretme",
+                    "description": "Yapay Zeka Tabanlı Dinamik Soru Hazırlama & Sınav Portalı",
+                    "price": 38000,
+                    "stars": 8,
+                    "language": "Python"
+                },
+                {
+                    "name": "gelanlasalim-v2",
+                    "description": "Yeni Nesil Online Pazarlık ve E-Ticaret Anlaşma Portalı",
+                    "price": 35000,
+                    "stars": 15,
+                    "language": "Javascript"
+                },
+                {
+                    "name": "pdf-soru-kesme",
+                    "description": "PDF Belgelerinden Akıllı Soru Kırpma ve Ayıklama Aracı",
+                    "price": 32000,
+                    "stars": 6,
+                    "language": "Python"
+                },
+                {
+                    "name": "gelanlasalim",
+                    "description": "Online Pazarlık ve E-Ticaret Teklif Alışveriş Ağı",
+                    "price": 25000,
+                    "stars": 9,
+                    "language": "HTML / JS"
+                },
+                {
+                    "name": "ozel-ders-bulma-yeni",
+                    "description": "Yeni Nesil Özel Ders Arama ve Eğitmen Eşleştirme Motoru",
+                    "price": 22000,
+                    "stars": 5,
+                    "language": "Javascript"
+                },
+                {
+                    "name": "bihocam",
+                    "description": "Öğretmen - Öğrenci Buluşma ve Ders Rezervasyon Platformu",
+                    "price": 18000,
+                    "stars": 7,
+                    "language": "Vue.js"
+                },
+                {
+                    "name": "mydesirre",
+                    "description": "Kişisel Dilek Listesi ve Hediye Paylaşım Ağı",
+                    "price": 16500,
+                    "stars": 4,
+                    "language": "HTML / CSS"
+                },
+                {
+                    "name": "dinapolipizza",
+                    "description": "Online Pizza Sipariş ve Restoran Yönetim Paneli",
+                    "price": 15000,
+                    "stars": 11,
+                    "language": "React.js"
+                },
+                {
+                    "name": "mistik-rehber",
+                    "description": "Mistik Astrolojik Yorumlama ve Günlük Burç Analizcisi",
+                    "price": 14000,
+                    "stars": 14,
+                    "language": "Python / Flask"
+                },
+                {
+                    "name": "adimizi",
+                    "description": "Marka ve İsim Analizi Arama Platformu",
+                    "price": 12500,
+                    "stars": 3,
+                    "language": "Javascript"
+                },
+                {
+                    "name": "Gizemli-Vaka",
+                    "description": "İnteraktif Dedektiflik ve Gizem Çözme Hikaye Oyunu",
+                    "price": 11000,
+                    "stars": 19,
+                    "language": "HTML / Canvas"
+                },
+                {
+                    "name": "edeneme",
+                    "description": "Öğrenciler İçin Çevrimiçi Deneme Sınavı Çözüm ve Analiz Sistemi",
+                    "price": 9500,
+                    "stars": 2,
+                    "language": "PHP"
+                }
+            ]
+            self.send_json_response({"success": True, "repos": repos})
+            return
+
         # ── CRM Leads List: /api/crm/leads ────────────────────────────────────
         if path == "/api/crm/leads":
             if not self._get_session():
