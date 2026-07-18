@@ -46,6 +46,7 @@ class VercelHTTPRequestHandler(CustomHTTPRequestHandler):
         
         # Set protocol version
         self.request_version = environ.get('SERVER_PROTOCOL', 'HTTP/1.1')
+        self.requestline = f"{self.command} {self.path} {self.request_version}"
         
         # Initialize database automatically if we are on Vercel
         from core.db_manager import init_db
@@ -86,6 +87,10 @@ class VercelHTTPRequestHandler(CustomHTTPRequestHandler):
                          (self.client_address[0],
                           self.log_date_time_string(),
                           format%args))
+
+    # Override log_request so it doesn't crash on missing requestline
+    def log_request(self, code='-', size='-'):
+        self.log_message('"%s" %s %s', self.requestline, str(code), str(size))
 
 
 def app(environ, start_response):
