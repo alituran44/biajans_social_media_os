@@ -1,0 +1,16 @@
+.git
+.github
+.gitignore
+.env
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.db
+*.log
+walkthrough.md
+task.md
+implementation_plan.md
+CVS
+.DS_Store

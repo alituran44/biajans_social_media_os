@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  biajans-os:
+    build: .
+    container_name: biajans_social_media_os
+    ports:
+      - "80:8080"
+    environment:
+      - PORT=8080
+      - PYTHONUNBUFFERED=1
+      # Insert environment variables here if deploying on EC2
+      # - OPENAI_API_KEY=your_key
+      # - GEMINI_API_KEY=your_key
+    restart: always
