@@ -5168,6 +5168,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
     // Render mini today timeline
     function renderMiniTodaySchedule(brand) {
+        if (!brand) return;
         const listContainer = document.getElementById('miniTimelineList');
         if (!listContainer) return;
 
@@ -5218,30 +5219,29 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
     // Attach click handlers to quick actions
     function initQuickActions() {
-        const actionEditBrand = document.getElementById('actionEditBrand');
-        if (actionEditBrand) {
-            actionEditBrand.addEventListener('click', (e) => {
+        document.addEventListener('click', (e) => {
+            const actionEditBrand = e.target.closest('#actionEditBrand');
+            if (actionEditBrand) {
                 e.preventDefault();
                 showView('brandSettingsSection', 'markaAyarlariSideBtn');
-            });
-        }
-        
-        const actionConnectSocials = document.getElementById('actionConnectSocials');
-        if (actionConnectSocials) {
-            actionConnectSocials.addEventListener('click', (e) => {
+                return;
+            }
+
+            const actionConnectSocials = e.target.closest('#actionConnectSocials');
+            if (actionConnectSocials) {
                 e.preventDefault();
                 const connectionsModal = document.getElementById('connectionsModal');
                 if (connectionsModal) connectionsModal.classList.remove('hidden');
-            });
-        }
+                return;
+            }
 
-        const actionGoAnalytics = document.getElementById('actionGoAnalytics');
-        if (actionGoAnalytics) {
-            actionGoAnalytics.addEventListener('click', (e) => {
+            const actionGoAnalytics = e.target.closest('#actionGoAnalytics');
+            if (actionGoAnalytics) {
                 e.preventDefault();
                 showView('analitikSection', 'navAnalitik');
-            });
-        }
+                return;
+            }
+        });
     }
 
     // ---- EXTEND populateBrandForm to include Muhasebe + CRM ----
