@@ -2,11 +2,18 @@ import io
 import urllib.parse
 import os
 import sys
+import traceback
 
 # Ensure project root is in the path so we can import app and core modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import CustomHTTPRequestHandler
+import_error = None
+try:
+    from app import CustomHTTPRequestHandler
+except Exception as e:
+    import_error = traceback.format_exc()
+    class CustomHTTPRequestHandler:
+        pass
 
 class VercelHTTPRequestHandler(CustomHTTPRequestHandler):
     def __init__(self, environ, rfile, wfile):
@@ -82,14 +89,40 @@ class VercelHTTPRequestHandler(CustomHTTPRequestHandler):
 
 
 def app(environ, start_response):
+    if import_error:
+        start_response('500 Internal Server Error', [('Content-Type', 'text/html; charset=utf-8')])
+        html = f"""
+        <html>
+        <head><title>Import Error</title></head>
+        <body style="font-family: monospace; padding: 20px; background: #fafafa; color: #333;">
+            <h2 style="color: #d9534f;">Failed to import application</h2>
+            <pre style="background: #eee; padding: 15px; border-radius: 5px; border: 1px solid #ccc; overflow-x: auto;">{import_error}</pre>
+        </body>
+        </html>
+        """
+        return [html.encode('utf-8')]
+
     # Determine the request body input
     content_length = int(environ.get('CONTENT_LENGTH', 0) or 0)
     request_body = environ['wsgi.input'].read(content_length) if content_length else b''
     rfile = io.BytesIO(request_body)
     wfile = io.BytesIO()
     
-    # Run the handler
-    handler = VercelHTTPRequestHandler(environ, rfile, wfile)
+    try:
+        # Run the handler
+        handler = VercelHTTPRequestHandler(environ, rfile, wfile)
+    except Exception as e:
+        start_response('500 Internal Server Error', [('Content-Type', 'text/html; charset=utf-8')])
+        html = f"""
+        <html>
+        <head><title>Runtime Error</title></head>
+        <body style="font-family: monospace; padding: 20px; background: #fafafa; color: #333;">
+            <h2 style="color: #d9534f;">Runtime Error during Request</h2>
+            <pre style="background: #eee; padding: 15px; border-radius: 5px; border: 1px solid #ccc; overflow-x: auto;">{traceback.format_exc()}</pre>
+        </body>
+        </html>
+        """
+        return [html.encode('utf-8')]
     
     # Parse the output
     wfile.seek(0)
@@ -122,3 +155,4 @@ def app(environ, start_response):
                 
     start_response(status, headers)
     return [body]
+
