@@ -106,6 +106,12 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         path = parsed_url.path
         qs = urllib.parse.parse_qs(parsed_url.query)
 
+        # Clean URLs normalization (e.g. /dashboard -> /dashboard.html)
+        if not path.endswith("/") and not "." in os.path.basename(path):
+            potential_file = os.path.join(DIRECTORY, path.lstrip("/") + ".html")
+            if os.path.exists(potential_file) and os.path.isfile(potential_file):
+                path = path + ".html"
+
         # Enforce authentication for dashboard.html
         if path == "/dashboard.html":
             if not self._get_session():
@@ -398,6 +404,12 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
+
+        # Clean URLs normalization (e.g. /dashboard -> /dashboard.html)
+        if not path.endswith("/") and not "." in os.path.basename(path):
+            potential_file = os.path.join(DIRECTORY, path.lstrip("/") + ".html")
+            if os.path.exists(potential_file) and os.path.isfile(potential_file):
+                path = path + ".html"
 
         content_length = int(self.headers.get("Content-Length", 0))
         post_data = self.rfile.read(content_length) if content_length else b"{}"
