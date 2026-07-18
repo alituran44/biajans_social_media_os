@@ -835,13 +835,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            const targetEl = document.querySelector(targetId);
-            if (targetEl) {
-                targetEl.scrollIntoView({
-                    behavior: 'smooth'
-                });
+            const href = this.getAttribute('href');
+            if (href === '#') return;
+            try {
+                const targetEl = document.querySelector(href);
+                if (targetEl) {
+                    e.preventDefault();
+                    targetEl.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            } catch (err) {
+                console.warn(err);
             }
         });
     });
