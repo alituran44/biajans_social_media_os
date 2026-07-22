@@ -7422,6 +7422,70 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             tokenInput.placeholder = isConnected ? "••••••••••••••••" : "Geliştirici erişim anahtarınızı veya tokenınızı girin";
         }
 
+        // Populate platform specific instructions
+        const helpContent = document.getElementById('directHelpContent');
+        const helpContainer = document.getElementById('directHelpContainer');
+        if (helpContent && helpContainer) {
+            helpContainer.style.display = 'none'; // Keep closed initially
+            
+            const guides = {
+                meta: `
+                    <strong>1. Hesap / Sayfa Adı:</strong> Facebook Sayfanızın adı.<br>
+                    <strong>2. Sayfa ID:</strong> Facebook Sayfanızın "Hakkında > Şeffaflık" veya URL kısmındaki benzersiz numaradır.<br>
+                    <strong>3. Erişim Tokenı:</strong> <a href="https://developers.facebook.com/tools/explorer" target="_blank" style="color:#6366f1;text-decoration:underline;">Meta Graph API Explorer</a> aracından üretebileceğiniz 60 günlük veya süresiz Page Access Token'dır.
+                `,
+                facebook: `
+                    <strong>1. Hesap / Sayfa Adı:</strong> Facebook Sayfanızın adı.<br>
+                    <strong>2. Sayfa ID:</strong> Facebook Sayfanızın "Hakkında > Şeffaflık" veya URL kısmındaki benzersiz numaradır.<br>
+                    <strong>3. Erişim Tokenı:</strong> <a href="https://developers.facebook.com/tools/explorer" target="_blank" style="color:#6366f1;text-decoration:underline;">Meta Graph API Explorer</a> aracından üretebileceğiniz Page Access Token'dır.
+                `,
+                instagram: `
+                    <strong>1. Hesap Adı:</strong> Instagram kullanıcı adınız.<br>
+                    <strong>2. Hesap ID:</strong> Instagram Profesyonel hesap numaranız (Meta Business Suite üzerinde görünür).<br>
+                    <strong>3. Erişim Tokenı:</strong> Meta Graph API Explorer'dan aldığınız ve Instagram API yetkilerine sahip User/Page Access Token'dır.
+                `,
+                google: `
+                    <strong>1. Hesap Adı:</strong> Google / YouTube hesap adınız.<br>
+                    <strong>2. API Key / Token:</strong> <a href="https://console.cloud.google.com" target="_blank" style="color:#6366f1;text-decoration:underline;">Google Cloud Console</a> -> Credential sayfasından oluşturduğunuz API Key veya Service Account JSON dosyası içeriğidir.
+                `,
+                youtube: `
+                    <strong>1. Kanal Adı:</strong> YouTube Kanal adınız.<br>
+                    <strong>2. Kanal ID:</strong> YouTube Kanal URL'sindeki benzersiz kanal kimliğidir (örn. UC... ile başlayan kısım).<br>
+                    <strong>3. API Key / Token:</strong> Google Cloud Console üzerinden YouTube Data API v3'ü etkinleştirip ürettiğiniz API Key'dir.
+                `,
+                google_ads: `
+                    <strong>1. Hesap Adı:</strong> Reklam veren hesap adınız.<br>
+                    <strong>2. Müşteri ID:</strong> Google Ads panelinin sağ üst köşesinde yazan 10 haneli Müşteri Kimliğidir (örn: 123-456-7890).<br>
+                    <strong>3. Developer Token:</strong> Google Ads API Geliştirici Tokenı (Developer Token).
+                `,
+                linkedin: `
+                    <strong>1. Hesap Adı:</strong> Şirket sayfanızın veya profilinizin adı.<br>
+                    <strong>2. Erişim Tokenı:</strong> <a href="https://www.linkedin.com/developers" target="_blank" style="color:#6366f1;text-decoration:underline;">LinkedIn Developer Portal</a> üzerinden oluşturduğunuz uygulamanın Access Token'ıdır.
+                `,
+                x: `
+                    <strong>1. Kullanıcı Adı:</strong> Twitter / X kullanıcı adınız (@ olmadan).<br>
+                    <strong>2. Bearer Token:</strong> <a href="https://developer.x.com" target="_blank" style="color:#6366f1;text-decoration:underline;">X Developer Portal</a> -> Projects & Apps sayfasından oluşturduğunuz uygulamanın Bearer Token'ıdır.
+                `,
+                tiktok: `
+                    <strong>1. Kullanıcı Adı:</strong> TikTok kullanıcı adınız.<br>
+                    <strong>2. Access Token:</strong> <a href="https://developers.tiktok.com" target="_blank" style="color:#6366f1;text-decoration:underline;">TikTok Developers</a> portalından oluşturduğunuz uygulamanın Access Token'ıdır.
+                `,
+                pinterest: `
+                    <strong>1. Kullanıcı Adı:</strong> Pinterest kullanıcı adınız.<br>
+                    <strong>2. Access Token:</strong> <a href="https://developers.pinterest.com" target="_blank" style="color:#6366f1;text-decoration:underline;">Pinterest Developers</a> portalından ürettiğiniz reklam/pimleri yönetme erişim anahtarıdır.
+                `,
+                bluesky: `
+                    <strong>1. Kullanıcı Adı:</strong> Bluesky kullanıcı adınız (örn: adiniz.bsky.social).<br>
+                    <strong>2. App Password:</strong> bsky.app -> Ayarlar -> Uygulama Şifreleri (App Passwords) kısmından oluşturduğunuz özel şifredir.
+                `
+            };
+            
+            helpContent.innerHTML = guides[slug] || `
+                <strong>1. Hesap Adı:</strong> Hesap veya sayfa isminiz.<br>
+                <strong>2. API Key / Token:</strong> İlgili platformun geliştirici panelinden alacağınız API Erişim Anahtarıdır.
+            `;
+        }
+
         const colors = {
             meta: '#1877f2', facebook: '#1877f2', instagram: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
             youtube: '#ff0000', google: '#4285f4', google_ads: '#4285f4', linkedin: '#0077b5',
@@ -7445,6 +7509,15 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     if (directCloseBtn) {
         directCloseBtn.addEventListener('click', () => {
             directConnectModal.classList.add('hidden');
+        });
+    }
+    
+    const btnToggleDirectHelp = document.getElementById('btnToggleDirectHelp');
+    const directHelpContainer = document.getElementById('directHelpContainer');
+    if (btnToggleDirectHelp && directHelpContainer) {
+        btnToggleDirectHelp.addEventListener('click', () => {
+            const isHidden = directHelpContainer.style.display === 'none';
+            directHelpContainer.style.display = isHidden ? 'block' : 'none';
         });
     }
     if (directConnectModal) {
