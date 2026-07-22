@@ -1252,7 +1252,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Normal OAuth Platformları
-            connectPlatform(card, network);
+            openDirectConnectionModal(network);
         });
     });
 
@@ -7301,6 +7301,162 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const crmSection = document.getElementById('crmSection');
             if (crmSection && !crmSection.classList.contains('hidden')) {
                 loadCRMLeads();
+            }
+        });
+    }
+
+    // ==========================================
+    // OAuth-suz Doğrudan Bağlantı Modalı & Mantığı
+    // ==========================================
+    function openDirectConnectionModal(network) {
+        const modal = document.getElementById('directConnectModal');
+        if (!modal) return;
+        
+        const slug = _platformSlug(network);
+        const iconDiv = document.getElementById('directPlatformIcon');
+        const titleEl = document.getElementById('directPlatformTitle');
+        const tokenLabel = document.getElementById('directTokenLabel');
+        const tokenInput = document.getElementById('directAccessToken');
+        
+        document.getElementById('directPlatformSlug').value = slug;
+        document.getElementById('directPlatformLabel').value = network;
+        
+        // Reset form inputs
+        document.getElementById('directAccountName').value = '';
+        document.getElementById('directAccountId').value = '';
+        tokenInput.value = '';
+        
+        titleEl.textContent = `${network} Bağlantısı`;
+        
+        if (slug === 'google' || slug === 'youtube' || slug === 'google_ads') {
+            tokenLabel.textContent = "Google Developer API Key / Service Account JSON";
+            tokenInput.placeholder = "Geliştirici anahtarınızı veya JSON tokenınızı girin";
+        } else if (slug === 'meta' || slug === 'facebook' || slug === 'instagram') {
+            tokenLabel.textContent = "Meta Page / User Access Token";
+            tokenInput.placeholder = "Meta Sayfa veya Kullanıcı Erişim Tokenı girin";
+        } else {
+            tokenLabel.textContent = "API Key / Access Token";
+            tokenInput.placeholder = "Geliştirici erişim anahtarınızı veya tokenınızı girin";
+        }
+
+        const colors = {
+            meta: '#1877f2', facebook: '#1877f2', instagram: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
+            youtube: '#ff0000', google: '#4285f4', google_ads: '#4285f4', linkedin: '#0077b5',
+            x: '#000000', tiktok: '#000000', pinterest: '#bd081c'
+        };
+        const iconHtmls = {
+            meta: '<i class="fa-brands fa-meta"></i>', facebook: '<i class="fa-brands fa-facebook-f"></i>', instagram: '<i class="fa-brands fa-instagram"></i>',
+            youtube: '<i class="fa-brands fa-youtube"></i>', google: '<i class="fa-brands fa-google"></i>', google_ads: '<i class="fa-solid fa-rectangle-ad"></i>',
+            linkedin: '<i class="fa-brands fa-linkedin-in"></i>', x: '<i class="fa-brands fa-x-twitter"></i>', tiktok: '<i class="fa-brands fa-tiktok"></i>',
+            pinterest: '<i class="fa-brands fa-pinterest-p"></i>'
+        };
+        
+        iconDiv.style.background = colors[slug] || '#6366f1';
+        iconDiv.innerHTML = iconHtmls[slug] || '<i class="fa-solid fa-link"></i>';
+        
+        modal.classList.remove('hidden');
+    }
+
+    const directConnectModal = document.getElementById('directConnectModal');
+    const directCloseBtn = document.getElementById('directCloseBtn');
+    if (directCloseBtn) {
+        directCloseBtn.addEventListener('click', () => {
+            directConnectModal.classList.add('hidden');
+        });
+    }
+    if (directConnectModal) {
+        directConnectModal.addEventListener('click', (e) => {
+            if (e.target === directConnectModal) {
+                directConnectModal.classList.add('hidden');
+            }
+        });
+    }
+
+    const directConnectOAuthBtn = document.getElementById('directConnectOAuthBtn');
+    if (directConnectOAuthBtn) {
+        directConnectOAuthBtn.addEventListener('click', () => {
+            const slug = document.getElementById('directPlatformSlug').value;
+            const label = document.getElementById('directPlatformLabel').value;
+            directConnectModal.classList.add('hidden');
+            
+            const cards = document.querySelectorAll(`.conn-card[data-network="${label}"]`);
+            if (cards.length > 0) {
+                connectPlatform(cards[0], label);
+            }
+        });
+    }
+
+    const directConnectForm = document.getElementById('directConnectForm');
+    if (directConnectForm) {
+        directConnectForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const slug = document.getElementById('directPlatformSlug').value;
+            const label = document.getElementById('directPlatformLabel').value;
+            const accountName = document.getElementById('directAccountName').value.trim();
+            const accountId = document.getElementById('directAccountId').value.trim();
+            const token = document.getElementById('directAccessToken').value.trim();
+            
+            const submitBtn = directConnectForm.querySelector('button[type="submit"]');
+            const originalHTML = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Bağlanıyor...';
+            
+            try {
+                const brandId = getCurrentBrandId();
+                const res = await fetch('/api/connect/direct', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        platform: slug,
+                        brand: brandId,
+                        account_name: accountName,
+                        account_id: accountId,
+                        token: token
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast(`✅ ${label} doğrudan bağlantısı kuruldu!`);
+                    
+                    const brand = getCurrentBrand();
+                    if (brand) {
+                        if (!brand.connections) brand.connections = {};
+                        brand.connections[slug] = {
+                            connected: true,
+                            profile: { name: accountName, id: accountId }
+                        };
+                        saveBrandsToStorage(brandsData);
+                    }
+                    
+                    await syncConnectionStatus();
+                    directConnectModal.classList.add('hidden');
+                    connectionsModal.classList.add('hidden');
+                } else {
+                    throw new Error(data.error || "Bilinmeyen sunucu hatası");
+                }
+            } catch (err) {
+                console.warn("Direct backend connect failed, using frontend local connection fallback:", err.message);
+                
+                const brand = getCurrentBrand();
+                if (brand) {
+                    if (!brand.connections) brand.connections = {};
+                    brand.connections[slug] = {
+                        connected: true,
+                        profile: { name: accountName, id: accountId }
+                    };
+                    saveBrandsToStorage(brandsData);
+                    showToast(`✅ ${label} doğrudan bağlantısı kuruldu!`);
+                    syncConnectionStatus();
+                    directConnectModal.classList.add('hidden');
+                    connectionsModal.classList.add('hidden');
+                } else {
+                    showToast(`❌ Bağlantı hatası: ${err.message}`, true);
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHTML;
             }
         });
     }

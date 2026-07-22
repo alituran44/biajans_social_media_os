@@ -628,6 +628,28 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self.send_json_response({"success": False, "error": result.get("error")}, 400)
             return
+        # ── Direct Connect (No OAuth): /api/connect/direct ────────────────────
+        if path == "/api/connect/direct":
+            platform = body.get("platform", "").strip().lower()
+            brand_id = body.get("brand", "global").strip()
+            account_name = body.get("account_name", "").strip()
+            account_id = body.get("account_id", "").strip()
+            token = body.get("token", "").strip()
+            
+            if not platform or not token or not account_name:
+                self.send_json_response({"success": False, "error": "Platform, isim ve token zorunludur."}, 400)
+                return
+                
+            canonical = _PLATFORM_ALIASES.get(platform, platform)
+            save_token(canonical, {
+                "access_token": token,
+                "expires_at": 0,
+            }, profile={
+                "name": account_name,
+                "id": account_id or "direct_id",
+            }, brand_id=brand_id)
+            self.send_json_response({"success": True, "platform": canonical})
+            return
 
         # ── Mock/Simulated platform connection ─────────────────────────────
         if path == "/api/connect/mock":
