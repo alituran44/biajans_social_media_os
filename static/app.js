@@ -3411,7 +3411,20 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
             const data = await res.json();
             if (data && data.connections) {
-                renderConnections(data.connections);
+                const brand = getCurrentBrand();
+                const merged = { ...data.connections };
+                if (brand && brand.connections) {
+                    Object.entries(brand.connections).forEach(([k, v]) => {
+                        if (v && v.connected) {
+                            merged[k] = { connected: true, profile: v.profile || { name: 'Demo ' + k } };
+                        }
+                    });
+                }
+                renderConnections(merged);
+                if (brand) {
+                    brand.connections = merged;
+                    saveBrandsToStorage(brandsData);
+                }
                 return;
             }
             throw new Error("Invalid connections response");

@@ -102,6 +102,12 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     # ──────────────────────────────────────────────────────────────────────────
 
     def do_GET(self):
+        # Dynamically set APP_BASE_URL from request headers to support Vercel/proxies automatically
+        host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host")
+        if host:
+            proto = self.headers.get("X-Forwarded-Proto", "http")
+            Config.APP_BASE_URL = f"{proto}://{host}"
+
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         qs = urllib.parse.parse_qs(parsed_url.query)
@@ -402,6 +408,12 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     # ──────────────────────────────────────────────────────────────────────────
 
     def do_POST(self):
+        # Dynamically set APP_BASE_URL from request headers to support Vercel/proxies automatically
+        host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host")
+        if host:
+            proto = self.headers.get("X-Forwarded-Proto", "http")
+            Config.APP_BASE_URL = f"{proto}://{host}"
+
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
 
