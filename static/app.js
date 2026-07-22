@@ -1186,10 +1186,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.conn-card').forEach(card => {
         card.addEventListener('click', () => {
             const network = card.getAttribute('data-network');
-            if (card.classList.contains('active-connection')) {
-                showToast(`${network} zaten bağlı durumda. Bağlantıyı kesmek için sağ tıklayın.`, true);
-                return;
-            }
             
             // Web, Blog, E-posta, Looker Stüdyosu, Twitch - OAuth flow yok, direkt yardım rehberini aç
             const noOAuthPlatforms = ['Web', 'Blog', 'E-posta', 'Looker Stüdyosu', 'Twitch'];
@@ -7322,21 +7318,108 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         document.getElementById('directPlatformLabel').value = network;
         
         // Reset form inputs
-        document.getElementById('directAccountName').value = '';
-        document.getElementById('directAccountId').value = '';
+        const nameInput = document.getElementById('directAccountName');
+        const idInput = document.getElementById('directAccountId');
+        nameInput.value = '';
+        idInput.value = '';
         tokenInput.value = '';
         
         titleEl.textContent = `${network} Bağlantısı`;
         
+        // Check if already connected
+        const brand = getCurrentBrand();
+        const connInfo = brand?.connections?.[slug];
+        const isConnected = connInfo && connInfo.connected;
+        
+        // Setup directButtonsContainer
+        const buttonsContainer = document.getElementById('directButtonsContainer');
+        
+        if (isConnected) {
+            titleEl.textContent = `${network} (Bağlı)`;
+            nameInput.value = connInfo.profile?.name || 'Demo Hesap';
+            idInput.value = connInfo.profile?.id || 'demo_id';
+            tokenInput.value = '••••••••••••••••';
+            
+            // Build Update and Disconnect buttons
+            if (buttonsContainer) {
+                buttonsContainer.innerHTML = `
+                    <button type="button" id="directDisconnectBtn" style="flex: 1; padding: 11px 0; border-radius: 8px; border: 1px solid #ef4444; background: #fee2e2; color: #ef4444; font-weight: 700; font-size: 13px; cursor: pointer;">
+                        Bağlantıyı Kes
+                    </button>
+                    <button type="submit" style="flex: 1; padding: 11px 0; border-radius: 8px; border: none; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(99,102,241,0.3);">
+                        Güncelle
+                    </button>
+                `;
+                
+                // Bind disconnect click
+                document.getElementById('directDisconnectBtn').addEventListener('click', async () => {
+                    const confirmed = confirm(`${network} bağlantısını kesmek istiyor musunuz?`);
+                    if (!confirmed) return;
+                    try {
+                        const brandId = getCurrentBrandId();
+                        const res = await fetch('/api/disconnect', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ platform: slug, brand: brandId })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            showToast(`✅ ${network} bağlantısı kesildi.`);
+                            const brandObj = getCurrentBrand();
+                            if (brandObj && brandObj.connections) {
+                                delete brandObj.connections[slug];
+                                saveBrandsToStorage(brandsData);
+                            }
+                            await syncConnectionStatus();
+                            modal.classList.add('hidden');
+                            connectionsModal.classList.add('hidden');
+                        }
+                    } catch (err) {
+                        // Local fallback disconnect
+                        const brandObj = getCurrentBrand();
+                        if (brandObj && brandObj.connections) {
+                            delete brandObj.connections[slug];
+                            saveBrandsToStorage(brandsData);
+                        }
+                        await syncConnectionStatus();
+                        showToast(`✅ ${network} bağlantısı kesildi.`);
+                        modal.classList.add('hidden');
+                        connectionsModal.classList.add('hidden');
+                    }
+                });
+            }
+        } else {
+            // Restore default connect buttons
+            if (buttonsContainer) {
+                buttonsContainer.innerHTML = `
+                    <button type="button" id="directConnectOAuthBtn" style="flex: 1; padding: 11px 0; border-radius: 8px; border: 1px solid #6366f1; background: transparent; color: #6366f1; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> OAuth ile Bağlan
+                    </button>
+                    <button type="submit" style="flex: 1; padding: 11px 0; border-radius: 8px; border: none; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(99,102,241,0.3);">
+                        Doğrudan Bağlan
+                    </button>
+                `;
+                
+                // Re-bind OAuth click handler
+                document.getElementById('directConnectOAuthBtn').addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                    const cards = document.querySelectorAll(`.conn-card[data-network="${network}"]`);
+                    if (cards.length > 0) {
+                        connectPlatform(cards[0], network);
+                    }
+                });
+            }
+        }
+        
         if (slug === 'google' || slug === 'youtube' || slug === 'google_ads') {
             tokenLabel.textContent = "Google Developer API Key / Service Account JSON";
-            tokenInput.placeholder = "Geliştirici anahtarınızı veya JSON tokenınızı girin";
+            tokenInput.placeholder = isConnected ? "••••••••••••••••" : "Geliştirici anahtarınızı veya JSON tokenınızı girin";
         } else if (slug === 'meta' || slug === 'facebook' || slug === 'instagram') {
             tokenLabel.textContent = "Meta Page / User Access Token";
-            tokenInput.placeholder = "Meta Sayfa veya Kullanıcı Erişim Tokenı girin";
+            tokenInput.placeholder = isConnected ? "••••••••••••••••" : "Meta Sayfa veya Kullanıcı Erişim Tokenı girin";
         } else {
             tokenLabel.textContent = "API Key / Access Token";
-            tokenInput.placeholder = "Geliştirici erişim anahtarınızı veya tokenınızı girin";
+            tokenInput.placeholder = isConnected ? "••••••••••••••••" : "Geliştirici erişim anahtarınızı veya tokenınızı girin";
         }
 
         const colors = {
