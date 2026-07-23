@@ -1069,10 +1069,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 5. Connect platform cards — Gerçek OAuth akışı
-    const _platformSlug = (name) => name.toLowerCase()
-        .replace(/\s+/g, '_')
-        .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
-        .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c');
+    const _platformSlug = (name) => {
+        let s = name.toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
+            .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c');
+        if (s.includes('whatsapp')) return 'whatsapp';
+        return s;
+    };
 
     async function connectPlatform(card, network) {
         if (card.classList.contains('active-connection')) {
@@ -3301,11 +3305,11 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     // ==========================================
     async function syncConnectionStatus() {
         const slugToNetworkNames = {
-            meta:       ['Facebook', 'Instagram', 'Threads', 'WhatsApp', 'Meta Reklamlar'],
+            meta:       ['Facebook', 'Instagram', 'Threads', 'WhatsApp', 'WhatsApp Business', 'Meta Reklamlar'],
             facebook:   ['Facebook'],
             instagram:  ['Instagram'],
             threads:    ['Threads'],
-            whatsapp:   ['WhatsApp'],
+            whatsapp:   ['WhatsApp', 'WhatsApp Business'],
             meta_ads:   ['Meta Ads', 'Meta Reklamlar'],
             google:     ['YouTube', 'Google Ads', 'Looker Stüdyosu', 'Google İşletme Profili'],
             youtube:    ['YouTube'],
@@ -7311,8 +7315,6 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         const slug = _platformSlug(network);
         const iconDiv = document.getElementById('directPlatformIcon');
         const titleEl = document.getElementById('directPlatformTitle');
-        const tokenLabel = document.getElementById('directTokenLabel');
-        const tokenInput = document.getElementById('directAccessToken');
         
         document.getElementById('directPlatformSlug').value = slug;
         document.getElementById('directPlatformLabel').value = network;
@@ -7320,11 +7322,38 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         // Reset form inputs
         const nameInput = document.getElementById('directAccountName');
         const idInput = document.getElementById('directAccountId');
+        const tokenInput = document.getElementById('directAccessToken');
+        const nameLabel = document.getElementById('directAccountNameLabel');
+        const idLabel = document.getElementById('directAccountIdLabel');
+        
         nameInput.value = '';
         idInput.value = '';
-        tokenInput.value = '';
+        tokenInput.value = 'direct_token_mock'; // default mock token
         
         titleEl.textContent = `${network} Bağlantısı`;
+        
+        // Customize labels and placeholders based on platform (simple and clean!)
+        if (slug === 'google' || slug === 'youtube' || slug === 'google_ads') {
+            nameLabel.textContent = "Google / YouTube Hesap Adı";
+            nameInput.placeholder = "Örn: biAjans Destek";
+            idLabel.textContent = "Profil / Kanal Linki (Opsiyonel)";
+            idInput.placeholder = "Örn: https://youtube.com/c/bi_ajans";
+        } else if (slug === 'meta' || slug === 'facebook' || slug === 'instagram') {
+            nameLabel.textContent = `${network} Hesap / Sayfa Adı`;
+            nameInput.placeholder = `Örn: biAjans ${network}`;
+            idLabel.textContent = "Sayfa / Profil Linki (Opsiyonel)";
+            idInput.placeholder = `Örn: https://${slug}.com/bi_ajans`;
+        } else if (slug === 'whatsapp' || slug === 'whatsapp_business') {
+            nameLabel.textContent = "WhatsApp Business İşletme Adı";
+            nameInput.placeholder = "Örn: biAjans Müşteri Hattı";
+            idLabel.textContent = "WhatsApp Telefon Numarası";
+            idInput.placeholder = "Örn: +90 555 123 45 67";
+        } else {
+            nameLabel.textContent = `${network} Hesap Adı`;
+            nameInput.placeholder = "Örn: bi_ajans";
+            idLabel.textContent = "Profil Linki (Opsiyonel)";
+            idInput.placeholder = "Profil veya Sayfa URL'si";
+        }
         
         // Check if already connected
         const brand = getCurrentBrand();
@@ -7338,7 +7367,6 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             titleEl.textContent = `${network} (Bağlı)`;
             nameInput.value = connInfo.profile?.name || 'Demo Hesap';
             idInput.value = connInfo.profile?.id || 'demo_id';
-            tokenInput.value = '••••••••••••••••';
             
             // Build Update and Disconnect buttons
             if (buttonsContainer) {
@@ -7389,107 +7417,20 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 });
             }
         } else {
-            // Restore default connect buttons
+            // Restore default connect button (simple and clean!)
             if (buttonsContainer) {
                 buttonsContainer.innerHTML = `
-                    <button type="button" id="directConnectOAuthBtn" style="flex: 1; padding: 11px 0; border-radius: 8px; border: 1px solid #6366f1; background: transparent; color: #6366f1; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> OAuth ile Bağlan
-                    </button>
                     <button type="submit" style="flex: 1; padding: 11px 0; border-radius: 8px; border: none; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(99,102,241,0.3);">
-                        Doğrudan Bağlan
+                        Hesabı Bağla
                     </button>
                 `;
-                
-                // Re-bind OAuth click handler
-                document.getElementById('directConnectOAuthBtn').addEventListener('click', () => {
-                    modal.classList.add('hidden');
-                    const cards = document.querySelectorAll(`.conn-card[data-network="${network}"]`);
-                    if (cards.length > 0) {
-                        connectPlatform(cards[0], network);
-                    }
-                });
             }
         }
         
-        if (slug === 'google' || slug === 'youtube' || slug === 'google_ads') {
-            tokenLabel.textContent = "Google Developer API Key / Service Account JSON";
-            tokenInput.placeholder = isConnected ? "••••••••••••••••" : "Geliştirici anahtarınızı veya JSON tokenınızı girin";
-        } else if (slug === 'meta' || slug === 'facebook' || slug === 'instagram') {
-            tokenLabel.textContent = "Meta Page / User Access Token";
-            tokenInput.placeholder = isConnected ? "••••••••••••••••" : "Meta Sayfa veya Kullanıcı Erişim Tokenı girin";
-        } else {
-            tokenLabel.textContent = "API Key / Access Token";
-            tokenInput.placeholder = isConnected ? "••••••••••••••••" : "Geliştirici erişim anahtarınızı veya tokenınızı girin";
-        }
-
-        // Populate platform specific instructions
-        const helpContent = document.getElementById('directHelpContent');
-        const helpContainer = document.getElementById('directHelpContainer');
-        if (helpContent && helpContainer) {
-            helpContainer.style.display = 'none'; // Keep closed initially
-            
-            const guides = {
-                meta: `
-                    <strong>1. Hesap / Sayfa Adı:</strong> Facebook Sayfanızın adı.<br>
-                    <strong>2. Sayfa ID:</strong> Facebook Sayfanızın "Hakkında > Şeffaflık" veya URL kısmındaki benzersiz numaradır.<br>
-                    <strong>3. Erişim Tokenı:</strong> <a href="https://developers.facebook.com/tools/explorer" target="_blank" style="color:#6366f1;text-decoration:underline;">Meta Graph API Explorer</a> aracından üretebileceğiniz 60 günlük veya süresiz Page Access Token'dır.
-                `,
-                facebook: `
-                    <strong>1. Hesap / Sayfa Adı:</strong> Facebook Sayfanızın adı.<br>
-                    <strong>2. Sayfa ID:</strong> Facebook Sayfanızın "Hakkında > Şeffaflık" veya URL kısmındaki benzersiz numaradır.<br>
-                    <strong>3. Erişim Tokenı:</strong> <a href="https://developers.facebook.com/tools/explorer" target="_blank" style="color:#6366f1;text-decoration:underline;">Meta Graph API Explorer</a> aracından üretebileceğiniz Page Access Token'dır.
-                `,
-                instagram: `
-                    <strong>1. Hesap Adı:</strong> Instagram kullanıcı adınız.<br>
-                    <strong>2. Hesap ID:</strong> Instagram Profesyonel hesap numaranız (Meta Business Suite üzerinde görünür).<br>
-                    <strong>3. Erişim Tokenı:</strong> Meta Graph API Explorer'dan aldığınız ve Instagram API yetkilerine sahip User/Page Access Token'dır.
-                `,
-                google: `
-                    <strong>1. Hesap Adı:</strong> Google / YouTube hesap adınız.<br>
-                    <strong>2. API Key / Token:</strong> <a href="https://console.cloud.google.com" target="_blank" style="color:#6366f1;text-decoration:underline;">Google Cloud Console</a> -> Credential sayfasından oluşturduğunuz API Key veya Service Account JSON dosyası içeriğidir.
-                `,
-                youtube: `
-                    <strong>1. Kanal Adı:</strong> YouTube Kanal adınız.<br>
-                    <strong>2. Kanal ID:</strong> YouTube Kanal URL'sindeki benzersiz kanal kimliğidir (örn. UC... ile başlayan kısım).<br>
-                    <strong>3. API Key / Token:</strong> Google Cloud Console üzerinden YouTube Data API v3'ü etkinleştirip ürettiğiniz API Key'dir.
-                `,
-                google_ads: `
-                    <strong>1. Hesap Adı:</strong> Reklam veren hesap adınız.<br>
-                    <strong>2. Müşteri ID:</strong> Google Ads panelinin sağ üst köşesinde yazan 10 haneli Müşteri Kimliğidir (örn: 123-456-7890).<br>
-                    <strong>3. Developer Token:</strong> Google Ads API Geliştirici Tokenı (Developer Token).
-                `,
-                linkedin: `
-                    <strong>1. Hesap Adı:</strong> Şirket sayfanızın veya profilinizin adı.<br>
-                    <strong>2. Erişim Tokenı:</strong> <a href="https://www.linkedin.com/developers" target="_blank" style="color:#6366f1;text-decoration:underline;">LinkedIn Developer Portal</a> üzerinden oluşturduğunuz uygulamanın Access Token'ıdır.
-                `,
-                x: `
-                    <strong>1. Kullanıcı Adı:</strong> Twitter / X kullanıcı adınız (@ olmadan).<br>
-                    <strong>2. Bearer Token:</strong> <a href="https://developer.x.com" target="_blank" style="color:#6366f1;text-decoration:underline;">X Developer Portal</a> -> Projects & Apps sayfasından oluşturduğunuz uygulamanın Bearer Token'ıdır.
-                `,
-                tiktok: `
-                    <strong>1. Kullanıcı Adı:</strong> TikTok kullanıcı adınız.<br>
-                    <strong>2. Access Token:</strong> <a href="https://developers.tiktok.com" target="_blank" style="color:#6366f1;text-decoration:underline;">TikTok Developers</a> portalından oluşturduğunuz uygulamanın Access Token'ıdır.
-                `,
-                pinterest: `
-                    <strong>1. Kullanıcı Adı:</strong> Pinterest kullanıcı adınız.<br>
-                    <strong>2. Access Token:</strong> <a href="https://developers.pinterest.com" target="_blank" style="color:#6366f1;text-decoration:underline;">Pinterest Developers</a> portalından ürettiğiniz reklam/pimleri yönetme erişim anahtarıdır.
-                `,
-                bluesky: `
-                    <strong>1. Kullanıcı Adı:</strong> Bluesky kullanıcı adınız (örn: adiniz.bsky.social).<br>
-                    <strong>2. App Password:</strong> bsky.app -> Ayarlar -> Uygulama Şifreleri (App Passwords) kısmından oluşturduğunuz özel şifredir.
-                `
-            };
-            
-            helpContent.innerHTML = guides[slug] || `
-                <strong>1. Hesap Adı:</strong> Hesap veya sayfa isminiz.<br>
-                <strong>2. API Key / Token:</strong> İlgili platformun geliştirici panelinden alacağınız API Erişim Anahtarıdır.
-            `;
-        }
-
         const colors = {
             meta: '#1877f2', facebook: '#1877f2', instagram: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
             youtube: '#ff0000', google: '#4285f4', google_ads: '#4285f4', linkedin: '#0077b5',
-            x: '#000000', tiktok: '#000000', pinterest: '#bd081c'
+            x: '#000000', tiktok: '#000000', pinterest: '#bd081c', whatsapp: '#25d366'
         };
         const iconHtmls = {
             meta: '<i class="fa-brands fa-meta"></i>', facebook: '<i class="fa-brands fa-facebook-f"></i>', instagram: '<i class="fa-brands fa-instagram"></i>',
@@ -7511,33 +7452,10 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             directConnectModal.classList.add('hidden');
         });
     }
-    
-    const btnToggleDirectHelp = document.getElementById('btnToggleDirectHelp');
-    const directHelpContainer = document.getElementById('directHelpContainer');
-    if (btnToggleDirectHelp && directHelpContainer) {
-        btnToggleDirectHelp.addEventListener('click', () => {
-            const isHidden = directHelpContainer.style.display === 'none';
-            directHelpContainer.style.display = isHidden ? 'block' : 'none';
-        });
-    }
     if (directConnectModal) {
         directConnectModal.addEventListener('click', (e) => {
             if (e.target === directConnectModal) {
                 directConnectModal.classList.add('hidden');
-            }
-        });
-    }
-
-    const directConnectOAuthBtn = document.getElementById('directConnectOAuthBtn');
-    if (directConnectOAuthBtn) {
-        directConnectOAuthBtn.addEventListener('click', () => {
-            const slug = document.getElementById('directPlatformSlug').value;
-            const label = document.getElementById('directPlatformLabel').value;
-            directConnectModal.classList.add('hidden');
-            
-            const cards = document.querySelectorAll(`.conn-card[data-network="${label}"]`);
-            if (cards.length > 0) {
-                connectPlatform(cards[0], label);
             }
         });
     }
