@@ -1075,6 +1075,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
             .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c');
         if (s.includes('whatsapp')) return 'whatsapp';
+        if (s.includes('meta_reklam') || s === 'meta_ads') return 'meta_ads';
+        if (s.includes('google_reklam') || s === 'google_ads') return 'google_ads';
+        if (s === 'e_posta' || s === 'email') return 'e_posta';
+        if (s === 'looker_studyosu') return 'looker_studio';
         return s;
     };
 
@@ -1190,71 +1194,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.conn-card').forEach(card => {
         card.addEventListener('click', () => {
             const network = card.getAttribute('data-network');
-            
-            // Web, Blog, E-posta, Looker Stüdyosu, Twitch - OAuth flow yok, direkt yardım rehberini aç
-            const noOAuthPlatforms = ['Web', 'Blog', 'E-posta', 'Looker Stüdyosu', 'Twitch'];
-            if (noOAuthPlatforms.includes(network)) {
-                if (window.openHowToConnectFor) {
-                    window.openHowToConnectFor(network);
-                }
-                return;
-            }
-
-            // Bluesky - App password flow
-            if (network === 'Bluesky') {
-                const identifier = prompt("Bluesky Kullanıcı Adı (örn: adiniz.bsky.social):");
-                if (!identifier) return;
-                const appPassword = prompt("Bluesky Uygulama Şifresi (App Password):");
-                if (!appPassword) return;
-                
-                // Yükleniyor durumu
-                card.style.pointerEvents = 'none';
-                card.style.opacity = '0.7';
-                const h4 = card.querySelector('h4');
-                const originalTitle = h4 ? h4.textContent : 'Bluesky';
-                if (h4) h4.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Bağlanıyor...';
-
-                fetch('/api/connect/bluesky', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ identifier: identifier, app_password: appPassword, brand: getCurrentBrandId() })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    card.style.pointerEvents = 'auto';
-                    card.style.opacity = '1';
-                    if (h4) h4.textContent = originalTitle;
-                    
-                    if (data.success) {
-                        card.classList.add('active-connection');
-                        if (!card.querySelector('.conn-active-badge')) {
-                            const badge = document.createElement('span');
-                            badge.className = 'conn-active-badge';
-                            badge.style.cssText = 'position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background-color:#10b981;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;';
-                            badge.innerHTML = '<i class="fa-solid fa-check"></i>';
-                            card.style.position = 'relative';
-                            card.appendChild(badge);
-                        }
-                        updateSidebarPlatformStatus('Bluesky', true);
-                        updateConnectedBrandStatsCount();
-                        showToast("Bluesky başarıyla bağlandı!");
-                    } else {
-                        showToast(`Bluesky bağlantısı başarısız: ${data.error}`, true);
-                    }
-                })
-                .catch(err => {
-                    card.style.pointerEvents = 'auto';
-                    card.style.opacity = '1';
-                    if (h4) h4.textContent = originalTitle;
-                    showToast(`Bluesky bağlantısı sırasında hata: ${err.message}`, true);
-                });
-                return;
-            }
-
-            // Normal OAuth Platformları
             openDirectConnectionModal(network);
         });
     });
+
+
 
     // Sağ tık → bağlantıyı kes
     document.querySelectorAll('.conn-card').forEach(card => {
@@ -7333,7 +7277,17 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         titleEl.textContent = `${network} Bağlantısı`;
         
         // Customize labels and placeholders based on platform (simple and clean!)
-        if (slug === 'google' || slug === 'youtube' || slug === 'google_ads') {
+        if (slug === 'google_ads') {
+            nameLabel.textContent = "Google Ads Reklam Veren Adı";
+            nameInput.placeholder = "Örn: biAjans Google Ads Reklamı";
+            idLabel.textContent = "Google Ads Müşteri ID (Opsiyonel)";
+            idInput.placeholder = "Örn: 123-456-7890";
+        } else if (slug === 'meta_ads') {
+            nameLabel.textContent = "Meta Ads Reklam Hesabı Adı";
+            nameInput.placeholder = "Örn: biAjans Meta Ads Reklamı";
+            idLabel.textContent = "Meta Reklam Hesabı ID (Opsiyonel)";
+            idInput.placeholder = "Örn: act_1029384756";
+        } else if (slug === 'google' || slug === 'youtube') {
             nameLabel.textContent = "Google / YouTube Hesap Adı";
             nameInput.placeholder = "Örn: biAjans Destek";
             idLabel.textContent = "Profil / Kanal Linki (Opsiyonel)";
@@ -7348,6 +7302,21 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             nameInput.placeholder = "Örn: biAjans Müşteri Hattı";
             idLabel.textContent = "WhatsApp Telefon Numarası";
             idInput.placeholder = "Örn: +90 555 123 45 67";
+        } else if (slug === 'looker_studio') {
+            nameLabel.textContent = "Looker Studio Rapor Adı";
+            nameInput.placeholder = "Örn: biAjans Performans Raporu";
+            idLabel.textContent = "Rapor Linki (Opsiyonel)";
+            idInput.placeholder = "Örn: https://lookerstudio.google.com/reporting/...";
+        } else if (slug === 'web' || slug === 'blog') {
+            nameLabel.textContent = `${network} Başlığı / Adı`;
+            nameInput.placeholder = `Örn: biAjans Resmî Web Sitesi`;
+            idLabel.textContent = "Domain / URL Adresi";
+            idInput.placeholder = "Örn: https://www.biajans.com";
+        } else if (slug === 'e_posta') {
+            nameLabel.textContent = "E-posta Sağlayıcı İsmi";
+            nameInput.placeholder = "Örn: Kurumsal Yandex Mail / Gmail";
+            idLabel.textContent = "E-posta Adresi";
+            idInput.placeholder = "Örn: info@biajans.com";
         } else {
             nameLabel.textContent = `${network} Hesap Adı`;
             nameInput.placeholder = "Örn: bi_ajans";
