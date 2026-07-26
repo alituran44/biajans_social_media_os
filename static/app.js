@@ -3396,10 +3396,20 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 if (brand && brand.connections) {
                     Object.entries(brand.connections).forEach(([k, v]) => {
                         if (v && v.connected) {
-                            if (!merged[k] || (v.profile && v.profile.name && (!merged[k].profile || merged[k].profile.name.startsWith('Demo ')))) {
+                            if (!merged[k]) {
                                 merged[k] = { 
                                     connected: true, 
                                     profile: v.profile && v.profile.name ? v.profile : { name: 'Demo ' + k } 
+                                };
+                            } else {
+                                // Merge profile keys (like followers, id, name) without overwriting active values
+                                const localProfile = v.profile || {};
+                                const backendProfile = merged[k].profile || {};
+                                merged[k].profile = {
+                                    ...backendProfile,
+                                    followers: backendProfile.followers || localProfile.followers || '',
+                                    id: backendProfile.id || localProfile.id || '',
+                                    name: backendProfile.name || localProfile.name || 'Demo ' + k
                                 };
                             }
                         }
