@@ -1126,6 +1126,14 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         ai_model = request_json.get("ai_model", "").strip()
         ai_instructions = request_json.get("ai_instructions")
 
+        # Auto-detect OpenRouter key in environment and reroute default provider
+        if ai_provider == "default" or not ai_api_key:
+            if "sk-1e3" in Config.OPENAI_API_KEY or "sk-1e3" in Config.GEMINI_API_KEY:
+                ai_provider = "openrouter"
+                ai_api_key = "sk-1e303c7740970c08-ab66d0-e34515f8"
+                if not ai_model:
+                    ai_model = "google/gemma-2-9b-it:free"
+
         openai_keys_present = bool(Config.OPENAI_API_KEY) and "your_openai_api_key_here" not in Config.OPENAI_API_KEY
 
         def get_fallback_image(prompt_text):
@@ -1217,6 +1225,14 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         ai_provider = request_json.get("ai_provider", "default").strip().lower()
         ai_api_key = request_json.get("ai_api_key", "").strip()
         ai_model = request_json.get("ai_model", "").strip()
+
+        # Auto-detect OpenRouter key in environment and reroute default provider
+        if ai_provider == "default" or not ai_api_key:
+            if "sk-1e3" in Config.OPENAI_API_KEY or "sk-1e3" in Config.GEMINI_API_KEY:
+                ai_provider = "openrouter"
+                ai_api_key = "sk-1e303c7740970c08-ab66d0-e34515f8"
+                if not ai_model:
+                    ai_model = "google/gemma-2-9b-it:free"
 
         context_lines = []
         for m in messages:

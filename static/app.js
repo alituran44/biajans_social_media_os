@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Load AI settings from localStorage
-            const activeAiProvider = localStorage.getItem('activeAiProvider') || 'default';
+            const activeAiProvider = localStorage.getItem('activeAiProvider') || 'openrouter';
             const aiApiKey = localStorage.getItem(activeAiProvider + 'ApiKey') || '';
             const aiModel = localStorage.getItem(activeAiProvider + 'Model') || '';
 
@@ -860,7 +860,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load AI settings from localStorage on startup
     const openrouterModelSelectComposer = document.getElementById('openrouterModelSelectComposer');
-    const savedProvider = localStorage.getItem('activeAiProvider') || 'default';
+    if (!localStorage.getItem('activeAiProvider')) {
+        localStorage.setItem('activeAiProvider', 'openrouter');
+    }
+    const savedProvider = localStorage.getItem('activeAiProvider') || 'openrouter';
     
     // Set provider select values
     const provSelect1 = document.getElementById('aiProviderSelectAccount');
@@ -989,7 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function syncComposerSelect() {
         const composer = document.getElementById('openrouterModelSelectComposer');
         if (!composer) return;
-        const provider = localStorage.getItem('activeAiProvider') || 'default';
+        const provider = localStorage.getItem('activeAiProvider') || 'openrouter';
         if (provider === 'default') {
             composer.value = 'default';
         } else {
@@ -2022,7 +2025,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             if (inboxAiSpinner) inboxAiSpinner.classList.remove('hidden');
 
             try {
-                const activeAiProvider = localStorage.getItem('activeAiProvider') || 'default';
+                const activeAiProvider = localStorage.getItem('activeAiProvider') || 'openrouter';
                 const aiApiKey = localStorage.getItem(activeAiProvider + 'ApiKey') || '';
                 const aiModel = localStorage.getItem(activeAiProvider + 'Model') || '';
                 const brandName = document.getElementById('settingsBrandTitle') ? document.getElementById('settingsBrandTitle').textContent : 'Boş marka';
