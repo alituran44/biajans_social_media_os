@@ -5052,9 +5052,14 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
                 if (igVal) {
                     if (igConn) {
-                        const name = (connectionsData.instagram && connectionsData.instagram.profile && connectionsData.instagram.profile.name) || 'instagram';
-                        const followers = 10000 + (name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 17) % 89999;
-                        igVal.textContent = followers.toLocaleString('tr-TR');
+                        const profile = (connectionsData.instagram && connectionsData.instagram.profile) || (connectionsData.meta && connectionsData.meta.profile);
+                        if (profile && profile.followers) {
+                            igVal.textContent = profile.followers;
+                        } else {
+                            const name = (profile && profile.name) || 'instagram';
+                            const followers = 10000 + (name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 17) % 89999;
+                            igVal.textContent = followers.toLocaleString('tr-TR');
+                        }
                     } else {
                         igVal.textContent = 'Bağlı Değil';
                     }
@@ -5062,9 +5067,14 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
                 if (fbVal) {
                     if (fbConn) {
-                        const name = (connectionsData.facebook && connectionsData.facebook.profile && connectionsData.facebook.profile.name) || 'facebook';
-                        const likes = 5000 + (name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 13) % 44999;
-                        fbVal.textContent = likes.toLocaleString('tr-TR');
+                        const profile = (connectionsData.facebook && connectionsData.facebook.profile) || (connectionsData.meta && connectionsData.meta.profile);
+                        if (profile && profile.followers) {
+                            fbVal.textContent = profile.followers;
+                        } else {
+                            const name = (profile && profile.name) || 'facebook';
+                            const likes = 5000 + (name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 13) % 44999;
+                            fbVal.textContent = likes.toLocaleString('tr-TR');
+                        }
                     } else {
                         fbVal.textContent = 'Bağlı Değil';
                     }
@@ -5072,9 +5082,14 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
 
                 if (ytVal) {
                     if (ytConn) {
-                        const name = (connectionsData.youtube && connectionsData.youtube.profile && connectionsData.youtube.profile.name) || 'youtube';
-                        const subs = 1000 + (name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 7) % 19999;
-                        ytVal.textContent = subs.toLocaleString('tr-TR');
+                        const profile = (connectionsData.youtube && connectionsData.youtube.profile) || (connectionsData.google && connectionsData.google.profile);
+                        if (profile && profile.followers) {
+                            ytVal.textContent = profile.followers;
+                        } else {
+                            const name = (profile && profile.name) || 'youtube';
+                            const subs = 1000 + (name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 7) % 19999;
+                            ytVal.textContent = subs.toLocaleString('tr-TR');
+                        }
                     } else {
                         ytVal.textContent = 'Bağlı Değil';
                     }
@@ -7347,6 +7362,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         nameInput.value = '';
         idInput.value = '';
         tokenInput.value = 'direct_token_mock'; // default mock token
+        const followersInput = document.getElementById('directAccountFollowers');
+        if (followersInput) followersInput.value = '';
         
         titleEl.textContent = `${network} Bağlantısı`;
         
@@ -7410,6 +7427,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             titleEl.textContent = `${network} (Bağlı)`;
             nameInput.value = connInfo.profile?.name || 'Demo Hesap';
             idInput.value = connInfo.profile?.id || 'demo_id';
+            if (followersInput) followersInput.value = connInfo.profile?.followers || '';
             
             // Build Update and Disconnect buttons
             if (buttonsContainer) {
@@ -7512,6 +7530,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const label = document.getElementById('directPlatformLabel').value;
             const accountName = document.getElementById('directAccountName').value.trim();
             const accountId = document.getElementById('directAccountId').value.trim();
+            const followers = document.getElementById('directAccountFollowers') ? document.getElementById('directAccountFollowers').value.trim() : '';
             const token = document.getElementById('directAccessToken').value.trim();
             
             const submitBtn = directConnectForm.querySelector('button[type="submit"]');
@@ -7529,6 +7548,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                         brand: brandId,
                         account_name: accountName,
                         account_id: accountId,
+                        followers: followers,
                         token: token
                     })
                 });
@@ -7542,7 +7562,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                         if (!brand.connections) brand.connections = {};
                         brand.connections[slug] = {
                             connected: true,
-                            profile: { name: accountName, id: accountId }
+                            profile: { name: accountName, id: accountId, followers: followers }
                         };
                         saveBrandsToStorage(brandsData);
                     }
@@ -7561,7 +7581,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                     if (!brand.connections) brand.connections = {};
                     brand.connections[slug] = {
                         connected: true,
-                        profile: { name: accountName, id: accountId }
+                        profile: { name: accountName, id: accountId, followers: followers }
                     };
                     saveBrandsToStorage(brandsData);
                     showToast(`✅ ${label} doğrudan bağlantısı kuruldu!`);

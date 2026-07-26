@@ -650,6 +650,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             brand_id = body.get("brand", "global").strip()
             account_name = body.get("account_name", "").strip()
             account_id = body.get("account_id", "").strip()
+            followers = body.get("followers", "").strip()
             token = body.get("token", "").strip()
             
             if not platform or not token or not account_name:
@@ -663,6 +664,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             }, profile={
                 "name": account_name,
                 "id": account_id or "direct_id",
+                "followers": followers
             }, brand_id=brand_id)
             self.send_json_response({"success": True, "platform": canonical})
             return
