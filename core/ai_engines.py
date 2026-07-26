@@ -281,7 +281,7 @@ class AIEngines:
         }
         
         payload = {
-            "model": model or "google/gemma-2-9b-it:free",
+            "model": model or "openrouter/free",
             "messages": [
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_prompt}
@@ -382,7 +382,7 @@ class AIEngines:
                 "X-Title": "biAjans",
             }
             payload = {
-                "model": model or "google/gemma-2-9b-it:free",
+                "model": model or "openrouter/free",
                 "messages": [
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": user_prompt}
@@ -531,7 +531,7 @@ class AIEngines:
                     "X-Title": "biAjans",
                 }
                 payload = {
-                    "model": model or "google/gemma-2-9b-it:free",
+                    "model": model or "openrouter/free",
                     "messages": [
                         {"role": "system", "content": system_instruction},
                         {"role": "user", "content": user_prompt}

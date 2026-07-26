@@ -1132,7 +1132,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 ai_provider = "openrouter"
                 ai_api_key = "sk-1e303c7740970c08-ab66d0-e34515f8"
                 if not ai_model:
-                    ai_model = "google/gemma-2-9b-it:free"
+                    ai_model = "openrouter/free"
 
         openai_keys_present = bool(Config.OPENAI_API_KEY) and "your_openai_api_key_here" not in Config.OPENAI_API_KEY
 
@@ -1232,7 +1232,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 ai_provider = "openrouter"
                 ai_api_key = "sk-1e303c7740970c08-ab66d0-e34515f8"
                 if not ai_model:
-                    ai_model = "google/gemma-2-9b-it:free"
+                    ai_model = "openrouter/free"
 
         context_lines = []
         for m in messages:

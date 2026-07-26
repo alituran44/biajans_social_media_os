@@ -874,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load API Keys and Models
     const providersList = ['openrouter', 'openai', 'anthropic', 'gemini'];
     const defaultModels = {
-        openrouter: 'google/gemma-2-9b-it:free',
+        openrouter: 'openrouter/free',
         openai: 'gpt-4o-mini',
         anthropic: 'claude-3-5-sonnet-20241022',
         gemini: 'gemini-1.5-flash'
