@@ -3,8 +3,13 @@ import sys
 import logging
 import json
 from pydantic import BaseModel, Field
-from google import genai
-from google.genai import types
+try:
+    from google import genai
+    from google.genai import types
+except ImportError as e:
+    genai = None
+    types = None
+    print(f"[AIEngines] Warning: Failed to import google-genai package: {e}")
 from config import Config
 
 # Configure logging
