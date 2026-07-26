@@ -148,6 +148,25 @@ def init_db():
     # 6. Seed Default CRM Leads if empty
     pass
         
+    # ── Migration: Migrate legacy meta/google tokens to separate independent tokens ──
+    try:
+        cursor.execute("SELECT count(*) FROM tokens WHERE platform = 'meta'")
+        if cursor.fetchone()[0] > 0:
+            cursor.execute("UPDATE OR IGNORE tokens SET platform = 'instagram' WHERE platform = 'meta'")
+            cursor.execute("DELETE FROM tokens WHERE platform = 'meta'")
+            logger.info("Migrated legacy 'meta' tokens to 'instagram'")
+    except Exception as e:
+        logger.error(f"Migration 'meta' -> 'instagram' failed: {e}")
+
+    try:
+        cursor.execute("SELECT count(*) FROM tokens WHERE platform = 'google'")
+        if cursor.fetchone()[0] > 0:
+            cursor.execute("UPDATE OR IGNORE tokens SET platform = 'google_ads' WHERE platform = 'google'")
+            cursor.execute("DELETE FROM tokens WHERE platform = 'google'")
+            logger.info("Migrated legacy 'google' tokens to 'google_ads'")
+    except Exception as e:
+        logger.error(f"Migration 'google' -> 'google_ads' failed: {e}")
+
     conn.commit()
     conn.close()
     logger.info("SQLite database initialization complete.")

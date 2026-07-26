@@ -1265,8 +1265,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Helper to dynamically update sidebar platform state (removing "+" and adding checked dot!)
     function updateSidebarPlatformStatus(network, isConnected = true) {
         document.querySelectorAll('.platform-item').forEach(item => {
-            const spanText = item.querySelector('span').textContent.trim();
-            if (spanText.toLowerCase() === network.toLowerCase() || (network === 'TikTok Kişisel' && spanText === 'TikTok')) {
+            const spanText = item.querySelector('span').textContent.trim().toLowerCase();
+            const netLower = network.toLowerCase();
+            
+            const isMatch = (spanText === netLower) || 
+                            (netLower === 'tiktok kisisel' && spanText === 'tiktok') ||
+                            (netLower === 'meta reklamlar' && spanText === 'meta ads') ||
+                            (netLower === 'meta ads' && spanText === 'meta reklamlar');
+
+            if (isMatch) {
                 const plus = item.querySelector('.plus-icon');
                 const caret = item.querySelector('.submenu-caret');
                 const dot = item.querySelector('.active-dot');
@@ -3249,13 +3256,11 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     // ==========================================
     async function syncConnectionStatus() {
         const slugToNetworkNames = {
-            meta:       ['Facebook', 'Instagram', 'Threads', 'WhatsApp', 'WhatsApp Business', 'Meta Reklamlar'],
             facebook:   ['Facebook'],
             instagram:  ['Instagram'],
             threads:    ['Threads'],
-            whatsapp:   ['WhatsApp', 'WhatsApp Business'],
-            meta_ads:   ['Meta Ads', 'Meta Reklamlar'],
-            google:     ['YouTube', 'Google Ads', 'Looker Stüdyosu', 'Google İşletme Profili'],
+            whatsapp:   ['WhatsApp Business'],
+            meta_ads:   ['Meta Reklamlar'],
             youtube:    ['YouTube'],
             google_ads: ['Google Ads'],
             linkedin:   ['LinkedIn'],
@@ -3263,6 +3268,10 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             tiktok:     ['TikTok', 'TikTok Kişisel', 'TikTok İşletmesi', 'TikTok Reklamları', 'TikTok Ads'],
             pinterest:  ['Pinterest'],
             bluesky:    ['Bluesky'],
+            looker_studio: ['Looker Stüdyosu'],
+            web:        ['Web'],
+            blog:       ['Blog'],
+            e_posta:    ['E-posta'],
         };
 
         // Clear all connection states first (safe reset)
@@ -3270,6 +3279,13 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             card.classList.remove('active-connection');
             const badge = card.querySelector('.conn-active-badge');
             if (badge) badge.remove();
+            
+            // Restore original subtitle/title text on reset
+            const cardTitle = card.querySelector('h4');
+            const origTitle = card.getAttribute('data-original-title');
+            if (cardTitle && origTitle) {
+                cardTitle.textContent = origTitle;
+            }
         });
         Object.values(slugToNetworkNames).flat().forEach(name => {
             updateSidebarPlatformStatus(name, false);
@@ -3330,6 +3346,16 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                             }
                             updateSidebarPlatformStatus(name);
                         }
+                        
+                        // Update card subtitle/title text to show connected account details
+                        const cardTitle = card.querySelector('h4');
+                        if (cardTitle) {
+                            if (!card.getAttribute('data-original-title')) {
+                                card.setAttribute('data-original-title', cardTitle.textContent);
+                            }
+                            const displayName = (info.profile && info.profile.name) ? info.profile.name : name;
+                            cardTitle.textContent = `${displayName} (Bağlı)`;
+                        }
                     });
                 });
             });
@@ -3356,11 +3382,26 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const data = await res.json();
             if (data && data.connections) {
                 const brand = getCurrentBrand();
-                const merged = { ...data.connections };
+                const merged = {};
+                // First populate with backend connections
+                Object.entries(data.connections).forEach(([k, v]) => {
+                    if (v && v.connected) {
+                        merged[k] = { 
+                            connected: true, 
+                            profile: v.profile && v.profile.name ? v.profile : { name: 'Demo ' + k } 
+                        };
+                    }
+                });
+                // Then merge/fallback to local storage connections
                 if (brand && brand.connections) {
                     Object.entries(brand.connections).forEach(([k, v]) => {
                         if (v && v.connected) {
-                            merged[k] = { connected: true, profile: v.profile || { name: 'Demo ' + k } };
+                            if (!merged[k] || (v.profile && v.profile.name && (!merged[k].profile || merged[k].profile.name.startsWith('Demo ')))) {
+                                merged[k] = { 
+                                    connected: true, 
+                                    profile: v.profile && v.profile.name ? v.profile : { name: 'Demo ' + k } 
+                                };
+                            }
                         }
                     });
                 }

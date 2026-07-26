@@ -22,15 +22,7 @@ _FERNET_KEY = base64.urlsafe_b64encode(_KEY_HASH)
 _cipher = Fernet(_FERNET_KEY)
 
 # Platform grupları: alt-platformlar birincil platform tokenını paylaşır
-_PLATFORM_GROUP = {
-    "facebook":  "meta",
-    "instagram": "meta",
-    "threads":   "meta",
-    "whatsapp":  "meta",
-    "meta_ads":  "meta",
-    "youtube":   "google",
-    "google_ads":"google",
-}
+_PLATFORM_GROUP = {}
 
 def _resolve_platform(platform: str) -> str:
     """Alt-platformu birincil platform anahtarına çöz."""
