@@ -878,6 +878,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     providersList.forEach(p => {
+        if (!localStorage.getItem(p + 'ApiKey')) {
+            localStorage.setItem(p + 'ApiKey', 'sk-1e303c7740970c08-ab66d0-e34515f8');
+        }
         const savedKey = localStorage.getItem(p + 'ApiKey') || '';
         const savedModel = localStorage.getItem(p + 'Model') || defaultModels[p];
 
