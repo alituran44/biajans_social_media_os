@@ -5015,30 +5015,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         const statHealth = document.getElementById('statHealth');
         const statHealthBar = document.getElementById('statHealthBar');
         
-        let connectedCount = 0;
-        let connectionsData = null;
-        try {
-            const res = await fetch(`/api/connections/status?brand=${brand.id}`);
-            if (res.ok) {
-                const contentType = res.headers.get("content-type");
-                if (contentType && contentType.includes("application/json")) {
-                    const data = await res.json();
-                    if (data && data.connections) {
-                        connectionsData = data.connections;
-                        connectedCount = Object.values(connectionsData).filter(c => c.connected).length;
-                    }
-                }
-            }
-            if (!connectionsData) {
-                throw new Error("No connections data");
-            }
-        } catch (e) {
-            console.debug('Dashboard health fetch connection error, trying local fallback:', e);
-            if (brand && brand.connections) {
-                connectionsData = brand.connections;
-                connectedCount = Object.values(connectionsData).filter(c => c.connected).length;
-            }
-        }
+        let connectionsData = brand.connections || {};
+        let connectedCount = Object.values(connectionsData).filter(c => c.connected).length;
 
         let healthPercent = 75;
         if (brand.id === 'coffee') {
