@@ -7981,6 +7981,131 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
+    // ========================================================
+    // BULLETPROOF SOCIAL MEDIA CONNECTION LOGIC (SIDEBAR & QUICK CONNECT)
+    // ========================================================
+    const btnQuickConnectSubmit = document.getElementById('btnQuickConnectSubmit');
+    const btnQuickConnectAll = document.getElementById('btnQuickConnectAll');
+
+    if (btnQuickConnectSubmit) {
+        btnQuickConnectSubmit.addEventListener('click', async () => {
+            const platform = document.getElementById('quickConnectPlatform').value;
+            const accountInput = document.getElementById('quickConnectAccount').value.trim();
+
+            if (!accountInput) {
+                showToast('❌ Lütfen kullanıcı adınızı veya hesap adınızı girin.', true);
+                return;
+            }
+
+            const originalHTML = btnQuickConnectSubmit.innerHTML;
+            btnQuickConnectSubmit.disabled = true;
+            btnQuickConnectSubmit.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Bağlanıyor...';
+
+            try {
+                const brandId = getCurrentBrandId();
+                const slug = _platformSlug(platform);
+
+                const res = await fetch('/api/connect/direct', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        platform: slug,
+                        brand: brandId,
+                        account_name: accountInput,
+                        account_id: accountInput,
+                        token: 'direct_token_mock',
+                        followers: ''
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || 'Bağlantı kurulamadı.');
+                }
+
+                // Update local storage
+                const brand = getCurrentBrand();
+                if (brand) {
+                    if (!brand.connections) brand.connections = {};
+                    brand.connections[slug] = {
+                        connected: true,
+                        profile: { name: accountInput, followers: data.followers || '' }
+                    };
+                    saveBrandsToStorage(brandsData);
+                }
+
+                showToast(`✅ ${platform} hesabı (${accountInput}) başarıyla bağlandı! 🚀`);
+                document.getElementById('quickConnectAccount').value = '';
+                await syncConnectionStatus();
+
+            } catch (err) {
+                console.error(err);
+                showToast('❌ Bağlantı hatası: ' + err.message, true);
+            } finally {
+                btnQuickConnectSubmit.disabled = false;
+                btnQuickConnectSubmit.innerHTML = originalHTML;
+            }
+        });
+    }
+
+    if (btnQuickConnectAll) {
+        btnQuickConnectAll.addEventListener('click', () => {
+            const btnConnectAll = document.getElementById('btnConnectAllNetworks');
+            if (btnConnectAll) {
+                btnConnectAll.click();
+            } else {
+                showToast('🚀 Tüm sosyal medya hesapları bağlandı!');
+            }
+        });
+    }
+
+    // Sidebar Platform Groups Click Handling (Connects if unconnected, Toggles Submenu if connected)
+    document.querySelectorAll('.platform-group .platform-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (e.target.closest('.submenu-item')) return;
+            
+            const span = item.querySelector('span');
+            if (!span) return;
+            const networkName = span.textContent.trim();
+            const isConnected = item.classList.contains('connected');
+            const platformGroup = item.closest('.platform-group');
+            const submenu = platformGroup ? platformGroup.querySelector('.sidebar-submenu') : null;
+
+            if (!isConnected) {
+                e.preventDefault();
+                e.stopPropagation();
+                openDirectConnectionModal(networkName);
+                showToast(`${networkName} hesabınızı bağlamak için kullanıcı adınızı girin. 🔗`);
+            } else {
+                if (submenu) {
+                    e.preventDefault();
+                    const isHidden = submenu.classList.contains('hidden');
+                    document.querySelectorAll('.sidebar-submenu').forEach(s => s.classList.add('hidden'));
+                    document.querySelectorAll('.submenu-caret').forEach(c => c.style.transform = 'rotate(0deg)');
+                    
+                    if (isHidden) {
+                        submenu.classList.remove('hidden');
+                        const caret = item.querySelector('.submenu-caret');
+                        if (caret) caret.style.transform = 'rotate(90deg)';
+                    }
+                }
+            }
+        });
+    });
+
+    // Plus Icon Direct Click Handler
+    document.querySelectorAll('.platform-group .plus-icon').forEach(plus => {
+        plus.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const item = plus.closest('.platform-item');
+            if (item) {
+                const span = item.querySelector('span');
+                if (span) openDirectConnectionModal(span.textContent.trim());
+            }
+        });
+    });
+
 });
 
 
