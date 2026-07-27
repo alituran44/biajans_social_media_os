@@ -889,3 +889,200 @@ class AIEngines:
                 {"name": "Selin Yıldız (28)", "type": "Sosyal Kanıt & Yorum", "feedback": s_feedback, "score": s_score}
             ]
         }
+
+    @staticmethod
+    def generate_expert_social_content(tool: str, topic: str, platform: str, tone: str, source_text: str, provider: str, api_key: str, model: str) -> dict:
+        """
+        Generates structured digital marketing content based on social-expert skill.
+        Returns a JSON object with results.
+        """
+        logger.info(f"Expert Social Content Generation: tool={tool}, platform={platform}, provider={provider}...")
+        import json
+        import re
+        import urllib.request
+        import urllib.error
+        
+        # Build prompt based on tool type
+        if tool == "hook_post":
+            system_instruction = (
+                "Sen kıdemli bir sosyal medya uzmanısın. Görevin: Kullanıcının girdiği konu hakkında, "
+                "seçilen platform için optimize edilmiş kanca (hook) ve gönderiler üretmektir.\n"
+                "Aşağıdaki kuralları izle:\n"
+                "1. Karakter ve biçimlendirme sınırlarına tam olarak uy.\n"
+                "2. 4 adet kanca tipi sun:\n"
+                "   - Merak Uyandırıcı Kanca (Curiosity Hook)\n"
+                "   - Hikaye Kancası (Story Hook)\n"
+                "   - Değer/Eğitim Kancası (Value Hook)\n"
+                "   - Aykırı/Zıt Kanca (Contrarian Hook)\n"
+                "3. Platformun tonu ve diline uygun komple bir gönderi (veya Twitter/X için tweet dizisi) oluştur.\n"
+                "4. İlgili hashtag'leri ekle.\n"
+                "Çıktıyı YALNIZCA geçerli bir JSON objesi olarak döndür. Markdown açıklamaları ekleme. JSON yapısı:\n"
+                "{\n"
+                "  \"hooks\": {\n"
+                "    \"curiosity\": \"...\",\n"
+                "    \"story\": \"...\",\n"
+                "    \"value\": \"...\",\n"
+                "    \"contrarian\": \"...\"\n"
+                "  },\n"
+                "  \"post_content\": \"...\",\n"
+                "  \"hashtags\": [\"...\"]\n"
+                "}"
+            )
+            user_prompt = f"Konu: {topic}\nPlatform: {platform}\nYazım Tonu: {tone}"
+            
+        elif tool == "repurpose":
+            system_instruction = (
+                "Sen kıdemli bir sosyal medya uzmanısın. Görevin: Kullanıcının verdiği uzun kaynak metni (blog, makale, bülten vb.), "
+                "seçilen platform için kısa formda ve yüksek etkileşim alacak şekilde dönüştürmektir.\n"
+                "Çıktıyı YALNIZCA geçerli bir JSON objesi olarak döndür. Markdown açıklamaları ekleme. JSON yapısı:\n"
+                "{\n"
+                "  \"repurposed_content\": \"...\",\n"
+                "  \"key_takeaways\": [\"...\"],\n"
+                "  \"hashtags\": [\"...\"]\n"
+                "}"
+            )
+            user_prompt = f"Kaynak Metin: {source_text}\nPlatform: {platform}\nYazım Tonu: {tone}"
+            
+        elif tool == "carousel":
+            system_instruction = (
+                "Sen kıdemli bir sosyal medya uzmanısın. Görevin: Kullanıcının girdiği konu için, "
+                "seçilen platforma uygun (Instagram/LinkedIn), sayfa sayfa (slide-by-slide) kaydırmalı (carousel) gönderi planı oluşturmaktır.\n"
+                "Aşağıdaki 5 şablondan birini seç ve kurgula: Value-Stack, Problem-Proof, Hack List, Rant Callout, Demo Walkthrough.\n"
+                "Her slayt için başlık, görsel açıklama ve kısa alt metin tasarla (toplam 5-8 slayt).\n"
+                "Çıktıyı YALNIZCA geçerli bir JSON objesi olarak döndür. Markdown açıklamaları ekleme. JSON yapısı:\n"
+                "{\n"
+                "  \"framework_used\": \"...\",\n"
+                "  \"slides\": [\n"
+                "    {\n"
+                "      \"slide_number\": 1,\n"
+                "      \"title\": \"...\",\n"
+                "      \"visual_desc\": \"...\",\n"
+                "      \"body_text\": \"...\"\n"
+                "    }\n"
+                "  ],\n"
+                "  \"hashtags\": [\"...\"]\n"
+                "}"
+            )
+            user_prompt = f"Konu: {topic}\nPlatform: {platform}\nYazım Tonu: {tone}"
+            
+        elif tool == "video":
+            system_instruction = (
+                "Sen kıdemli bir sosyal medya uzmanısın. Görevin: Kullanıcının girdiği konu hakkında, "
+                "kısa video platformları (Reels, TikTok, Shorts) için optimize edilmiş 15-60 saniyelik bir video senaryosu oluşturmaktır.\n"
+                "Görsel kanca, sözel kanca ve ekran üstü metin yerleşimlerini belirt.\n"
+                "Çıktıyı YALNIZCA geçerli bir JSON objesi olarak döndür. Markdown açıklamaları ekleme. JSON yapısı:\n"
+                "{\n"
+                "  \"hooks\": {\n"
+                "    \"visual_hook\": \"...\",\n"
+                "    \"verbal_hook\": \"...\",\n"
+                "    \"text_overlay\": \"...\"\n"
+                "  },\n"
+                "  \"script\": [\n"
+                "    {\n"
+                "      \"time\": \"0-3s\",\n"
+                "      \"visual\": \"...\",\n"
+                "      \"audio\": \"...\"\n"
+                "    }\n"
+                "  ],\n"
+                "  \"hashtags\": [\"...\"]\n"
+                "}"
+            )
+            user_prompt = f"Konu: {topic}\nYazım Tonu: {tone}"
+            
+        else:
+            return {"error": "Invalid tool selection"}
+
+        url = ""
+        headers = {}
+        payload = {}
+        p_clean = provider.strip().lower()
+
+        if p_clean == "openrouter":
+            url = "https://openrouter.ai/api/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:8080",
+                "X-Title": "biAjans",
+            }
+            payload = {
+                "model": model or "openrouter/free",
+                "messages": [
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "response_format": {"type": "json_object"}
+            }
+        elif p_clean == "openai":
+            url = "https://api.openai.com/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": model or "gpt-4o-mini",
+                "messages": [
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "response_format": {"type": "json_object"}
+            }
+        elif p_clean == "anthropic":
+            url = "https://api.anthropic.com/v1/messages"
+            headers = {
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            }
+            payload = {
+                "model": model or "claude-3-5-sonnet-20241022",
+                "max_tokens": 4000,
+                "system": system_instruction,
+                "messages": [
+                    {"role": "user", "content": user_prompt}
+                ]
+            }
+        elif p_clean == "gemini":
+            m_name = model or "gemini-1.5-flash"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={api_key}"
+            headers = {
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": f"{system_instruction}\n\nKullanıcı Fikri: {user_prompt}"}
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "responseMimeType": "application/json"
+                }
+            }
+        else:
+            return {"error": f"Unsupported provider: {p_clean}"}
+
+        try:
+            req_body = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=req_body, headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=45) as response:
+                resp_data = json.loads(response.read().decode("utf-8"))
+                
+            if p_clean in ["openrouter", "openai"]:
+                content = resp_data["choices"][0]["message"]["content"]
+                return json.loads(content)
+            elif p_clean == "anthropic":
+                content = resp_data["content"][0]["text"]
+                try:
+                    return json.loads(content)
+                except:
+                    cleaned = re.sub(r"^```json\s*", "", content.strip())
+                    cleaned = re.sub(r"\s*```$", "", cleaned)
+                    return json.loads(cleaned)
+            elif p_clean == "gemini":
+                content = resp_data["candidates"][0]["content"]["parts"][0]["text"]
+                return json.loads(content)
+        except Exception as e:
+            logger.error(f"Error during Expert Social generation: {e}", exc_info=True)
+            return {"error": str(e)}

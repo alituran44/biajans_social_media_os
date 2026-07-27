@@ -787,6 +787,51 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json_response({"success": True, "platform": platform})
             return
 
+        # ── Social Media Expert: /api/social/generate ────────────────────────
+        if path == "/api/social/generate":
+            if not self._get_session():
+                self.send_json_response({"error": "Unauthorized"}, 401)
+                return
+            
+            tool = body.get("tool", "").strip()
+            topic = body.get("topic", "").strip()
+            platform = body.get("platform", "").strip()
+            tone = body.get("tone", "Profesyonel").strip()
+            source_text = body.get("source_text", "").strip()
+            
+            # API Config details
+            ai_provider = body.get("ai_provider", "openrouter").strip()
+            ai_key = body.get("ai_key", "").strip()
+            ai_model = body.get("ai_model", "").strip()
+
+            # Auto-detect key if not provided
+            if not ai_key:
+                if ai_provider == "openrouter":
+                    ai_key = Config.OPENROUTER_API_KEY
+                elif ai_provider == "openai":
+                    ai_key = Config.OPENAI_API_KEY
+                elif ai_provider == "anthropic":
+                    ai_key = Config.CLAUDE_API_KEY
+                elif ai_provider == "gemini":
+                    ai_key = Config.GEMINI_API_KEY
+            
+            if not ai_key:
+                self.send_json_response({"success": False, "error": "Yapay Zeka API Anahtarı bulunamadı. Lütfen Ayarlar sayfasından API anahtarınızı tanımlayın."}, 400)
+                return
+
+            result = AIEngines.generate_expert_social_content(
+                tool=tool,
+                topic=topic,
+                platform=platform,
+                tone=tone,
+                source_text=source_text,
+                provider=ai_provider,
+                api_key=ai_key,
+                model=ai_model
+            )
+            self.send_json_response({"success": True, "data": result})
+            return
+
         # ── CRM: Public Submit Lead ──────────────────────────────────────────
         if path == "/api/crm/leads/public-submit":
             brand_id = body.get("brand", "global").strip()

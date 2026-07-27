@@ -31,6 +31,7 @@
                     <a href="#" class="top-nav-item active" id="navPlanlama"><i class="fa-solid fa-calendar-days"></i> Planlama</a>
                     <a href="#" class="top-nav-item" id="navAkilliBaglantilar"><i class="fa-solid fa-link"></i> Akıllı Bağlantılar</a>
                     <a href="#" class="top-nav-item" id="navReklamlar"><i class="fa-solid fa-rectangle-ad"></i> Reklamlar</a>
+                    <a href="#" class="top-nav-item" id="navSosyalMedyaUzmanligi"><i class="fa-solid fa-wand-magic-sparkles"></i> Sosyal Medya Uzmanlığı</a>
                 </nav>
             </div>
 
@@ -4204,6 +4205,86 @@
                                 </div>
                                 <div class="kanban-cards-container" id="container-done" style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
                                     <!-- Dynamic Cards -->
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Sosyal Medya Uzmanlığı Section -->
+                    <section class="card settings-section hidden animate-slide-up" id="sosyalMedyaUzmanligiSection" style="padding: 30px; background-color: #ffffff; border-radius: 16px; border: 1px solid rgba(226, 232, 240, 0.8); text-align: left; box-shadow: 0 4px 20px rgba(0,0,0,0.02); font-family: var(--font-body);">
+                        <div class="card-header" style="justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 20px; color: #4f46e5;"></i>
+                                <h2 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0;">Sosyal Medya Uzmanlığı (AI)</h2>
+                            </div>
+                            <span style="background: linear-gradient(135deg, #4f46e5, #ec4899); color: white; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase;">PRO ASİSTAN</span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px;">
+                            <!-- Form Column -->
+                            <div style="display: flex; flex-direction: column; gap: 16px; border-right: 1px solid #f1f5f9; padding-right: 20px;">
+                                <div>
+                                    <label style="font-size: 12px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">Yapay Zeka Aracı Seçin</label>
+                                    <select id="smExpertTool" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; background: #ffffff;">
+                                        <option value="hook_post">Gönderi & Viral Kanca Üretici 🪝</option>
+                                        <option value="repurpose">İçerik Dönüştürücü (Blog/Makale) ♻️</option>
+                                        <option value="carousel">Kaydırmalı Gönderi Planlayıcı (Carousel) 📱</option>
+                                        <option value="video">Kısa Video Senaryolaştırıcı (Reels/TikTok) 🎬</option>
+                                    </select>
+                                </div>
+
+                                <div id="smExpertTopicGroup">
+                                    <label style="font-size: 12px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">Konu Başlığı veya Fikir</label>
+                                    <input type="text" id="smExpertTopic" placeholder="Örn: Evde taze kahve demlemenin 3 altın kuralı" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;">
+                                </div>
+
+                                <div id="smExpertSourceGroup" class="hidden">
+                                    <label style="font-size: 12px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">Kaynak Metin (Uzun Yazı)</label>
+                                    <textarea id="smExpertSourceText" rows="6" placeholder="Buraya sosyal medyaya dönüştürmek istediğiniz blog yazısı, bülten veya makaleyi yapıştırın..." style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; resize: vertical; font-family: inherit;"></textarea>
+                                </div>
+
+                                <div id="smExpertPlatformGroup">
+                                    <label style="font-size: 12px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">Hedef Platform</label>
+                                    <select id="smExpertPlatform" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; background: #ffffff;">
+                                        <option value="Instagram">Instagram</option>
+                                        <option value="LinkedIn">LinkedIn</option>
+                                        <option value="Twitter/X">Twitter / X</option>
+                                        <option value="Facebook">Facebook</option>
+                                        <option value="TikTok">TikTok</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label style="font-size: 12px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">Yazım Tonu (Tone of Voice)</label>
+                                    <select id="smExpertTone" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; background: #ffffff;">
+                                        <option value="Profesyonel">Profesyonel & Kurumsal</option>
+                                        <option value="Samimi">Samimi & Arkadaşça</option>
+                                        <option value="Dikkat Çekici">Dikkat Çekici & Viral</option>
+                                        <option value="Eğitici">Eğitici & Bilgi Verici</option>
+                                        <option value="Esprili">Esprili & Samimi</option>
+                                    </select>
+                                </div>
+
+                                <button id="btnGenerateSocialAI" style="width: 100%; margin-top: 10px; background: linear-gradient(135deg, #4f46e5, #ec4899); border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 800; color: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> İçerik Üret 🌟
+                                </button>
+                            </div>
+
+                            <!-- Output Column -->
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <h3 style="font-size: 14px; font-weight: 800; color: var(--text-primary); margin: 0;">Üretilen Sosyal Medya Planı</h3>
+                                    <button class="btn btn-outline-all" id="btnCopySocialOutput" style="padding: 4px 10px; font-size: 11px; display: none;"><i class="fa-regular fa-copy"></i> Kopyala</button>
+                                </div>
+
+                                <div id="smExpertOutputPlaceholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; background-color: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 12px; padding: 24px; text-align: center;">
+                                    <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 40px; color: #cbd5e1; margin-bottom: 12px;"></i>
+                                    <h4 style="font-size: 13.5px; font-weight: 700; color: #64748b; margin-bottom: 4px;">Henüz İçerik Üretilmedi</h4>
+                                    <p style="font-size: 11.5px; color: #94a3b8; max-width: 280px; margin: 0;">Sol taraftaki ayarları tamamlayıp 'İçerik Üret' butonuna tıklayarak ilk içeriğinizi tasarlayabilirsiniz.</p>
+                                </div>
+
+                                <div id="smExpertOutputArea" class="hidden" style="display: flex; flex-direction: column; gap: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; max-height: 480px; overflow-y: auto; text-align: left;">
+                                    <!-- Structured outputs will be injected dynamically -->
                                 </div>
                             </div>
                         </div>

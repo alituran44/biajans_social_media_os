@@ -584,7 +584,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { btnId: 'markaAyarlariBtn', secId: 'settingsSection' },
         { btnId: 'hesapAyarlariSideBtn', secId: 'settingsSection' },
         { btnId: 'markaAyarlariSideBtn', secId: 'brandSettingsSection' },
-        { btnId: 'sideKlavuz', secId: 'klavuzSection' }
+        { btnId: 'sideKlavuz', secId: 'klavuzSection' },
+        { btnId: 'navSosyalMedyaUzmanligi', secId: 'sosyalMedyaUzmanligiSection' }
     ];
 
     function showView(targetSecId, activeBtnId) {
@@ -7740,6 +7741,243 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalHTML;
             }
+        });
+    }
+
+    // ==========================================
+    // SOSYAL MEDYA UZMANLIĞI (AI) FRONTEND LOGIC
+    // ==========================================
+    const smExpertTool = document.getElementById('smExpertTool');
+    const smExpertTopicGroup = document.getElementById('smExpertTopicGroup');
+    const smExpertSourceGroup = document.getElementById('smExpertSourceGroup');
+    const smExpertPlatformGroup = document.getElementById('smExpertPlatformGroup');
+    const btnGenerateSocialAI = document.getElementById('btnGenerateSocialAI');
+    const smExpertOutputPlaceholder = document.getElementById('smExpertOutputPlaceholder');
+    const smExpertOutputArea = document.getElementById('smExpertOutputArea');
+    const btnCopySocialOutput = document.getElementById('btnCopySocialOutput');
+
+    if (smExpertTool) {
+        smExpertTool.addEventListener('change', () => {
+            const tool = smExpertTool.value;
+            if (tool === 'repurpose') {
+                smExpertTopicGroup.classList.add('hidden');
+                smExpertSourceGroup.classList.remove('hidden');
+            } else {
+                smExpertTopicGroup.classList.remove('hidden');
+                smExpertSourceGroup.classList.add('hidden');
+            }
+
+            if (tool === 'video') {
+                smExpertPlatformGroup.classList.add('hidden');
+            } else {
+                smExpertPlatformGroup.classList.remove('hidden');
+            }
+        });
+    }
+
+    let lastGeneratedText = '';
+
+    if (btnGenerateSocialAI) {
+        btnGenerateSocialAI.addEventListener('click', async () => {
+            const tool = smExpertTool.value;
+            const topic = document.getElementById('smExpertTopic').value.trim();
+            const sourceText = document.getElementById('smExpertSourceText').value.trim();
+            const platform = document.getElementById('smExpertPlatform').value;
+            const tone = document.getElementById('smExpertTone').value;
+
+            if (tool === 'repurpose' && !sourceText) {
+                showToast('❌ Lütfen kaynak metni girin.', true);
+                return;
+            }
+            if (tool !== 'repurpose' && !topic) {
+                showToast('❌ Lütfen bir konu başlığı girin.', true);
+                return;
+            }
+
+            const originalHTML = btnGenerateSocialAI.innerHTML;
+            btnGenerateSocialAI.disabled = true;
+            btnGenerateSocialAI.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> İçerik Tasarlanıyor...';
+
+            try {
+                const activeAiProvider = localStorage.getItem('activeAiProvider') || 'openrouter';
+                const aiKey = localStorage.getItem(activeAiProvider + 'ApiKey') || '';
+                const aiModel = localStorage.getItem(activeAiProvider + 'Model') || '';
+
+                const res = await fetch('/api/social/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tool: tool,
+                        topic: topic,
+                        platform: platform,
+                        tone: tone,
+                        source_text: sourceText,
+                        ai_provider: activeAiProvider,
+                        ai_key: aiKey,
+                        ai_model: aiModel
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || 'Yapay zeka yanıt oluşturamadı.');
+                }
+
+                const result = data.data;
+                smExpertOutputPlaceholder.classList.add('hidden');
+                smExpertOutputArea.classList.remove('hidden');
+                if (btnCopySocialOutput) btnCopySocialOutput.style.display = 'block';
+
+                let html = '';
+                let rawText = '';
+
+                if (tool === 'hook_post') {
+                    const hooks = result.hooks || {};
+                    html = `
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 8px;"><i class="fa-solid fa-anchor"></i> Viral Kanca Seçenekleri</h4>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <div style="background:#f1f5f9; padding:8px 12px; border-radius:6px; border-left:4px solid #3b82f6;">
+                                    <strong style="font-size:11px; color:#2563eb; display:block;">Merak Uyandırıcı:</strong>
+                                    <span style="font-size:12.5px; color:#1e293b;">${hooks.curiosity || '-'}</span>
+                                </div>
+                                <div style="background:#f1f5f9; padding:8px 12px; border-radius:6px; border-left:4px solid #10b981;">
+                                    <strong style="font-size:11px; color:#059669; display:block;">Hikaye:</strong>
+                                    <span style="font-size:12.5px; color:#1e293b;">${hooks.story || '-'}</span>
+                                </div>
+                                <div style="background:#f1f5f9; padding:8px 12px; border-radius:6px; border-left:4px solid #f59e0b;">
+                                    <strong style="font-size:11px; color:#d97706; display:block;">Değer / Eğitim:</strong>
+                                    <span style="font-size:12.5px; color:#1e293b;">${hooks.value || '-'}</span>
+                                </div>
+                                <div style="background:#f1f5f9; padding:8px 12px; border-radius:6px; border-left:4px solid #ef4444;">
+                                    <strong style="font-size:11px; color:#dc2626; display:block;">Aykırı (Contrarian):</strong>
+                                    <span style="font-size:12.5px; color:#1e293b;">${hooks.contrarian || '-'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 8px;"><i class="fa-solid fa-file-pen"></i> Gönderi İçeriği</h4>
+                            <pre style="white-space: pre-wrap; font-family: inherit; font-size: 12.5px; color: #334155; line-height: 1.5; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin:0;">${result.post_content || ''}</pre>
+                        </div>
+                        <div>
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 6px;"><i class="fa-solid fa-hashtag"></i> Etiketler</h4>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                ${(result.hashtags || []).map(tag => `<span style="background:#e0e7ff; color:#4338ca; font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px;">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                    rawText = `VIRAL KANCALAR\n- Merak: ${hooks.curiosity || '-'}\n- Hikaye: ${hooks.story || '-'}\n- Değer: ${hooks.value || '-'}\n- Aykırı: ${hooks.contrarian || '-'}\n\nGÖNDERİ İÇERİĞİ\n${result.post_content || ''}\n\nETİKETLER\n${(result.hashtags || []).join(' ')}`;
+
+                } else if (tool === 'repurpose') {
+                    html = `
+                        <div style="margin-bottom: 12px;">
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 8px;"><i class="fa-solid fa-recycle"></i> Dönüştürülen İçerik</h4>
+                            <pre style="white-space: pre-wrap; font-family: inherit; font-size: 12.5px; color: #334155; line-height: 1.5; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin:0;">${result.repurposed_content || ''}</pre>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 8px;"><i class="fa-solid fa-list-check"></i> Önemli Çıkarımlar</h4>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 12.5px; color: #334155; line-height: 1.5;">
+                                ${(result.key_takeaways || []).map(take => `<li style="margin-bottom:4px;">${take}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 6px;"><i class="fa-solid fa-hashtag"></i> Etiketler</h4>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                ${(result.hashtags || []).map(tag => `<span style="background:#e0e7ff; color:#4338ca; font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px;">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                    rawText = `DÖNÜŞTÜRÜLEN İÇERİK\n${result.repurposed_content || ''}\n\nÖNEMLİ ÇIKARIMLAR\n${(result.key_takeaways || []).map(t => `- ${t}`).join('\n')}\n\nETİKETLER\n${(result.hashtags || []).join(' ')}`;
+
+                } else if (tool === 'carousel') {
+                    html = `
+                        <div style="margin-bottom: 12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                                <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin: 0;"><i class="fa-solid fa-images"></i> Carousel Slayt Planı</h4>
+                                <span style="background:#fef3c7; color:#d97706; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">Şablon: ${result.framework_used || 'Custom'}</span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:10px;">
+                                ${(result.slides || []).map(slide => `
+                                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
+                                        <strong style="font-size:11px; color:#4f46e5; display:block; margin-bottom:4px;">Slayt ${slide.slide_number}</strong>
+                                        <h5 style="font-size:12.5px; font-weight:700; color:#1e293b; margin:0 0 6px 0;">${slide.title}</h5>
+                                        <p style="font-size:11.5px; color:#64748b; margin:0 0 6px 0; background:#f8fafc; padding:6px; border-radius:4px; border-left:3px solid #cbd5e1;">📸 <em>Görsel Açıklama: ${slide.visual_desc || '-'}</em></p>
+                                        <p style="font-size:12px; color:#334155; margin:0; line-height:1.45;">${slide.body_text || ''}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 6px;"><i class="fa-solid fa-hashtag"></i> Etiketler</h4>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                ${(result.hashtags || []).map(tag => `<span style="background:#e0e7ff; color:#4338ca; font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px;">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                    rawText = `CAROUSEL SLAYT PLANI (${result.framework_used || 'Custom'})\n\n` + 
+                        (result.slides || []).map(s => `SLAYT ${s.slide_number}\nBaşlık: ${s.title}\nGörsel Açıklama: ${s.visual_desc}\nMetin: ${s.body_text}`).join('\n\n') +
+                        `\n\nETİKETLER\n${(result.hashtags || []).join(' ')}`;
+
+                } else if (tool === 'video') {
+                    const hooks = result.hooks || {};
+                    html = `
+                        <div style="margin-bottom: 12px;">
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 8px;"><i class="fa-solid fa-bolt"></i> 3 Saniyelik Kanca (3-Second Hooks)</h4>
+                            <div style="display:flex; flex-direction:column; gap:6px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
+                                <div style="font-size:12px; margin-bottom:4px;">👁️ <strong>Görsel Kanca:</strong> <span style="color:#475569;">${hooks.visual_hook || '-'}</span></div>
+                                <div style="font-size:12px; margin-bottom:4px;">🗣️ <strong>Sözel Kanca:</strong> <span style="color:#475569;">${hooks.verbal_hook || '-'}</span></div>
+                                <div style="font-size:12px;">💬 <strong>Ekran Üstü Metin (Overlay):</strong> <span style="color:#475569; font-weight:700;">${hooks.text_overlay || '-'}</span></div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 8px;"><i class="fa-solid fa-clapperboard"></i> Senaryo Akışı (Script)</h4>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                ${(result.script || []).map(scene => `
+                                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; display:grid; grid-template-columns: 60px 1fr; gap:10px;">
+                                        <span style="background:#e0e7ff; color:#4338ca; font-size:11px; font-weight:800; padding:2px 6px; border-radius:4px; height:fit-content; text-align:center;">${scene.time}</span>
+                                        <div style="font-size:12px;">
+                                            <p style="margin:0 0 4px 0;">📸 <strong>Görsel:</strong> <span style="color:#475569;">${scene.visual || ''}</span></p>
+                                            <p style="margin:0;">🎙️ <strong>Seslendirme (Audio):</strong> <span style="color:#1e293b; font-weight:500;">${scene.audio || ''}</span></p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 style="font-size: 13px; font-weight: 800; color: #4338ca; margin-bottom: 6px;"><i class="fa-solid fa-hashtag"></i> Etiketler</h4>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                ${(result.hashtags || []).map(tag => `<span style="background:#e0e7ff; color:#4338ca; font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px;">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                    rawText = `3 SANİYELİK KANCALAR\n- Görsel: ${hooks.visual_hook || '-'}\n- Sözel: ${hooks.verbal_hook || '-'}\n- Ekran Üstü Metin: ${hooks.text_overlay || '-'}\n\nSENARYO AKIŞI\n` +
+                        (result.script || []).map(s => `[${s.time}]\nGörsel: ${s.visual}\nSes: ${s.audio}`).join('\n\n') +
+                        `\n\nETİKETLER\n${(result.hashtags || []).join(' ')}`;
+                }
+
+                smExpertOutputArea.innerHTML = html;
+                lastGeneratedText = rawText;
+                showToast('✅ Sosyal medya içeriği başarıyla üretildi!');
+
+            } catch (err) {
+                console.error(err);
+                showToast('❌ İçerik üretilirken hata oluştu: ' + err.message, true);
+            } finally {
+                btnGenerateSocialAI.disabled = false;
+                btnGenerateSocialAI.innerHTML = originalHTML;
+            }
+        });
+    }
+
+    if (btnCopySocialOutput) {
+        btnCopySocialOutput.addEventListener('click', () => {
+            if (!lastGeneratedText) return;
+            navigator.clipboard.writeText(lastGeneratedText);
+            showToast('📋 İçerik panoya kopyalandı!');
         });
     }
 
