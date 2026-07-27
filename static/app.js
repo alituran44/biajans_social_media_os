@@ -1821,7 +1821,6 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     let activeInboxChatKey = 'Melis Yılmaz';
     let inboxActiveFilter = 'all';
 
-    // Renders the single-screen consolidated inbox list based on active filtering tabs
     function renderConsolidatedInboxList() {
         const unifiedInboxList = document.getElementById('unifiedInboxList');
         if (!unifiedInboxList) return;
@@ -1829,8 +1828,60 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         unifiedInboxList.innerHTML = '';
         let matchCount = 0;
 
+        const currentBrand = getCurrentBrand();
+        const connections = (currentBrand && currentBrand.connections) || {};
+        const filterToKeys = {
+            instagram: ['instagram', 'meta'],
+            facebook: ['facebook', 'meta'],
+            youtube: ['youtube', 'google'],
+            linkedin: ['linkedin'],
+            x: ['x'],
+            whatsapp: ['whatsapp'],
+            email: ['e_posta', 'email']
+        };
+
+        // Auto switch active selected key if it's not connected or not matching filter
+        const isCurrentActiveConnected = () => {
+            if (!activeInboxChatKey || !inboxChatsData[activeInboxChatKey]) return false;
+            const chat = inboxChatsData[activeInboxChatKey];
+            const connectionKeys = filterToKeys[chat.platform] || [chat.platform];
+            const isConnected = connectionKeys.some(k => {
+                const conn = connections[k];
+                return conn && conn.connected;
+            });
+            if (!isConnected) return false;
+            return inboxActiveFilter === 'all' || chat.platform === inboxActiveFilter;
+        };
+
+        if (!isCurrentActiveConnected()) {
+            const firstConnected = Object.keys(inboxChatsData).find(key => {
+                const chat = inboxChatsData[key];
+                const connectionKeys = filterToKeys[chat.platform] || [chat.platform];
+                const isConnected = connectionKeys.some(k => {
+                    const conn = connections[k];
+                    return conn && conn.connected;
+                });
+                if (!isConnected) return false;
+                return inboxActiveFilter === 'all' || chat.platform === inboxActiveFilter;
+            });
+            if (firstConnected) {
+                activeInboxChatKey = firstConnected;
+            } else {
+                activeInboxChatKey = null;
+            }
+        }
+
         Object.keys(inboxChatsData).forEach(key => {
             const chat = inboxChatsData[key];
+
+            // Verify if this chat's platform is connected
+            const connectionKeys = filterToKeys[chat.platform] || [chat.platform];
+            const isConnected = connectionKeys.some(k => {
+                const conn = connections[k];
+                return conn && conn.connected;
+            });
+            if (!isConnected) return; // Skip if not connected
+
             if (inboxActiveFilter !== 'all' && chat.platform !== inboxActiveFilter) return;
 
             matchCount++;
@@ -1901,7 +1952,26 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         if (!viewport || !inboxChatsData) return;
 
         const chat = inboxChatsData[activeInboxChatKey];
-        if (!chat) return;
+        if (!chat) {
+            if (activeName) activeName.textContent = 'Bağlı Hesap Yok';
+            if (activeHandle) activeHandle.textContent = '';
+            if (activeAvatar) activeAvatar.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&q=80';
+            if (inboxCustNoteInput) inboxCustNoteInput.value = '';
+            if (activeTagBadge) activeTagBadge.style.display = 'none';
+            if (activePlatformIcon) activePlatformIcon.style.display = 'none';
+            viewport.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--text-secondary); text-align:center; padding:20px;">
+                    <i class="fa-solid fa-envelope-open" style="font-size:48px; color:var(--text-muted); margin-bottom:12px;"></i>
+                    <p style="font-weight:700; margin-bottom:4px;">Gelen Kutusu Boş</p>
+                    <p style="font-size:12px;">Aktif mesajları görmek için lütfen sosyal medya hesaplarınızı bağlayın.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Restore visibility
+        if (activeTagBadge) activeTagBadge.style.display = 'inline-block';
+        if (activePlatformIcon) activePlatformIcon.style.display = 'flex';
 
         // Populate metadata
         if (activeName) activeName.textContent = activeInboxChatKey;
@@ -3372,6 +3442,65 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             if (typeof updateDashboardStats === 'function') {
                 const currentBrand = getCurrentBrand();
                 if (currentBrand) updateDashboardStats(currentBrand);
+            }
+
+            // Update inbox filter tabs visibility dynamically
+            const filterToKeys = {
+                instagram: ['instagram', 'meta'],
+                facebook: ['facebook', 'meta'],
+                youtube: ['youtube', 'google'],
+                linkedin: ['linkedin'],
+                x: ['x'],
+                whatsapp: ['whatsapp'],
+                email: ['e_posta', 'email']
+            };
+
+            const counts = { all: 0, instagram: 0, facebook: 0, youtube: 0, linkedin: 0, x: 0, whatsapp: 0, email: 0 };
+            if (typeof inboxChatsData !== 'undefined') {
+                Object.keys(inboxChatsData).forEach(k => {
+                    const c = inboxChatsData[k];
+                    const connectionKeys = filterToKeys[c.platform] || [c.platform];
+                    const isConnected = connectionKeys.some(key => {
+                        const conn = connections[key];
+                        return conn && conn.connected;
+                    });
+                    if (isConnected) {
+                        counts.all++;
+                        if (counts[c.platform] !== undefined) {
+                            counts[c.platform]++;
+                        }
+                    }
+                });
+            }
+
+            document.querySelectorAll('.inbox-filter-btn[data-inbox-filter]').forEach(btn => {
+                const filter = btn.getAttribute('data-inbox-filter');
+                
+                const connectionKeys = filterToKeys[filter] || [filter];
+                const isConnected = connectionKeys.some(key => {
+                    const conn = connections[key];
+                    return conn && conn.connected;
+                });
+
+                if (filter === 'all' || isConnected) {
+                    btn.style.setProperty('display', 'inline-flex', 'important');
+                } else {
+                    btn.style.setProperty('display', 'none', 'important');
+                }
+
+                // Update count tag
+                const countSpan = btn.querySelector('.tag-count');
+                if (countSpan && counts[filter] !== undefined) {
+                    countSpan.textContent = counts[filter];
+                }
+            });
+
+            // Re-render inbox elements dynamically
+            if (typeof renderConsolidatedInboxList === 'function') {
+                renderConsolidatedInboxList();
+            }
+            if (typeof renderActiveInboxChat === 'function') {
+                renderActiveInboxChat();
             }
         }
 
