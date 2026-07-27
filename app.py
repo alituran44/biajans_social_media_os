@@ -44,6 +44,85 @@ _PLATFORM_ALIASES = {
 }
 
 
+def extract_username(name, uid):
+    for val in [uid, name]:
+        if not val:
+            continue
+        val = val.strip()
+        if any(x in val.lower() for x in ["instagram.com/", "facebook.com/", "youtube.com/", "tiktok.com/", "x.com/"]):
+            path_parts = val.split("?")[0]
+            parts = [p for p in path_parts.split("/") if p]
+            if len(parts) >= 2:
+                last = parts[-1]
+                if last.startswith("@"):
+                    last = last[1:]
+                return last
+        if val.startswith("@"):
+            return val[1:].strip()
+        if len(val.split()) == 1 and val.replace("_", "").replace(".", "").isalnum():
+            return val
+    return name.strip()
+
+
+def scrape_social_followers(plat, uname):
+    if not uname:
+        return None
+    uname = uname.strip().replace("@", "")
+    plat = plat.lower().strip()
+    if plat == "instagram":
+        q = f"site:instagram.com/{uname}"
+    elif plat == "facebook":
+        q = f"site:facebook.com/{uname}"
+    elif plat == "youtube":
+        q = f"site:youtube.com/@{uname}"
+    elif plat in ["x", "twitter"]:
+        q = f"site:x.com/{uname}"
+    elif plat == "tiktok":
+        q = f"site:tiktok.com/@{uname}"
+    else:
+        q = f"site:{plat}.com/{uname}"
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+    
+    # 1. Try Yahoo Search
+    try:
+        import requests
+        import urllib.parse
+        import re
+        url = f"https://search.yahoo.com/search?p={urllib.parse.quote(q)}"
+        r = requests.get(url, headers=headers, timeout=10)
+        if r.status_code == 200:
+            pattern = r'([0-9\.,\s]+[KMBkmb]?)\s*(?:Takipçi|Followers|follower|takipçi|Beğeni|Likes|Subscriber|subscriber|Abone|Abonesi|Takip|Üye|Grup Üyesi|Görüntüleme)'
+            matches = re.findall(pattern, r.text, re.IGNORECASE)
+            for m in matches:
+                val = m.strip()
+                val = re.sub(r'^[^0-9]+', '', val)
+                val = re.sub(r'[^0-9KMBkmb]+$', '', val)
+                if re.search(r'\d', val):
+                    return val
+    except Exception as e:
+        print(f"[Scraper] Yahoo error: {e}")
+        
+    # 2. Try DuckDuckGo Fallback
+    try:
+        import requests
+        import urllib.parse
+        import re
+        url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(q)}"
+        r = requests.get(url, headers=headers, timeout=10)
+        if r.status_code == 200:
+            pattern = r'([0-9\.,\s]+[KMBkmb]?)\s*(?:Takipçi|Followers|follower|takipçi|Beğeni|Likes|Subscriber|subscriber|Abone|Abonesi|Takip|Üye|Grup Üyesi|Görüntüleme)'
+            matches = re.findall(pattern, r.text, re.IGNORECASE)
+            for m in matches:
+                val = m.strip()
+                val = re.sub(r'^[^0-9]+', '', val)
+                val = re.sub(r'[^0-9KMBkmb]+$', '', val)
+                if re.search(r'\d', val):
+                    return val
+    except Exception as e:
+        print(f"[Scraper] DDG error: {e}")
+    return None
+
+
 def get_smartlinks_path():
     path = os.path.join(os.path.dirname(__file__), "core", "smartlinks.json")
     if "VERCEL" in os.environ or os.environ.get("VERCEL"):
@@ -658,6 +737,16 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 return
                 
             canonical = _PLATFORM_ALIASES.get(platform, platform)
+            
+            # Attempt scraping live count using top-level helpers
+            if canonical in ["instagram", "facebook"]:
+                target_username = extract_username(account_name, account_id)
+                print(f"[DirectConnect] Scraping real followers for {target_username} on {canonical}")
+                scraped_count = scrape_social_followers(canonical, target_username)
+                if scraped_count:
+                    print(f"[DirectConnect] Successfully scraped: {scraped_count}")
+                    followers = scraped_count
+
             save_token(canonical, {
                 "access_token": token,
                 "expires_at": 0,
@@ -666,7 +755,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 "id": account_id or "direct_id",
                 "followers": followers
             }, brand_id=brand_id)
-            self.send_json_response({"success": True, "platform": canonical})
+            self.send_json_response({"success": True, "platform": canonical, "followers": followers})
             return
 
         # ── Mock/Simulated platform connection ─────────────────────────────

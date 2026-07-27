@@ -7578,7 +7578,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                         if (!brand.connections) brand.connections = {};
                         brand.connections[slug] = {
                             connected: true,
-                            profile: { name: accountName, id: accountId, followers: followers }
+                            profile: { name: accountName, id: accountId, followers: data.followers || followers }
                         };
                         saveBrandsToStorage(brandsData);
                     }
