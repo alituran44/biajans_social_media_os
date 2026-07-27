@@ -70,17 +70,17 @@ def scrape_social_followers(plat, uname):
     uname = uname.strip().replace("@", "")
     plat = plat.lower().strip()
     if plat == "instagram":
-        q = f"site:instagram.com/{uname}"
+        q = f"instagram.com/{uname}"
     elif plat == "facebook":
-        q = f"site:facebook.com/{uname}"
+        q = f"facebook.com/{uname}"
     elif plat == "youtube":
-        q = f"site:youtube.com/@{uname}"
+        q = f"youtube.com/@{uname}"
     elif plat in ["x", "twitter"]:
-        q = f"site:x.com/{uname}"
+        q = f"x.com/{uname}"
     elif plat == "tiktok":
-        q = f"site:tiktok.com/@{uname}"
+        q = f"tiktok.com/@{uname}"
     else:
-        q = f"site:{plat}.com/{uname}"
+        q = f"{plat}.com/{uname}"
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
     
     # 1. Try Yahoo Search
