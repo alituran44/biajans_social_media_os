@@ -7991,6 +7991,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         btnQuickConnectSubmit.addEventListener('click', async () => {
             const platform = document.getElementById('quickConnectPlatform').value;
             const accountInput = document.getElementById('quickConnectAccount').value.trim();
+            const followersInput = document.getElementById('quickConnectFollowers') ? document.getElementById('quickConnectFollowers').value.trim() : '';
 
             if (!accountInput) {
                 showToast('❌ Lütfen kullanıcı adınızı veya hesap adınızı girin.', true);
@@ -8014,7 +8015,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                         account_name: accountInput,
                         account_id: accountInput,
                         token: 'direct_token_mock',
-                        followers: ''
+                        followers: followersInput
                     })
                 });
 
