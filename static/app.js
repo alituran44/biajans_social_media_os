@@ -8187,14 +8187,22 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     // ========================================================
     let currentReconnectPlatform = 'Instagram';
 
-    const platformIcons = {
-        'Facebook': '<i class="fa-brands fa-facebook" style="color:#1877f2;"></i>',
-        'Instagram': '<i class="fa-brands fa-instagram" style="color:#e1306c;"></i>',
-        'LinkedIn': '<i class="fa-brands fa-linkedin-in" style="color:#0a66c2;"></i>',
-        'LinkedIn Personal': '<i class="fa-brands fa-linkedin-in" style="color:#0a66c2;"></i>',
-        'X': '<i class="fa-brands fa-x-twitter" style="color:#000000;"></i>',
-        'YouTube': '<i class="fa-brands fa-youtube" style="color:#ff0000;"></i>',
-        'TikTok': '<i class="fa-brands fa-tiktok" style="color:#00f2fe;"></i>'
+    const platformUrls = {
+        'Facebook': 'facebook.com/v17.0/dialog/oauth?client_id=419624328673353&redirect_uri=https%3A%2F%2Fiap-services.odoo.com',
+        'Instagram': 'facebook.com/v17.0/dialog/oauth?client_id=419624328673353&redirect_uri=https%3A%2F%2Fiap-services.odoo.com',
+        'TikTok': 'open.tiktokapis.com/v2/auth/authorize?client_key=aw630z91k&scope=user.info.basic,video.list',
+        'LinkedIn': 'linkedin.com/oauth/v2/authorization?response_type=code&client_id=78xx921',
+        'X': 'twitter.com/i/oauth2/authorize?response_type=code&client_id=MTkyODMw',
+        'YouTube': 'accounts.google.com/o/oauth2/v2/auth?client_id=8923910.apps.googleusercontent.com'
+    };
+
+    const platformLogosHTML = {
+        'Facebook': '<span style="color:#1877f2; font-weight:900; font-size:26px;">facebook</span>',
+        'Instagram': '<span style="background:linear-gradient(45deg,#f09433,#dc2743,#bc1888);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;font-size:24px;">Instagram</span>',
+        'TikTok': '<span style="color:#000000; font-weight:900; font-size:24px;"><i class="fa-brands fa-tiktok" style="color:#00f2fe;"></i> TikTok</span>',
+        'LinkedIn': '<span style="color:#0a66c2; font-weight:900; font-size:24px;">Linked<span style="background:#0a66c2;color:white;padding:0 4px;border-radius:3px;">in</span></span>',
+        'X': '<span style="color:#000000; font-weight:900; font-size:24px;"><i class="fa-brands fa-x-twitter"></i> X</span>',
+        'YouTube': '<span style="color:#ff0000; font-weight:900; font-size:24px;"><i class="fa-brands fa-youtube"></i> YouTube</span>'
     };
 
     document.addEventListener('click', (e) => {
@@ -8205,12 +8213,18 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const network = btn.getAttribute('data-network') || 'Instagram';
             currentReconnectPlatform = network;
 
-            const iconSpan = document.getElementById('reconnectPlatformIcon');
+            const chromeTitle = document.getElementById('chromeWindowTitle');
+            const chromeUrl = document.getElementById('chromeAddressUrl');
+            const pageHeaderLogo = document.getElementById('pageHeaderLogo');
+            const chromeIcon = document.getElementById('chromeTabIcon');
             const titleElem = document.getElementById('reconnectTitle');
             const nameSpan = document.getElementById('reconnectPlatformName');
             const reconnectModal = document.getElementById('reconnectOAuthModal');
 
-            if (iconSpan) iconSpan.innerHTML = platformIcons[network] || platformIcons['Instagram'];
+            if (chromeTitle) chromeTitle.textContent = `İşletme İçin ${network} Girişi - Google Chrome`;
+            if (chromeUrl) chromeUrl.textContent = platformUrls[network] || platformUrls['Instagram'];
+            if (pageHeaderLogo) pageHeaderLogo.innerHTML = platformLogosHTML[network] || platformLogosHTML['Facebook'];
+            if (chromeIcon) chromeIcon.innerHTML = platformIcons[network] || platformIcons['Instagram'];
             if (titleElem) titleElem.textContent = `Ali Turan, ${network} ile biAjans OS'e bağlansın mı?`;
             if (nameSpan) nameSpan.textContent = network;
 
@@ -8218,9 +8232,16 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         }
     });
 
+    const chromeCloseBtn = document.getElementById('chromeWindowCloseBtn');
     const btnReconnectCancel = document.getElementById('btnReconnectCancel');
     const btnReconnectSubmit = document.getElementById('btnReconnectSubmit');
     const reconnectOAuthModal = document.getElementById('reconnectOAuthModal');
+
+    if (chromeCloseBtn) {
+        chromeCloseBtn.addEventListener('click', () => {
+            if (reconnectOAuthModal) reconnectOAuthModal.classList.add('hidden');
+        });
+    }
 
     if (btnReconnectCancel) {
         btnReconnectCancel.addEventListener('click', () => {
