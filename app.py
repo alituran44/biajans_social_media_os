@@ -211,12 +211,25 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self._handle_oauth_start(platform, brand_id)
             return
 
-        # ── OAuth callback: /auth/<platform>/callback ─────────────────────────
-        if path.startswith("/auth/") and path.endswith("/callback"):
-            platform = path.split("/")[2]
-            code  = qs.get("code",  [None])[0]
-            state = qs.get("state", [None])[0]
-            error = qs.get("error", [None])[0]
+        # ── OAuth callback: /auth/<platform>/callback & /api/social/<platform>/.../callback ──
+        if (path.startswith("/auth/") and path.endswith("/callback")) or ("/api/social/" in path and "callback" in path):
+            parts = [p for p in path.split("/") if p]
+            platform = "facebook"
+            if "social" in parts:
+                idx = parts.index("social")
+                if len(parts) > idx + 1:
+                    platform = parts[idx + 1]
+            elif len(parts) >= 3:
+                platform = parts[1]
+
+            code   = qs.get("code",   [None])[0]
+            state  = qs.get("state",  [None])[0]
+            error  = qs.get("error",  [None])[0]
+            action = qs.get("action", [None])[0]
+            
+            if action == "cancel" or error == "access_denied":
+                error = error or "user_denied"
+
             self._handle_oauth_callback(platform, code, state, error)
             return
 

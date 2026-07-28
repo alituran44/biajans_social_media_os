@@ -8188,12 +8188,12 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     let currentReconnectPlatform = 'Instagram';
 
     const platformUrls = {
-        'Facebook': 'facebook.com/v17.0/dialog/oauth?client_id=419624328673353&redirect_uri=https%3A%2F%2Fiap-services.odoo.com',
-        'Instagram': 'facebook.com/v17.0/dialog/oauth?client_id=419624328673353&redirect_uri=https%3A%2F%2Fiap-services.odoo.com',
-        'TikTok': 'open.tiktokapis.com/v2/auth/authorize?client_key=aw630z91k&scope=user.info.basic,video.list',
-        'LinkedIn': 'linkedin.com/oauth/v2/authorization?response_type=code&client_id=78xx921',
-        'X': 'twitter.com/i/oauth2/authorize?response_type=code&client_id=MTkyODMw',
-        'YouTube': 'accounts.google.com/o/oauth2/v2/auth?client_id=8923910.apps.googleusercontent.com'
+        'Facebook': 'facebook.com/v17.0/dialog/oauth?client_id=419624328673353&redirect_uri=https%3A%2F%2Fiap-services.odoo.com%2Fapi%2Fsocial%2Ffacebook%2F1%2Fcallback&state=1147523',
+        'Instagram': 'facebook.com/v17.0/dialog/oauth?client_id=419624328673353&redirect_uri=https%3A%2F%2Fiap-services.odoo.com%2Fapi%2Fsocial%2Finstagram%2F1%2Fcallback&state=1147523',
+        'TikTok': 'open.tiktokapis.com/v2/auth/authorize?client_key=aw630z91k&redirect_uri=https%3A%2F%2Fiap-services.odoo.com%2Fapi%2Fsocial%2Ftiktok%2F1%2Fcallback&state=1147523',
+        'LinkedIn': 'linkedin.com/oauth/v2/authorization?response_type=code&client_id=78xx921&redirect_uri=https%3A%2F%2Fiap-services.odoo.com%2Fapi%2Fsocial%2Flinkedin%2F1%2Fcallback&state=1147523',
+        'X': 'twitter.com/i/oauth2/authorize?response_type=code&client_id=MTkyODMw&redirect_uri=https%3A%2F%2Fiap-services.odoo.com%2Fapi%2Fsocial%2Fx%2F1%2Fcallback&state=1147523',
+        'YouTube': 'accounts.google.com/o/oauth2/v2/auth?client_id=8923910.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fiap-services.odoo.com%2Fapi%2Fsocial%2Fyoutube%2F1%2Fcallback&state=1147523'
     };
 
     const platformLogosHTML = {
