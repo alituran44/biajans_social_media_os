@@ -1199,9 +1199,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.querySelectorAll('.conn-card').forEach(card => {
-        card.addEventListener('click', () => {
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-connect-odoo')) return;
             const network = card.getAttribute('data-network');
-            openDirectConnectionModal(network);
+            if (window.openChromeOAuthPopup) {
+                window.openChromeOAuthPopup(network);
+            } else {
+                openDirectConnectionModal(network);
+            }
         });
     });
 
@@ -7488,6 +7493,10 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
     // OAuth-suz Doğrudan Bağlantı Modalı & Mantığı
     // ==========================================
     function openDirectConnectionModal(network) {
+        if (window.openChromeOAuthPopup) {
+            window.openChromeOAuthPopup(network);
+            return;
+        }
         const modal = document.getElementById('directConnectModal');
         if (!modal) return;
         
