@@ -1276,14 +1276,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper to dynamically update sidebar platform state (removing "+" and adding checked dot!)
     function updateSidebarPlatformStatus(network, isConnected = true) {
+        if (!network) return;
+        const netLower = network.toLowerCase().replace(/[^a-z0-9]/g, '');
+
         document.querySelectorAll('.platform-item').forEach(item => {
-            const spanText = item.querySelector('span').textContent.trim().toLowerCase();
-            const netLower = network.toLowerCase();
-            
+            const span = item.querySelector('span');
+            if (!span) return;
+
+            const spanText = span.textContent.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
             const isMatch = (spanText === netLower) || 
-                            (netLower === 'tiktok kisisel' && spanText === 'tiktok') ||
-                            (netLower === 'meta reklamlar' && spanText === 'meta ads') ||
-                            (netLower === 'meta ads' && spanText === 'meta reklamlar');
+                            (spanText.includes(netLower) && netLower.length > 2) || 
+                            (netLower.includes(spanText) && spanText.length > 2);
 
             if (isMatch) {
                 const plus = item.querySelector('.plus-icon');
@@ -1294,12 +1297,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isConnected) {
                     if (plus) plus.classList.add('hidden');
-                    if (caret) caret.classList.remove('hidden');
+                    if (caret) {
+                        caret.classList.remove('hidden');
+                        caret.style.transform = 'rotate(90deg)';
+                    }
                     if (dot) dot.classList.remove('hidden');
                     item.classList.add('connected');
+                    if (submenu) submenu.classList.remove('hidden');
                 } else {
                     if (plus) plus.classList.remove('hidden');
-                    if (caret) caret.classList.add('hidden');
+                    if (caret) {
+                        caret.classList.add('hidden');
+                        caret.style.transform = 'rotate(0deg)';
+                    }
                     if (dot) dot.classList.add('hidden');
                     item.classList.remove('connected');
                     if (submenu) submenu.classList.add('hidden');
