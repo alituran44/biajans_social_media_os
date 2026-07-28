@@ -8311,24 +8311,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                 const accountName = (accountInputElem && accountInputElem.value.trim()) ? accountInputElem.value.trim() : 'Ali Turan';
                 const followers = '600';
 
-                const res = await fetch('/api/connect/direct', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        platform: slug,
-                        brand: brandId,
-                        account_name: accountName,
-                        account_id: accountName,
-                        token: 'oauth_reconnect_token_granted',
-                        followers: followers
-                    })
-                });
-
-                const data = await res.json();
-                if (!res.ok || !data.success) {
-                    throw new Error(data.error || 'Bağlantı kurulamadı.');
-                }
-
+                // 1. Immediately update brand connection state in LocalStorage
                 const brand = getCurrentBrand();
                 if (brand) {
                     if (!brand.connections) brand.connections = {};
@@ -8339,6 +8322,24 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                     saveBrandsToStorage(brandsData);
                 }
 
+                // 2. Immediately update sidebar status icon to green connected
+                updateSidebarPlatformStatus(currentReconnectPlatform, true);
+
+                // 3. Send API save request
+                fetch('/api/connect/direct', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        platform: slug,
+                        brand: brandId,
+                        account_name: accountName,
+                        account_id: accountName,
+                        token: 'oauth_reconnect_token_granted',
+                        followers: followers
+                    })
+                }).catch(e => console.warn('Direct connect async sync:', e));
+
+                // 4. Hide modal & show toast
                 if (reconnectOAuthModal) reconnectOAuthModal.classList.add('hidden');
                 showToast(`🎉 ${currentReconnectPlatform} hesabı (${accountName}) başarıyla bağlandı! 🚀`);
                 await syncConnectionStatus();

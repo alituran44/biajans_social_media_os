@@ -89,7 +89,7 @@ def scrape_social_followers(plat, uname):
         import urllib.parse
         import re
         url = f"https://search.yahoo.com/search?p={urllib.parse.quote(q)}"
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(url, headers=headers, timeout=1.5)
         if r.status_code == 200:
             pattern = r'([0-9\.,\s]+[KMBkmb]?)\s*(?:Takipçi|Followers|follower|takipçi|Beğeni|Likes|Subscriber|subscriber|Abone|Abonesi|Takip|Üye|Grup Üyesi|Görüntüleme)'
             matches = re.findall(pattern, r.text, re.IGNORECASE)
@@ -108,7 +108,7 @@ def scrape_social_followers(plat, uname):
         import urllib.parse
         import re
         url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(q)}"
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(url, headers=headers, timeout=1.5)
         if r.status_code == 200:
             pattern = r'([0-9\.,\s]+[KMBkmb]?)\s*(?:Takipçi|Followers|follower|takipçi|Beğeni|Likes|Subscriber|subscriber|Abone|Abonesi|Takip|Üye|Grup Üyesi|Görüntüleme)'
             matches = re.findall(pattern, r.text, re.IGNORECASE)
