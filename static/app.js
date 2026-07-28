@@ -8176,6 +8176,12 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             } catch (err) {
                 console.error(err);
                 showToast('❌ Meta izin hatası: ' + err.message, true);
+            } finally {
+                btnMetaOAuthSave.disabled = false;
+                btnMetaOAuthSave.innerHTML = originalHTML;
+            }
+        });
+    }
     // ========================================================
     // ODOO-STYLE SOCIAL MEDIA CONNECTION CARDS & RECONNECT POPUP (FACEBOOK, INSTAGRAM, LINKEDIN, X, YOUTUBE, TIKTOK)
     // ========================================================
