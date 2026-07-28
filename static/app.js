@@ -8060,7 +8060,7 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
-    // Sidebar Platform Groups Click Handling (Connects if unconnected, Toggles Submenu if connected)
+    // Sidebar Platform Groups Click Handling (Opens Chrome OAuth Popup if unconnected, Toggles Submenu if connected)
     document.querySelectorAll('.platform-group .platform-item').forEach(item => {
         item.addEventListener('click', (e) => {
             if (e.target.closest('.submenu-item')) return;
@@ -8075,8 +8075,11 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             if (!isConnected) {
                 e.preventDefault();
                 e.stopPropagation();
-                openDirectConnectionModal(networkName);
-                showToast(`${networkName} hesabınızı bağlamak için kullanıcı adınızı girin. 🔗`);
+                if (window.openChromeOAuthPopup) {
+                    window.openChromeOAuthPopup(networkName);
+                } else {
+                    openDirectConnectionModal(networkName);
+                }
             } else {
                 if (submenu) {
                     e.preventDefault();
@@ -8102,7 +8105,14 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const item = plus.closest('.platform-item');
             if (item) {
                 const span = item.querySelector('span');
-                if (span) openDirectConnectionModal(span.textContent.trim());
+                if (span) {
+                    const netName = span.textContent.trim();
+                    if (window.openChromeOAuthPopup) {
+                        window.openChromeOAuthPopup(netName);
+                    } else {
+                        openDirectConnectionModal(netName);
+                    }
+                }
             }
         });
     });
@@ -8205,30 +8215,39 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         'YouTube': '<span style="color:#ff0000; font-weight:900; font-size:24px;"><i class="fa-brands fa-youtube"></i> YouTube</span>'
     };
 
+    window.openChromeOAuthPopup = function(network) {
+        currentReconnectPlatform = network || 'Instagram';
+        const chromeTitle = document.getElementById('chromeWindowTitle');
+        const chromeUrl = document.getElementById('chromeAddressUrl');
+        const pageHeaderLogo = document.getElementById('pageHeaderLogo');
+        const chromeIcon = document.getElementById('chromeTabIcon');
+        const titleElem = document.getElementById('reconnectTitle');
+        const nameSpan = document.getElementById('reconnectPlatformName');
+        const reconnectAccountInput = document.getElementById('reconnectAccountInput');
+        const reconnectModal = document.getElementById('reconnectOAuthModal');
+
+        if (chromeTitle) chromeTitle.textContent = `İşletme İçin ${currentReconnectPlatform} Girişi - Google Chrome`;
+        if (chromeUrl) chromeUrl.textContent = platformUrls[currentReconnectPlatform] || platformUrls['Instagram'];
+        if (pageHeaderLogo) pageHeaderLogo.innerHTML = platformLogosHTML[currentReconnectPlatform] || platformLogosHTML['Facebook'];
+        if (chromeIcon) chromeIcon.innerHTML = platformIcons[currentReconnectPlatform] || platformIcons['Instagram'];
+
+        const currentBrand = getCurrentBrand();
+        const defaultName = (currentBrand && currentBrand.name) ? currentBrand.name : 'Ali Turan';
+        if (reconnectAccountInput) reconnectAccountInput.value = defaultName;
+
+        if (titleElem) titleElem.textContent = `${defaultName}, ${currentReconnectPlatform} ile biAjans OS'e bağlansın mı?`;
+        if (nameSpan) nameSpan.textContent = currentReconnectPlatform;
+
+        if (reconnectModal) reconnectModal.classList.remove('hidden');
+    };
+
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-connect-odoo');
         if (btn) {
             e.preventDefault();
             e.stopPropagation();
             const network = btn.getAttribute('data-network') || 'Instagram';
-            currentReconnectPlatform = network;
-
-            const chromeTitle = document.getElementById('chromeWindowTitle');
-            const chromeUrl = document.getElementById('chromeAddressUrl');
-            const pageHeaderLogo = document.getElementById('pageHeaderLogo');
-            const chromeIcon = document.getElementById('chromeTabIcon');
-            const titleElem = document.getElementById('reconnectTitle');
-            const nameSpan = document.getElementById('reconnectPlatformName');
-            const reconnectModal = document.getElementById('reconnectOAuthModal');
-
-            if (chromeTitle) chromeTitle.textContent = `İşletme İçin ${network} Girişi - Google Chrome`;
-            if (chromeUrl) chromeUrl.textContent = platformUrls[network] || platformUrls['Instagram'];
-            if (pageHeaderLogo) pageHeaderLogo.innerHTML = platformLogosHTML[network] || platformLogosHTML['Facebook'];
-            if (chromeIcon) chromeIcon.innerHTML = platformIcons[network] || platformIcons['Instagram'];
-            if (titleElem) titleElem.textContent = `Ali Turan, ${network} ile biAjans OS'e bağlansın mı?`;
-            if (nameSpan) nameSpan.textContent = network;
-
-            if (reconnectModal) reconnectModal.classList.remove('hidden');
+            window.openChromeOAuthPopup(network);
         }
     });
 
