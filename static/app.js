@@ -8249,6 +8249,27 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         });
     }
 
+    const reconnectAccountInput = document.getElementById('reconnectAccountInput');
+    const linkNotUser = document.getElementById('linkNotUser');
+
+    if (linkNotUser && reconnectAccountInput) {
+        linkNotUser.addEventListener('click', (e) => {
+            e.preventDefault();
+            reconnectAccountInput.value = '';
+            reconnectAccountInput.focus();
+            const titleElem = document.getElementById('reconnectTitle');
+            if (titleElem) titleElem.textContent = `Yeni Hesap ile ${currentReconnectPlatform}'a bağlanın`;
+        });
+    }
+
+    if (reconnectAccountInput) {
+        reconnectAccountInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim() || 'Ali Turan';
+            const titleElem = document.getElementById('reconnectTitle');
+            if (titleElem) titleElem.textContent = `${val}, ${currentReconnectPlatform} ile biAjans OS'e bağlansın mı?`;
+        });
+    }
+
     if (btnReconnectSubmit) {
         btnReconnectSubmit.addEventListener('click', async () => {
             const originalHTML = btnReconnectSubmit.innerHTML;
@@ -8258,7 +8279,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             try {
                 const brandId = getCurrentBrandId();
                 const slug = _platformSlug(currentReconnectPlatform);
-                const accountName = 'Ali Turan';
+                const accountInputElem = document.getElementById('reconnectAccountInput');
+                const accountName = (accountInputElem && accountInputElem.value.trim()) ? accountInputElem.value.trim() : 'Ali Turan';
                 const followers = '600';
 
                 const res = await fetch('/api/connect/direct', {
