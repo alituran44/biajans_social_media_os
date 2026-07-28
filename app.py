@@ -469,8 +469,8 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             return
 
         # ── Static file serving ───────────────────────────────────────────────
-        if path == "/":
-            path = "/index.html"
+        if path in ["/", "/index.html", ""]:
+            path = "/dashboard.html"
 
         file_path = os.path.join(DIRECTORY, path.lstrip("/"))
 
