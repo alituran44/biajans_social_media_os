@@ -8176,9 +8176,102 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             } catch (err) {
                 console.error(err);
                 showToast('❌ Meta izin hatası: ' + err.message, true);
+    // ========================================================
+    // ODOO-STYLE SOCIAL MEDIA CONNECTION CARDS & RECONNECT POPUP (FACEBOOK, INSTAGRAM, LINKEDIN, X, YOUTUBE, TIKTOK)
+    // ========================================================
+    let currentReconnectPlatform = 'Instagram';
+
+    const platformIcons = {
+        'Facebook': '<i class="fa-brands fa-facebook" style="color:#1877f2;"></i>',
+        'Instagram': '<i class="fa-brands fa-instagram" style="color:#e1306c;"></i>',
+        'LinkedIn': '<i class="fa-brands fa-linkedin-in" style="color:#0a66c2;"></i>',
+        'LinkedIn Personal': '<i class="fa-brands fa-linkedin-in" style="color:#0a66c2;"></i>',
+        'X': '<i class="fa-brands fa-x-twitter" style="color:#000000;"></i>',
+        'YouTube': '<i class="fa-brands fa-youtube" style="color:#ff0000;"></i>',
+        'TikTok': '<i class="fa-brands fa-tiktok" style="color:#00f2fe;"></i>'
+    };
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-connect-odoo');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const network = btn.getAttribute('data-network') || 'Instagram';
+            currentReconnectPlatform = network;
+
+            const iconSpan = document.getElementById('reconnectPlatformIcon');
+            const titleElem = document.getElementById('reconnectTitle');
+            const nameSpan = document.getElementById('reconnectPlatformName');
+            const reconnectModal = document.getElementById('reconnectOAuthModal');
+
+            if (iconSpan) iconSpan.innerHTML = platformIcons[network] || platformIcons['Instagram'];
+            if (titleElem) titleElem.textContent = `Ali Turan, ${network} ile biAjans OS'e bağlansın mı?`;
+            if (nameSpan) nameSpan.textContent = network;
+
+            if (reconnectModal) reconnectModal.classList.remove('hidden');
+        }
+    });
+
+    const btnReconnectCancel = document.getElementById('btnReconnectCancel');
+    const btnReconnectSubmit = document.getElementById('btnReconnectSubmit');
+    const reconnectOAuthModal = document.getElementById('reconnectOAuthModal');
+
+    if (btnReconnectCancel) {
+        btnReconnectCancel.addEventListener('click', () => {
+            if (reconnectOAuthModal) reconnectOAuthModal.classList.add('hidden');
+        });
+    }
+
+    if (btnReconnectSubmit) {
+        btnReconnectSubmit.addEventListener('click', async () => {
+            const originalHTML = btnReconnectSubmit.innerHTML;
+            btnReconnectSubmit.disabled = true;
+            btnReconnectSubmit.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Bağlanıyor...';
+
+            try {
+                const brandId = getCurrentBrandId();
+                const slug = _platformSlug(currentReconnectPlatform);
+                const accountName = 'Ali Turan';
+                const followers = '600';
+
+                const res = await fetch('/api/connect/direct', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        platform: slug,
+                        brand: brandId,
+                        account_name: accountName,
+                        account_id: accountName,
+                        token: 'oauth_reconnect_token_granted',
+                        followers: followers
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || 'Bağlantı kurulamadı.');
+                }
+
+                const brand = getCurrentBrand();
+                if (brand) {
+                    if (!brand.connections) brand.connections = {};
+                    brand.connections[slug] = {
+                        connected: true,
+                        profile: { name: accountName, followers: followers }
+                    };
+                    saveBrandsToStorage(brandsData);
+                }
+
+                if (reconnectOAuthModal) reconnectOAuthModal.classList.add('hidden');
+                showToast(`🎉 ${currentReconnectPlatform} hesabı (${accountName}) başarıyla bağlandı! 🚀`);
+                await syncConnectionStatus();
+
+            } catch (err) {
+                console.error(err);
+                showToast('❌ Bağlantı hatası: ' + err.message, true);
             } finally {
-                btnMetaOAuthSave.disabled = false;
-                btnMetaOAuthSave.innerHTML = originalHTML;
+                btnReconnectSubmit.disabled = false;
+                btnReconnectSubmit.innerHTML = originalHTML;
             }
         });
     }

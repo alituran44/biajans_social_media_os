@@ -1052,64 +1052,6 @@
                                 <div class="accordion-body" style="padding: 24px; background: #ffffff; display: none;">
                                     <p class="form-help margin-bottom-md" style="font-size: 12px; color: #64748b; margin-bottom: 15px;">Sosyal medya profillerinizi ve reklam hesaplarınızı bağlayın ya da yönetin. Bağlı kanallar özet kısmında yeşil nokta ile işaretlenir.</p>
                                     
-                                    <div class="connections-modal-grid" id="settingsConnectionsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-                                        <!-- Web Card -->
-                                        <div class="conn-card bg-web" data-network="Web" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                                            <div class="conn-card-info">
-                                                <span class="conn-category" style="font-size: 9.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Web</span>
-                                                <h4 style="font-size: 12.5px; font-weight: 700; color: #1e293b; margin: 4px 0 0 0;">Bir web sayfası bağlayın</h4>
-                                            </div>
-                                            <i class="fa-solid fa-wifi conn-icon" style="font-size: 22px; color: #94a3b8;"></i>
-                                        </div>
-                                        <!-- Blog Card -->
-                                        <div class="conn-card bg-blog" data-network="Blog" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                                            <div class="conn-card-info">
-                                                <span class="conn-category" style="font-size: 9.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Blog</span>
-                                                <h4 style="font-size: 12.5px; font-weight: 700; color: #1e293b; margin: 4px 0 0 0;">Bir blog bağlayın</h4>
-                                            </div>
-                                            <i class="fa-solid fa-rss conn-icon" style="font-size: 22px; color: #94a3b8;"></i>
-                                        </div>
-                                        <!-- Facebook Card -->
-                                        <div class="conn-card bg-fb" data-network="Facebook" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                                            <div class="conn-card-info">
-                                                <span class="conn-category" style="font-size: 9.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Facebook</span>
-                                                <h4 style="font-size: 12.5px; font-weight: 700; color: #1e293b; margin: 4px 0 0 0;">Facebook sayfası bağlayın</h4>
-                                            </div>
-                                            <i class="fa-brands fa-facebook-f conn-icon" style="font-size: 22px; color: #1877f2;"></i>
-                                        </div>
-                                        <!-- Instagram Card -->
-                                        <div class="conn-card bg-ig" data-network="Instagram" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                                            <div class="conn-card-info">
-                                                <span class="conn-category" style="font-size: 9.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Instagram</span>
-                                                <h4 style="font-size: 12.5px; font-weight: 700; color: #1e293b; margin: 4px 0 0 0;">Profesyonel Instagram hesabı bağlayın</h4>
-                                            </div>
-                                            <i class="fa-brands fa-instagram conn-icon" style="font-size: 22px; color: #e1306c;"></i>
-                                        </div>
-                                        <!-- Threads Card -->
-                                        <div class="conn-card bg-threads" data-network="Threads" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                                            <div class="conn-card-info">
-                                                <span class="conn-category" style="font-size: 9.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Konular</span>
-                                                <h4 style="font-size: 12.5px; font-weight: 700; color: #1e293b; margin: 4px 0 0 0;">Threads hesabınızı bağlayın</h4>
-                                            </div>
-                                            <i class="fa-solid fa-at conn-icon" style="font-size: 22px; color: #000000;"></i>
-                                        </div>
-                                        <!-- X Card -->
-                                        <div class="conn-card bg-x" data-network="X" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                                            <div class="conn-card-info">
-                                                <span class="conn-category" style="font-size: 9.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">X</span>
-                                                <h4 style="font-size: 12.5px; font-weight: 700; color: #1e293b; margin: 4px 0 0 0;">Bir Twitter / X hesabı bağlayın</h4>
-                                            </div>
-                                            <i class="fa-brands fa-x-twitter conn-icon" style="font-size: 22px; color: #000000;"></i>
-                                        </div>
-                                        <!-- LinkedIn Card -->
-                                        <div class="conn-card bg-li active-connection" data-network="LinkedIn" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                                            <div class="conn-card-info">
-                                                <span class="conn-category" style="font-size: 9.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">LinkedIn</span>
-                                                <h4 style="font-size: 12.5px; font-weight: 700; color: #1e293b; margin: 4px 0 0 0;">Linkedin hesabı veya şirket sayfası bağlayın</h4>
-                                            </div>
-                                            <i class="fa-brands fa-linkedin conn-icon" style="font-size: 22px; color: #0a66c2;"></i>
-                                            <span class="conn-active-badge" style="position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background-color: #10b981; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 9px;"><i class="fa-solid fa-check"></i></span>
-                                        </div>
                                         <!-- WhatsApp Card -->
                                         <div class="conn-card bg-wa" data-network="WhatsApp Business" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
                                             <div class="conn-card-info">
@@ -5708,12 +5650,58 @@ TWITCH_CLIENT_SECRET=buraya_client_secret_yazın</pre>
         </div>
     </div>
 
+    <!-- Re-connect OAuth Authorization Modal (Matching User Screenshot 2) -->
+    <div class="modal-overlay hidden" id="reconnectOAuthModal" style="z-index: 10006;">
+        <div class="modal-container" style="max-width: 580px; width: 95%; padding: 0; border-radius: 12px; position: relative; overflow: hidden; background: #ffffff; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+            <!-- Popup Header Bar -->
+            <div style="background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="reconnectPlatformIcon" style="font-size: 24px; color: #1877f2;"><i class="fa-brands fa-facebook"></i></span>
+                    <i class="fa-solid fa-arrows-rotate" style="font-size: 12px; color: #94a3b8;"></i>
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #0d9488); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; color: #475569; font-size: 13px; font-weight: 700; cursor: pointer;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #1877f2;">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <i class="fa-solid fa-caret-down" style="font-size: 10px;"></i>
+                </div>
+            </div>
+
+            <!-- Popup Body Content -->
+            <div style="padding: 28px 32px; text-align: left;">
+                <h3 id="reconnectTitle" style="font-size: 20px; font-weight: 800; color: #1f2937; margin: 0 0 8px 0; border: none; padding: 0;">Ali Turan, biAjans OS'e yeniden bağlansın mı?</h3>
+                <p style="font-size: 13px; color: #4b5563; margin: 0 0 20px 0;">Bu, bu bağlantı için önceki ayarlarını geri yükleyecektir.</p>
+
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
+                    <a href="#" id="linkNotUser" style="color: #2563eb; font-size: 13px; font-weight: 600; text-decoration: none;">Not Ali Turan? Başka bir hesaba giriş yap</a>
+                    <a href="#" id="linkEditSettings" style="color: #2563eb; font-size: 13px; font-weight: 600; text-decoration: none;">Ayarları düzenle</a>
+                </div>
+
+                <p style="font-size: 11.5px; color: #6b7280; line-height: 1.5; margin: 0;">
+                    Devam ettiğinde, biAjans OS paylaştığın bilgilere sürekli olarak erişebilecek ve <span id="reconnectPlatformName">Meta</span> biAjans OS'in bu bilgilere eriştiği zamanı kaydedecek. Bu paylaşım ve ayarların hakkında <a href="#" style="color: #2563eb; text-decoration: none;">Daha fazla bilgi al</a>.
+                </p>
+            </div>
+
+            <!-- Popup Footer Bar -->
+            <div style="background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; color: #6b7280;">biAjans OS <a href="#" style="color: #2563eb; text-decoration: none;">Gizlilik İlkesi</a> ve <a href="#" style="color: #2563eb; text-decoration: none;">Hizmet Koşulları</a></span>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnReconnectCancel" style="padding: 9px 22px; border-radius: 8px; border: 1px solid #d1d5db; background: #f3f4f6; color: #374151; font-weight: 700; font-size: 13px; cursor: pointer;">Şimdi Değil</button>
+                    <button id="btnReconnectSubmit" style="padding: 9px 26px; border-radius: 8px; border: none; background: #1d4ed8; color: #ffffff; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(29, 78, 216, 0.3);">Tekrar bağlan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification alerts -->
     <div class="toast hidden" id="toast">
         <i class="fa-solid fa-circle-check"></i>
         <span id="toastMsg">Kopyalandı!</span>
     </div>
 
-    <script src="app.js?v=20260728-v11"></script>
+    <script src="app.js?v=20260728-v12"></script>
 </body>
 </html>
