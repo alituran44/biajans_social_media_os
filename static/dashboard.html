@@ -17,32 +17,36 @@
         <!-- Metricool Style Top Bar -->
         <header class="top-bar animate-fade-in">
             <div class="top-bar-left">
-                <div class="logo-area" style="cursor: pointer;" id="headerLogoArea">
-                    <i class="fa-solid fa-wand-magic-sparkles logo-icon"></i>
-                    <span class="logo-text">biAjans</span>
+                <div class="logo-area" style="cursor: pointer; display: flex; align-items: center; gap: 10px;" id="headerLogoArea">
+                    <div style="width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #10b981, #3b82f6, #8b5cf6, #ec4899); display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; box-shadow: 0 4px 10px rgba(99,102,241,0.25);">
+                        <i class="fa-solid fa-dragon"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column; line-height: 1.1;">
+                        <span class="logo-text" style="font-weight: 900; font-size: 16px; letter-spacing: 0.5px; color: #0f172a; text-transform: uppercase;">DİJİTAL PANELİM</span>
+                    </div>
                 </div>
                 
-                <!-- Horizontal Navigation Links (Metricool Signature) -->
+                <!-- Horizontal Navigation Links -->
                 <nav class="top-nav">
-                    <a href="#" class="top-nav-item" id="navAnalitik"><i class="fa-solid fa-chart-simple"></i> Analitik</a>
-                    <a href="#" class="top-nav-item" id="navRakip"><i class="fa-solid fa-ranking-star"></i> Rakip Analizi</a>
-                    <a href="#" class="top-nav-item" id="navRaporlama"><i class="fa-solid fa-file-invoice"></i> Raporlama <span class="tag-new">Yeni</span></a>
-                    <a href="#" class="top-nav-item" id="navGelenKutusu"><i class="fa-solid fa-envelope"></i> Gelen Kutusu</a>
-                    <a href="#" class="top-nav-item active" id="navPlanlama"><i class="fa-solid fa-calendar-days"></i> Planlama</a>
-                    <a href="#" class="top-nav-item" id="navAkilliBaglantilar"><i class="fa-solid fa-link"></i> Akıllı Bağlantılar</a>
-                    <a href="#" class="top-nav-item" id="navReklamlar"><i class="fa-solid fa-rectangle-ad"></i> Reklamlar</a>
-                    <a href="#" class="top-nav-item" id="navSosyalMedyaUzmanligi"><i class="fa-solid fa-wand-magic-sparkles"></i> Sosyal Medya Uzmanlığı</a>
+                    <a href="#" class="top-nav-item active" id="navKontrolPaneli"><i class="fa-solid fa-house"></i> Kontrol Paneli</a>
+                    <a href="#" class="top-nav-item" id="navGonderiPaneli"><i class="fa-solid fa-paper-plane"></i> Gönderi Paneli</a>
+                    <a href="#" class="top-nav-item" id="navOtomasyonlar"><i class="fa-solid fa-brain"></i> Otomasyonlar</a>
+                    <a href="#" class="top-nav-item" id="navSosyalHesaplar"><i class="fa-solid fa-circle-nodes"></i> Sosyal Hesaplar</a>
+                    <a href="#" class="top-nav-item" id="navPlanlama"><i class="fa-solid fa-calendar-days"></i> Planlama</a>
+                    <a href="#" class="top-nav-item" id="navTaslaklarim"><i class="fa-solid fa-file-pen"></i> Taslaklarım</a>
+                    <a href="#" class="top-nav-item" id="navDosyalarim"><i class="fa-solid fa-folder-open"></i> Dosyalarım</a>
+                    <a href="#" class="top-nav-item" id="navYapayZeka"><i class="fa-solid fa-wand-magic-sparkles"></i> Yapay Zeka</a>
+                    <a href="#" class="top-nav-item" id="navAraclarim"><i class="fa-solid fa-wrench"></i> Araçlarım</a>
                 </nav>
             </div>
 
-            <div class="top-bar-right">
-                <button class="btn-upgrade"><i class="fa-solid fa-crown"></i> Planınızı yükseltin</button>
+            <div class="top-bar-right" style="display: flex; align-items: center; gap: 16px;">
+                <span style="font-size: 12px; font-weight: 600; color: #64748b;">Tarife Bitişi: <strong style="color: #1e293b;">08-08-2026</strong></span>
+                <button class="btn-upgrade" style="background: #0284c7; color: white; border-radius: 20px; padding: 7px 18px; font-weight: 700; font-size: 11.5px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(2,132,199,0.3); text-transform: uppercase; letter-spacing: 0.5px;">TARİFİ YENİLE</button>
                 <div class="brand-dropdown">
-                    <i class="fa-regular fa-user-circle"></i>
+                    <i class="fa-regular fa-user-circle" style="font-size: 22px; color: #0284c7;"></i>
                     <select id="brandSelect">
-                        <option value="global">Boş marka</option>
-                        <option value="coffee">Local Coffee Shop</option>
-                        <option value="fitness">Health & Fitness</option>
+                        <option value="global">dinapolicanakkale</option>
                     </select>
                 </div>
                 <div class="menu-sandwich" id="sandwichMenuBtn">
@@ -5747,12 +5751,11 @@ TWITCH_CLIENT_SECRET=buraya_client_secret_yazın</pre>
         </div>
     </div>
 
-    <!-- Toast Notification alerts -->
-    <div class="toast hidden" id="toast">
-        <i class="fa-solid fa-circle-check"></i>
-        <span id="toastMsg">Kopyalandı!</span>
-    </div>
+    <!-- Floating HELP "? NASIL" Widget Matching Reference Screenshot -->
+    <button id="btnNasilHelp" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: #0099ff; color: white; border: none; width: 62px; height: 62px; border-radius: 50%; font-weight: 900; font-size: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,153,255,0.45); cursor: pointer; line-height: 1.2; text-transform: uppercase;">
+        <i class="fa-solid fa-question" style="font-size: 15px; margin-bottom: 2px;"></i> NASIL
+    </button>
 
-    <script src="app.js?v=20260729-v24"></script>
+    <script src="app.js?v=20260729-v25"></script>
 </body>
 </html>
