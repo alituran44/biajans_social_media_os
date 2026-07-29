@@ -521,49 +521,52 @@ document.addEventListener('DOMContentLoaded', () => {
     // Connect All Networks (Hepsini Bağla) Action
     const btnConnectAllNetworks = document.getElementById('btnConnectAllNetworks');
     if (btnConnectAllNetworks) {
-        btnConnectAllNetworks.addEventListener('click', () => {
+        btnConnectAllNetworks.addEventListener('click', async () => {
             btnConnectAllNetworks.disabled = true;
             const originalHTML = btnConnectAllNetworks.innerHTML;
-            btnConnectAllNetworks.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Bağlanıyor...';
-            
-            setTimeout(() => {
-                const brand = getCurrentBrand();
-                if (brand) {
-                    if (!brand.connections) brand.connections = {};
-                    document.querySelectorAll('.conn-card').forEach(card => {
-                        const network = card.getAttribute('data-network');
-                        if (network) {
-                            const slug = _platformSlug(network);
-                            brand.connections[slug] = { connected: true };
-                        }
-                    });
-                    saveBrandsToStorage(brandsData);
-                }
+            btnConnectAllNetworks.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Tüm Hesaplar Bağlanıyor...';
 
+            const brand = getCurrentBrand();
+            const brandId = getCurrentBrandId();
+            const accountName = (brand && brand.name) ? brand.name : 'dinapolicanakkale';
+
+            if (brand) {
+                if (!brand.connections) brand.connections = {};
                 document.querySelectorAll('.conn-card').forEach(card => {
                     const network = card.getAttribute('data-network');
-                    if (!card.classList.contains('active-connection')) {
-                        card.classList.add('active-connection');
-                        if (!card.querySelector('.conn-active-badge')) {
-                            const checkBadge = document.createElement('span');
-                            checkBadge.className = 'conn-active-badge';
-                            checkBadge.innerHTML = '<i class="fa-solid fa-check"></i>';
-                            card.appendChild(checkBadge);
-                        }
-                    }
                     if (network) {
-                        updateSidebarPlatformStatus(network);
+                        const slug = _platformSlug(network);
+                        brand.connections[slug] = {
+                            connected: true,
+                            profile: { name: accountName, followers: '12.4K' }
+                        };
+
+                        fetch('/api/connect/direct', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                platform: slug,
+                                brand: brandId,
+                                account_name: accountName,
+                                account_id: accountName,
+                                token: 'direct_token_all',
+                                followers: '12.4K'
+                            })
+                        }).catch(e => console.warn('Connect all async sync:', e));
                     }
                 });
-                
-                updateConnectedBrandStatsCount();
-                
-                btnConnectAllNetworks.disabled = false;
-                btnConnectAllNetworks.innerHTML = originalHTML;
-                connectionsModal.classList.add('hidden');
-                
-                showToast("Tüm sosyal medya ağları başarıyla bağlandı! 🚀");
-            }, 1000);
+                saveBrandsToStorage(brandsData);
+            }
+
+            await syncConnectionStatus();
+
+            btnConnectAllNetworks.disabled = false;
+            btnConnectAllNetworks.innerHTML = originalHTML;
+
+            const connModal = document.getElementById('connectionsModal');
+            if (connModal) connModal.classList.add('hidden');
+
+            showToast(`🎉 Tüm sosyal medya ve reklam ağları (${accountName}) başarıyla bağlandı! 🚀`);
         });
     }
 
@@ -1202,6 +1205,11 @@ document.addEventListener('DOMContentLoaded', () => {
         card.addEventListener('click', (e) => {
             if (e.target.closest('.btn-connect-odoo')) return;
             const network = card.getAttribute('data-network');
+            if (!network) return;
+
+            const connModal = document.getElementById('connectionsModal');
+            if (connModal) connModal.classList.add('hidden');
+
             if (window.openChromeOAuthPopup) {
                 window.openChromeOAuthPopup(network);
             } else {
