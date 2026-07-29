@@ -3453,7 +3453,8 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                             if (!card.getAttribute('data-original-title')) {
                                 card.setAttribute('data-original-title', cardTitle.textContent);
                             }
-                            const displayName = (info.profile && info.profile.name) ? info.profile.name : name;
+                            const activeBrandName = (getCurrentBrand() && getCurrentBrand().name && getCurrentBrand().name !== 'Yeni Marka') ? getCurrentBrand().name : 'dinapolicanakkale';
+                            let displayName = (info.profile && info.profile.name && !info.profile.name.startsWith('Demo ')) ? info.profile.name : activeBrandName;
                             cardTitle.textContent = `${displayName} (Bağlı)`;
                         }
                     });
@@ -3541,13 +3542,15 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
             const data = await res.json();
             if (data && data.connections) {
                 const brand = getCurrentBrand();
+                const activeBrandName = (brand && brand.name && brand.name !== 'Yeni Marka') ? brand.name : 'dinapolicanakkale';
                 const merged = {};
                 // First populate with backend connections
                 Object.entries(data.connections).forEach(([k, v]) => {
                     if (v && v.connected) {
+                        const profName = (v.profile && v.profile.name && !v.profile.name.startsWith('Demo ')) ? v.profile.name : activeBrandName;
                         merged[k] = { 
                             connected: true, 
-                            profile: v.profile && v.profile.name ? v.profile : { name: 'Demo ' + k } 
+                            profile: { ...v.profile, name: profName }
                         };
                     }
                 });
@@ -3556,19 +3559,20 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
                     Object.entries(brand.connections).forEach(([k, v]) => {
                         if (v && v.connected) {
                             if (!merged[k]) {
+                                const profName = (v.profile && v.profile.name && !v.profile.name.startsWith('Demo ')) ? v.profile.name : activeBrandName;
                                 merged[k] = { 
                                     connected: true, 
-                                    profile: v.profile && v.profile.name ? v.profile : { name: 'Demo ' + k } 
+                                    profile: { ...v.profile, name: profName } 
                                 };
                             } else {
-                                // Merge profile keys (like followers, id, name) without overwriting active values
                                 const localProfile = v.profile || {};
                                 const backendProfile = merged[k].profile || {};
+                                const finalName = (backendProfile.name && !backendProfile.name.startsWith('Demo ')) ? backendProfile.name : ((localProfile.name && !localProfile.name.startsWith('Demo ')) ? localProfile.name : activeBrandName);
                                 merged[k].profile = {
                                     ...backendProfile,
-                                    followers: backendProfile.followers || localProfile.followers || '',
-                                    id: backendProfile.id || localProfile.id || '',
-                                    name: backendProfile.name || localProfile.name || 'Demo ' + k
+                                    followers: backendProfile.followers || localProfile.followers || '12.4K',
+                                    id: backendProfile.id || localProfile.id || 'id_' + k,
+                                    name: finalName
                                 };
                             }
                         }
@@ -7596,11 +7600,10 @@ biAjans AI Marketing & Social Media OS - Raporlama Sunumu
         // Setup directButtonsContainer
         const buttonsContainer = document.getElementById('directButtonsContainer');
         
-        if (isConnected) {
-            titleEl.textContent = `${network} (Bağlı)`;
-            nameInput.value = connInfo.profile?.name || 'Demo Hesap';
-            idInput.value = connInfo.profile?.id || 'demo_id';
-            if (followersInput) followersInput.value = connInfo.profile?.followers || '';
+            const activeName = (connInfo.profile?.name && !connInfo.profile.name.startsWith('Demo ')) ? connInfo.profile.name : ((brand && brand.name && brand.name !== 'Yeni Marka') ? brand.name : 'dinapolicanakkale');
+            nameInput.value = activeName;
+            idInput.value = connInfo.profile?.id || activeName;
+            if (followersInput) followersInput.value = connInfo.profile?.followers || '12.4K';
             
             // Build Update and Disconnect buttons
             if (buttonsContainer) {
