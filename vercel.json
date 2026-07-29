@@ -1,13 +1,18 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/api/index.py" },
-    { "source": "/robots.txt", "destination": "/static/robots.txt" },
-    { "source": "/sitemap.xml", "destination": "/static/sitemap.xml" },
-    { "source": "/dashboard.html", "destination": "/api/index.py" },
-    { "source": "/api/(.*)", "destination": "/api/index.py" },
-    { "source": "/sl/(.*)", "destination": "/api/index.py" },
-    { "source": "/auth/(.*)", "destination": "/api/index.py" },
-    { "source": "/(.*)", "destination": "/static/$1" }
+  "version": 2,
+  "builds": [
+    { "src": "api/index.py", "use": "@vercel/python" },
+    { "src": "static/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/robots.txt", "dest": "/static/robots.txt" },
+    { "src": "/sitemap.xml", "dest": "/static/sitemap.xml" },
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
+    { "src": "/sl/(.*)", "dest": "/api/index.py" },
+    { "src": "/auth/(.*)", "dest": "/api/index.py" },
+    { "src": "/dashboard.html", "dest": "/api/index.py" },
+    { "src": "/", "dest": "/api/index.py" },
+    { "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|woff|woff2|ttf|eot))", "dest": "/static/$1" },
+    { "src": "/(.*)", "dest": "/api/index.py" }
   ]
 }
